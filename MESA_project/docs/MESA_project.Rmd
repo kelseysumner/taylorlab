@@ -21,9 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 
 
-**Using cross-sectional case-control samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among three polymorphic gene targets: AMA1, CSP, HistB.**
-
-**Approach:** Implement haplotype inferences using DADA2 version 1.8, following this tutorial: https://benjjneb.github.io/dada2/tutorial.html.
+**Approach:** Using cross-sectional case-control samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among three polymorphic gene targets: AMA1, CSP, HistB.
 
 **Data aggregation:** Three primary data sets: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data.
 
@@ -41,19 +39,34 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     
 ## Any other subsection of processing
 
+
 # Haplotype Inference **[Kelsey]**
 
 ## Running DADA2 to Create Haplotypes
-* Determine social, economic, and demographic attributes to be used to evaluate similarity from previous literature on refusal/exemptions
-* ~~Gather/clean social, economic, and demographic attribute data~~
-    + Data at: `OneDrive/CA_NME_Diffusion/data/soc_econ_dem/yearly`
-        - Race/Ethnicity (8 variables, proportions), Age (18 variables, proportions), Education (5 variables, proportions), Income (2 variables, dollars)
-* ~~Determine metric to evaluate similarity among places based on multiple variables (Probably Euclidean distance, but maybe RMSE)~~
+* Create haplotypes from the cleaned, demultiplexed, and preprocessed targeted amplicon sequence data using DADA2 version 1.8, following this tutorial: https://benjjneb.github.io/dada2/tutorial.html.
+* Run DADA2 for haplotype inference on the data output from the bbmap preprocessing in terminal
+    + Code for running DADA2 on Github: `taylorlab/MESA_project/code/haplotype_inference/MESA_dada2.R`
+    + Input data at Duke Box: 
+        - 514 samples for each target (3 targets - AMA, CSP, HistB)
+        - For AMA: `Webuye MESA Sequence Data > Mapped Cut Reads > AMA_haplotypes > AMA > input_fastqs`
+        - For CSP: `Webuye MESA Sequence Data > Mapped Cut Reads > CSP_haplotypes > input_fastqs`
+        - For HistB: `Webuye MESA Sequence Data > Mapped Cut Reads > HistB_haplotypes > input_fastqs`
+    + Output data at Duke Box: 
+        - For AMA: `Webuye MESA Sequence Data > Mapped Cut Reads > AMA_haplotypes > AMA > Original Results`
+        - For CSP: `Webuye MESA Sequence Data > Mapped Cut Reads > CSP_haplotypes > Original Results`
+        - For HistB: `Webuye MESA Sequence Data > Mapped Cut Reads > HistB_haplotypes > Original Results`
     + Notes: 
-        1. *Weigh similarity of Race/Eth, Age, Education, and Income equally*
-        2. *Must consider scale of input variables measured in different units (e.g., proportions versus dollars) and how overall concepts are scaled (9 variables vs 2 variables), as well as the metric output (e.g., what is the similarity metric result for perfectly similar and for perfectly dissimilar regions?)*
+        1. *All of the haplotype inference is done in R*
+        2. *The processing is set up to mulithread the samples through multiple cores of a Mac (for increased efficiency) so needs to be run on a Mac.*
+        3. *Can be run locally on a computer.*
+        4. *Chimeras were removed in this step using DADA2.*
 
 ## Cleaning Haplotype Output
+* Clean the DADA2 haplotype inference output to only include samples and haplotypes that occurred in a high enough prevalence
+    + Inclusion criteria for the haplotypes: 
+        1. *Kept only DBS human samples - removed 3D7 DBS control, 3D7 culture control, and 7g83D7Dd2*
+        2. *Kept haplotypes that have >50 reads and are present in greater than 1% of the data*
+
 
 # Haplotype Analyses
 
