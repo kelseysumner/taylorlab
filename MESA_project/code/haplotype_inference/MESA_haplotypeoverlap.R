@@ -1,5 +1,7 @@
 # ----------------------------------------- #
-#      MESA Batch 1 Haplotype Sharing       #
+#      MESA Batch 1 Create First Step       #
+#   of Haplotype Tracking Pipeline Sample   #
+#                 Summary                   #
 #                21AUG2018                  #
 #                K. Sumner                  #
 # ----------------------------------------- #

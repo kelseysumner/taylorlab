@@ -233,11 +233,10 @@ div.tocify {
 
 
 <p>Last Updated 09/27/2018</p>
-<p><strong>Using cross-sectional case-control samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among three polymorphic gene targets: AMA1, CSP, HistB.</strong></p>
-<p><strong>Approach:</strong> Implement haplotype inferences using DADA2 version 1.8, following this tutorial: <a href="https://benjjneb.github.io/dada2/tutorial.html" class="uri">https://benjjneb.github.io/dada2/tutorial.html</a>.</p>
+<p><strong>Approach:</strong> Using cross-sectional case-control samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among three polymorphic gene targets: AMA1, CSP, HistB.</p>
 <p><strong>Data aggregation:</strong> Three primary data sets: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data.</p>
 <div id="sequence-processing-cleaning-in-terminal-joe" class="section level1">
-<h1>Sequence Processing &amp; Cleaning in Terminal <strong>[Joe]</strong></h1>
+<h1><strong>Sequence Processing &amp; Cleaning in Terminal [Joe]</strong></h1>
 <div id="bbmap-protocol" class="section level2">
 <h2>BBmap Protocol</h2>
 <ul>
@@ -258,37 +257,104 @@ div.tocify {
 <h2>Any other subsection of processing</h2>
 </div>
 </div>
-<div id="haplotype-inference-kelsey" class="section level1">
-<h1>Haplotype Inference <strong>[Kelsey]</strong></h1>
+<div id="haplotype-inference-data-set-creation-kelsey" class="section level1">
+<h1><strong>Haplotype Inference &amp; Data Set Creation [Kelsey]</strong></h1>
 <div id="running-dada2-to-create-haplotypes" class="section level2">
 <h2>Running DADA2 to Create Haplotypes</h2>
 <ul>
-<li>Determine social, economic, and demographic attributes to be used to evaluate similarity from previous literature on refusal/exemptions</li>
-<li><del>Gather/clean social, economic, and demographic attribute data</del>
+<li>Create haplotypes from the cleaned, demultiplexed, and preprocessed targeted amplicon sequence data using DADA2 version 1.8, following this tutorial: <a href="https://benjjneb.github.io/dada2/tutorial.html" class="uri">https://benjjneb.github.io/dada2/tutorial.html</a>.</li>
+<li>Run DADA2 for haplotype inference on the data output from the bbmap preprocessing in terminal
 <ul>
-<li>Data at: <code>OneDrive/CA_NME_Diffusion/data/soc_econ_dem/yearly</code>
+<li>Code for running DADA2 on Github: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_dada2.R</code></li>
+<li>Input data at Duke Box:
 <ul>
-<li>Race/Ethnicity (8 variables, proportions), Age (18 variables, proportions), Education (5 variables, proportions), Income (2 variables, dollars)</li>
+<li>514 samples for each target (3 targets - AMA, CSP, HistB)</li>
+<li>For AMA: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; AMA_haplotypes &gt; AMA &gt; input_fastqs</code></li>
+<li>For CSP: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; CSP_haplotypes &gt; input_fastqs</code></li>
+<li>For HistB: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; HistB_haplotypes &gt; input_fastqs</code></li>
 </ul></li>
-</ul></li>
-<li><del>Determine metric to evaluate similarity among places based on multiple variables (Probably Euclidean distance, but maybe RMSE)</del>
+<li>Output data at Duke Box:
 <ul>
+<li>For AMA: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; AMA_haplotypes &gt; AMA &gt; Original Results</code></li>
+<li>For CSP: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; CSP_haplotypes &gt; Original Results</code></li>
+<li>For HistB: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; HistB_haplotypes &gt; Original Results</code></li>
+</ul></li>
 <li>Notes:
 <ol style="list-style-type: decimal">
-<li><em>Weigh similarity of Race/Eth, Age, Education, and Income equally</em></li>
-<li><em>Must consider scale of input variables measured in different units (e.g., proportions versus dollars) and how overall concepts are scaled (9 variables vs 2 variables), as well as the metric output (e.g., what is the similarity metric result for perfectly similar and for perfectly dissimilar regions?)</em></li>
+<li><em>All of the haplotype inference is done in R</em></li>
+<li><em>The processing is set up to mulithread the samples through multiple cores of a Mac (for increased efficiency) so needs to be run on a Mac.</em></li>
+<li><em>Can be run locally on a computer.</em></li>
+<li><em>Chimeras were removed in this step using DADA2.</em></li>
 </ol></li>
 </ul></li>
 </ul>
 </div>
 <div id="cleaning-haplotype-output" class="section level2">
 <h2>Cleaning Haplotype Output</h2>
+<ul>
+<li>Clean the DADA2 haplotype inference output to only include samples and haplotypes that occurred in a high enough prevalence
+<ul>
+<li>Inclusion criteria for the samples and haplotypes:
+<ol style="list-style-type: decimal">
+<li><em>Kept only DBS human samples - removed 3D7 DBS control, 3D7 culture control, and 7g83D7Dd2</em></li>
+<li><em>Kept haplotypes that have &gt;50 reads and are present in greater than 1% of the data</em></li>
+</ol></li>
+<li>Code for cleaning initial haplotype output: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_haplotypeanalysis_nocontrols.R</code></li>
+</ul></li>
+<li>Merge sample information to create one final cleaned data set of the processing from the initial fastq files to the final, cleaned haplotype data set
+<ul>
+<li>First run this code to create a cleaned trackReadsThroughPipeline file and finalizing haplotype output: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_haplotypeoverlap.R</code></li>
+<li>Second run this code for creating merged sample information: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_merge_sample_info.R</code></li>
+</ul></li>
+<li>The data for both these steps was outputted to the same folder:
+<ul>
+<li>Input data: locations indicated in the R script (multiple files)</li>
+<li>Output data at Duke Box:
+<ul>
+<li>For AMA: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; AMA_haplotypes &gt; AMA &gt; 23AUG2018</code></li>
+<li>For CSP: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; CSP_haplotypes &gt; 23AUG2018</code></li>
+<li>For HistB: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; HistB_haplotypes &gt; 23AUG2018</code></li>
+</ul></li>
+<li>Notes:
+<ol style="list-style-type: decimal">
+<li><em>The data cleaning process had many steps and interim data sets (all found within the XXX_haplotypes folder for each target)</em></li>
+</ol></li>
+</ul></li>
+</ul>
+</div>
+<div id="combining-haplotype-inference-social-demographic-data" class="section level2">
+<h2>Combining Haplotype Inference &amp; Social Demographic Data</h2>
+<ul>
+<li>Clean the social demographic (meta data) data set.
+<ul>
+<li>Code for cleaning initial social demographic data set: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_clean_meta_data.R</code></li>
+</ul></li>
+<li>Merge the haplotype inference results with the social demographic data set:
+<ul>
+<li>Code for merging the haplotype and social demographic data sets: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_merge_meta_sequence_data.R</code></li>
+</ul></li>
+</ul>
 </div>
 </div>
-<div id="haplotype-analyses" class="section level1">
-<h1>Haplotype Analyses</h1>
+<div id="haplotype-analyses-kelsey" class="section level1">
+<h1><strong>Haplotype Analyses [Kelsey]</strong></h1>
 <div id="haplotype-sharing" class="section level2">
 <h2>Haplotype Sharing</h2>
+<ul>
+<li>Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB).
+<ul>
+<li>Code for calculating haplotype sharing between pairs: <code>taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R</code></li>
+</ul></li>
+</ul>
+</div>
+<div id="calculate-prevalence-csp-3d7-haplotype" class="section level2">
+<h2>Calculate Prevalence CSP 3D7 Haplotype</h2>
+<ul>
+<li>Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online mulitalignment software (Clustal Omega: <a href="https://www.ebi.ac.uk/Tools/msa/clustalo/" class="uri">https://www.ebi.ac.uk/Tools/msa/clustalo/</a>)
+<ul>
+<li>Code for calculating prevalence CSP 3D7 haplotype: <code>taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_prev_3D7_CSP_haplotype.R</code></li>
+</ul></li>
+</ul>
 </div>
 <div id="haplotype-spatial-relationships" class="section level2">
 <h2>Haplotype Spatial Relationships</h2>

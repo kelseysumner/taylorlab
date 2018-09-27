@@ -26,7 +26,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 **Data aggregation:** Three primary data sets: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data.
 
 
-# Sequence Processing & Cleaning in Terminal **[Joe]**
+# **Sequence Processing & Cleaning in Terminal [Joe]**
 
 ## BBmap Protocol 
 * Describe the overall process here
@@ -40,7 +40,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 ## Any other subsection of processing
 
 
-# Haplotype Inference **[Kelsey]**
+# **Haplotype Inference & Data Set Creation [Kelsey]**
 
 ## Running DADA2 to Create Haplotypes
 * Create haplotypes from the cleaned, demultiplexed, and preprocessed targeted amplicon sequence data using DADA2 version 1.8, following this tutorial: https://benjjneb.github.io/dada2/tutorial.html.
@@ -63,13 +63,45 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 
 ## Cleaning Haplotype Output
 * Clean the DADA2 haplotype inference output to only include samples and haplotypes that occurred in a high enough prevalence
-    + Inclusion criteria for the haplotypes: 
+    + Inclusion criteria for the samples and haplotypes: 
         1. *Kept only DBS human samples - removed 3D7 DBS control, 3D7 culture control, and 7g83D7Dd2*
         2. *Kept haplotypes that have >50 reads and are present in greater than 1% of the data*
+    + Code for cleaning initial haplotype output: `taylorlab/MESA_project/code/haplotype_inference/MESA_haplotypeanalysis_nocontrols.R`
+* Merge sample information to create one final cleaned data set of the processing from the initial fastq files to the final, cleaned haplotype data set
+    + First run this code to create a cleaned trackReadsThroughPipeline file and finalizing haplotype output: `taylorlab/MESA_project/code/haplotype_inference/MESA_haplotypeoverlap.R`
+    + Second run this code for creating merged sample information: `taylorlab/MESA_project/code/haplotype_inference/MESA_merge_sample_info.R`
+* The data for both these steps was outputted to the same folder:
+    + Input data: locations indicated in the R script (multiple files)
+    + Output data at Duke Box: 
+        - For AMA: `Webuye MESA Sequence Data > Mapped Cut Reads > AMA_haplotypes > AMA > 23AUG2018`
+        - For CSP: `Webuye MESA Sequence Data > Mapped Cut Reads > CSP_haplotypes > 23AUG2018`
+        - For HistB: `Webuye MESA Sequence Data > Mapped Cut Reads > HistB_haplotypes > 23AUG2018`
+    + Notes: 
+        1. *The data cleaning process had many steps and interim data sets (all found within the XXX_haplotypes folder for each target)*
+
+## Combining Haplotype Inference & Social Demographic Data
+* Clean the social demographic (meta data) data set. 
+    + Code for cleaning initial social demographic data set: `taylorlab/MESA_project/code/haplotype_inference/MESA_clean_meta_data.R`
+* Merge the haplotype inference results with the social demographic data set:
+    + Code for merging the haplotype and social demographic data sets: `taylorlab/MESA_project/code/haplotype_inference/MESA_merge_meta_sequence_data.R`
 
 
-# Haplotype Analyses
+# **Haplotype Analyses [Kelsey]**
 
 ## Haplotype Sharing 
+* Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB).
+    + Code for calculating haplotype sharing between pairs: `taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R`
+
+## Calculate Prevalence CSP 3D7 Haplotype
+* Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online mulitalignment software (Clustal Omega: https://www.ebi.ac.uk/Tools/msa/clustalo/)
+    + Code for calculating prevalence CSP 3D7 haplotype: `taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_prev_3D7_CSP_haplotype.R`
 
 ## Haplotype Spatial Relationships
+
+
+
+
+
+
+
+
