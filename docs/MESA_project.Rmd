@@ -1,0 +1,73 @@
+---
+title: "MESA project analysis pipeline"
+author: "Kelsey Sumner, Joseph Saelens"
+date: "9/27/2018"
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    theme: lumen
+    highlight: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
+
+# Haplotype Inference
+
+**Evaluate the extent to which there are are differences .**
+
+**Approach:** Implement global and local autocorrelation methods per [Delamater et al. 2018, Examining the spatiotemporal evolution of vaccine refusal: nonmedical exemptions from vaccination in California, 2000-2013](https://doi.org/10.1186/s12889-018-5368-y) using various neighborhood definitions. Compare the results of various neighbor definitions to help understand which of them best explains “clustering” of similar behaviors. Test each year’s NME data over 2000-2013.
+
+**Data aggregation:** In previous research, used School, Block Group (BG), Tract, and School District (SD). Results of previous research focused on Tract-level results. Potentially implement each level of aggregation, but likely start with BG and Tract-level data for comparative purposes, and then move onto School and SD.
+
+
+## Geographic Proximity
+Already completed in Delamater et al 2018.Used K=5 nearest neighbors for all tests. NME spatiotemporal dataset already created (for all years and all levels of data aggregation). The R code to conduct spatial autocorrelation tests and to consolidate results is already written.
+
+* Code at: `vaccine_exemptions/code/ref`
+
+
+## Socio-demographic similarity **[Kelsey]**
+* ~~Determine social, economic, and demographic attributes to be used to evaluate similarity from previous literature on refusal/exemptions~~
+* ~~Gather/clean social, economic, and demographic attribute data~~
+    + Data at: `OneDrive/CA_NME_Diffusion/data/soc_econ_dem/yearly`
+        - Race/Ethnicity (8 variables, proportions), Age (18 variables, proportions), Education (5 variables, proportions), Income (2 variables, dollars)
+* ~~Determine metric to evaluate similarity among places based on multiple variables (Probably Euclidean distance, but maybe RMSE)~~
+    + Notes: 
+        1. *Weigh similarity of Race/Eth, Age, Education, and Income equally*
+        2. *Must consider scale of input variables measured in different units (e.g., proportions versus dollars) and how overall concepts are scaled (9 variables vs 2 variables), as well as the metric output (e.g., what is the similarity metric result for perfectly similar and for perfectly dissimilar regions?)*
+        3. *For Age and Education, calculate Cumulative Sum of proportions first (from lowest group to highest group), as this will allow us to evaluate similarities/differences “within” the variables*
+        4. *Use Euclidean distance to calculate similarity scores*
+    + See example/explanation at: `docs/SimilarityExample.Rmd`
+    + Code for creating cumulative sum of proportions: `code/analysis/Kelsey/social_analyses/01_create_cum_prop_ordinal_vars_KS.R`
+    + Code for calculating similarity scores: `code/analysis/Kelsey/social_analyses/02_calculate_similiarty_scores_soc_ecom_dem_KS.R`
+    + Sample of histograms of similarity score distributions can be found at: `docs/Similarity Score Distributions.pdf`
+    + Data showing the matrices with the cumulative proportions for ordinal variables: `OneDrive -> CA_NME_Diffusion -> kms_data -> soc_econ_dem -> cumprop_yearly`
+    + Data showing the matrices with the similarity scores: `OneDrive -> CA_NME_Diffusion -> kms_data -> soc_econ_dem -> SI_yearly`
+* ~~Determine which year of data will be used – have all temporal data~~
+    + Notes: 
+        1. *Begin with a single year (2016), and using matching years (PBE to Community attributes).*
+        2. *We had sociodemographic data for 2000 to 2016 but PBE For 2000 to 2015, so matched output for years 2000 to 2015.*
+* ~~Construct neighborhood weight matrix in R to express similarity among regions~~
+    + Notes: 
+        1. *Constrain to only observations with Enrollment data in each year*
+        2. *Use K= 5 nearest neighbors to match spatial test*
+        3. *See Varun's code to format for spdep functions*
+    + Code for calculating K=5 nearest neighbors: `code/analysis/Kelsey/social_analyses/03_calculate_KNN5_soc_econ_dem_KS.R`
+    + Data showing the K=5 nearest neighbors results: `OneDrive -> CA_NME_Diffusion -> kms_data -> soc_econ_dem -> KNN5_yearly`
+* ~~Run global and local spatial autocorrelation tests over 2000-2013 using PBE data and gather/organize/consolidate output~~
+    + Notes:
+        1. *For final output, constrained data set to years 2002 to 2015, which have LODES, PBE, and sociodemographic data.*
+    + Code for calculating local spatial autocorrelation: `code/analysis/Kelsey/social_analyses/04_calculate_LISA_soc_econ_dem_KS.R` `code/analysis/Kelsey/social_analyses/05_consolidate_LISA_results_soc_econ_dem_KS.R`
+    + Code for summarizing local spatial autocorrelation results in tables:  `code/analysis/Kelsey/social_analyses/07_analyze_LISA_results_soc_econ_dem_KS.R`
+    + Data showing LISA results for K=5 nearest neighbors and summary tables: `OneDrive -> CA_NME_Diffusion -> kms_data -> soc_econ_dem -> LISA_results`
+
