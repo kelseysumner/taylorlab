@@ -11,8 +11,11 @@ library(readr)
 library(dplyr)
 library(gridExtra) 
 library(ggthemes)
+library(wesanderson)
+
 
 #### ----- figure 1: histogram of MOI across 3 targets ----- ####
+
 ## AMA
 # read in the clean haplotype table
 ama_haps = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/AMA_haplotypes/AMA/23AUG2018 AMA MESA Update/AMA_sample_summary.csv")

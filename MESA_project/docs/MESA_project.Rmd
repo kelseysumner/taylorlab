@@ -93,6 +93,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 ## Haplotype Sharing 
 * Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB).
     + Code for calculating haplotype sharing between pairs: `taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R`
+    + Data for combined haplotype sharing: 
 
 ## Prevalence CSP 3D7 Haplotype
 * Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online mulitalignment software (Clustal Omega: https://www.ebi.ac.uk/Tools/msa/clustalo/)

@@ -717,26 +717,30 @@ mesa_data$net_used_lastnight = factor(mesa_data$net_used_lastnight,levels = 0:1,
 ## make a variable that identifies if someone is a case, a control, a case household member or
 # a control household member
 person_type = ifelse(is.na(mesa_data$case_child)==T | is.na(mesa_data$control_child)==T | is.na(mesa_data$case_household)==T | is.na(mesa_data$control_household)==T,NA,
-                     ifelse(mesa_data$case_child == 1,0,
-                            ifelse(mesa_data$control_child == 1,1,
-                                   ifelse(mesa_data$case_child != 1 & mesa_data$case_household == 1,2,
-                                          ifelse(mesa_data$control_child != 1 & mesa_data$control_household,3,NA)))))
+                     ifelse(mesa_data$case_child == "yes",0,
+                            ifelse(mesa_data$control_child == "yes",1,
+                                   ifelse(mesa_data$case_child != "yes" & mesa_data$case_household == "yes",2,
+                                          ifelse(mesa_data$control_child != "yes" & mesa_data$control_household == "yes",3,NA)))))
 table(person_type, useNA = "always")
 length(which(is.na(mesa_data$case_child)==T | is.na(mesa_data$control_child)==T | is.na(mesa_data$case_household)==T | is.na(mesa_data$control_household)==T))
-length(which(mesa_data$case_child == 1))
-length(which(mesa_data$control_child == 1))
-length(which(mesa_data$case_child != 1 & mesa_data$case_household == 1))
-length(which(mesa_data$control_child != 1 & mesa_data$control_household))
+length(which(mesa_data$case_child == "yes"))
+length(which(mesa_data$control_child == "yes"))
+length(which(mesa_data$case_child != "yes" & mesa_data$case_household == "yes"))
+length(which(mesa_data$control_child != "yes" & mesa_data$control_household == "yes"))
 table(person_type,mesa_data$case_child)
 table(person_type,mesa_data$control_child)
 table(person_type,mesa_data$control_household)
 table(person_type,mesa_data$case_household)
-mesa_data$person_type = person_type
 # 0 is a case child, 1 is a control child, 2 is a case household, 3 is a control household
 # make this variable a factor
-person_type = factor(person_type,levels = 0:3, labels = c("case child", "control child","case household member","control household member"))
+mesa_data$person_type = factor(person_type,levels = 0:3, labels = c("case child", "control child","case household member","control household member"))
 str(person_type)
 
 ## change all column names to lowercase for each of coding in the future
 colnames(mesa_data) = tolower(colnames(mesa_data))
+
+## write out the new data set
+write_csv(mesa_data,"mesa_data_clean.csv")
+
+
 
