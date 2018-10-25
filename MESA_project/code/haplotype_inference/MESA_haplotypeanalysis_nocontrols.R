@@ -9,7 +9,7 @@
 
 
 # load in the data set (the haplotypes after chimeras have been removed - seqtab.nochim from dada2 r script)
-foo <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/AMA_haplotypes/AMA/23AUG2018 AMA MESA Update/MESA_AMA_haplotypes_final_clean_column_names.rds")
+foo <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/AMA_haplotypes/AMA/23AUG2018 AMA MESA Update/Prelim Materials/MESA_AMA_haplotypes_final_clean_column_names.rds")
 
 
 ### --- look at the raw haplotype output --- #
@@ -38,6 +38,10 @@ write.csv(haplotype_summary,"/Users/kelseysumner/Desktop/Meshnick Lab/Steve Tayl
 
 
 # write some code that summarizes the number of samples that have each haplotype for censored haplotypes
+# remove S293 and S294 because couldn't match to meta data
+remove = c("S293","S294")
+foo = foo[!rownames(foo) %in% remove,]
+# summarize the samples for each haplotype
 haplotype.names = rep(1:ncol(foo))
 haplotypes_in_samples = rep(NA,ncol(foo))
 for (k in 1:ncol(foo)){
@@ -71,7 +75,7 @@ saveRDS(final_foo, "/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/
 
 
 # load in the data set (the haplotypes after chimeras have been removed - seqtab.nochim from dada2 r script)
-foo <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/CSP_haplotypes/23AUG2018 CSP MESA Update/MESA_CSP_haplotypes_final_clean_column_names.rds")
+foo <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/CSP_haplotypes/23AUG2018 CSP MESA Update/Prelim Materials/MESA_CSP_haplotypes_final_clean_column_names.rds")
 
 
 ### --- look at the raw haplotype output --- #
@@ -100,6 +104,10 @@ write.csv(haplotype_summary,"/Users/kelseysumner/Desktop/Meshnick Lab/Steve Tayl
 
 
 # write some code that summarizes the number of samples that have each haplotype for censored haplotypes
+# remove S293 and S294 because couldn't match to meta data
+remove = c("S293","S294")
+foo = foo[!rownames(foo) %in% remove,]
+# summarize the samples for each haplotype
 haplotype.names = rep(1:ncol(foo))
 haplotypes_in_samples = rep(NA,ncol(foo))
 for (k in 1:ncol(foo)){
@@ -134,7 +142,7 @@ saveRDS(final_foo, "/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/
 
 
 # load in the data set (the haplotypes after chimeras have been removed - seqtab.nochim from dada2 r script)
-foo <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/HistB_haplotypes/23AUG2018 HistB MESA Update/MESA_HistB_haplotypes_final_clean_column_names.rds")
+foo <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/HistB_haplotypes/23AUG2018 HistB MESA Update/Prelim Materials/MESA_HistB_haplotypes_final_clean_column_names.rds")
 
 ### --- look at the raw haplotype output --- #
 
@@ -162,6 +170,10 @@ write.csv(haplotype_summary,"/Users/kelseysumner/Desktop/Meshnick Lab/Steve Tayl
 
 
 # write some code that summarizes the number of samples that have each haplotype for censored haplotypes
+# remove S293 and S294 because couldn't match to meta data
+remove = c("S293","S294")
+foo = foo[!rownames(foo) %in% remove,]
+# summarize the samples for each haplotype
 haplotype.names = rep(1:ncol(foo))
 haplotypes_in_samples = rep(NA,ncol(foo))
 for (k in 1:ncol(foo)){
