@@ -73,41 +73,58 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 * The data for both these steps was outputted to the same folder:
     + Input data: locations indicated in the R script (multiple files)
     + Output data at Duke Box: 
-        - For AMA: `Webuye MESA Sequence Data > Mapped Cut Reads > AMA_haplotypes > AMA > 23AUG2018`
-        - For CSP: `Webuye MESA Sequence Data > Mapped Cut Reads > CSP_haplotypes > 23AUG2018`
-        - For HistB: `Webuye MESA Sequence Data > Mapped Cut Reads > HistB_haplotypes > 23AUG2018`
+        - For AMA: `Deidentified data for Taylor lab > clean_files_for_lab > 23AUG2018 Haplotype Results > 23AUG2018 AMA MESA Update`
+        - For CSP: `Deidentified data for Taylor lab > clean_files_for_lab > 23AUG2018 Haplotype Results > 23AUG2018 CSP MESA Update`
+        - For HistB: `Deidentified data for Taylor lab > clean_files_for_lab > 23AUG2018 Haplotype Results > 23AUG2018 HistB MESA Update`
     + Notes: 
         1. *The data cleaning process had many steps and interim data sets (all found within the XXX_haplotypes folder for each target)*
 
-## Combining Haplotype Inference & Social Demographic Data
+## Combining Haplotype Calling, qPCR, & Social Demographic Data
 * Clean the social demographic (meta data) data set. 
     + Code for cleaning initial social demographic data set: `taylorlab/MESA_project/code/haplotype_inference/MESA_clean_meta_data.R`
-* Merge the haplotype inference results with the social demographic data set:
-    + Code for merging the haplotype and social demographic data sets: `taylorlab/MESA_project/code/haplotype_inference/MESA_merge_meta_sequence_data.R`
+    + Cleaned social demographic data set (before the master merge with everything else): `Deidentified data for Taylor lab > clean_files_for_lab > mesa_data_clean.csv`
+* Merge the haplotype calling results with the social demographic data set:
+    + Code for merging the haplotype, social demographic data sets, qpcr, and lab key data sets: `taylorlab/MESA_project/code/haplotype_inference/MESA_finalstep_mergeall3datasets.R`
+    + Output data set (final, clean, merged data set) for future analyses at Duke Box: `Deidentified data for Taylor lab > clean_files_for_lab > MESA_merged_final.csv`
+    + Clean lab key (used to connect all inventories if needed): `Deidentified data for Taylor lab > clean_files_for_lab > clean_lab_key.csv`
+    + Notes:
+    1. *Many input data sets were used which are all specified at the top of the R scripts for the specific cleaning processes.*
+    2. *Duplicates that occurred on the same plate were removed from the data set. Duplicates that occurred on different plates were renamed with a unique ID.*
 
 
-# **Haplotype Analyses [Kelsey]**
+# **Haplotype Analyses [Kelsey & Cody]**
 
-
-
-## Haplotype Sharing 
-* Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB).
-    + Code for calculating haplotype sharing between pairs: `taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R`
+## Haplotype Sharing [Kelsey]
+* Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB). Note: this is calculating haplotype sharing at the individual-level.
+    + Code for calculating haplotype sharing between pairs (at the individual-level): `taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R`
     + Data for combined haplotype sharing: 
+`Webuye MESA Sequence Data > Mapped Cut Reads > all_targets`
+* Calculate the amount of haplotype sharing at the household-level for the CSP haplotype (used this for a visualization for the 2018 ASMTH conference).
+    + Code for calculating haplotype sharing between households (at the household-level): `taylorlab/MESA_project/code/haplotype_sharing/MESA_summarize_haplotype_sharing_HHlevel.R`
 
-## Prevalence CSP 3D7 Haplotype
-* Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online mulitalignment software (Clustal Omega: https://www.ebi.ac.uk/Tools/msa/clustalo/)
+
+## Prevalence CSP 3D7 Haplotype [Kelsey]
+* Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online multialignment software (Clustal Omega: https://www.ebi.ac.uk/Tools/msa/clustalo/)
     + Code for calculating prevalence CSP 3D7 haplotype: `taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_prev_3D7_CSP_haplotype.R`
+* Create shapefiles of the prevalence of the CSP 3D7 haplotype in each household to use to perform local and global spatial autocorrelation tests in GeoDa.
+    + Code for creating shapefiles of CSP haplotype prevalence in each household: `taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_make_CSP_shapefile.R`
+    + Shapefiles created of the prevalence of the CSP haplotype in each household: `Webuye MESA Sequence Data > Mapped Cut Reads > CSP_haplotypes > mesa_csp_shapefiles`
 
-## Haplotype Spatial Relationships
 
-
-## Haplotype Visualizations
+## Haplotype Visualizations [Kelsey]
 * Created visualizations for the poster for the 2018 American Society of Tropical Medicine & Hygiene conference in New Orleans
     + Code for creating ASTMH 2018 poster visualizations: `taylorlab/MESA_project/code/visualizations/MESA_ASTMH_visualizations.R`
+    + Figures for the poster are located at: `Webuye MESA Sequence Data > ASTMH > Poster > Figures`
+
+## Haplotype Phylogenetic Analyses [Cody]
+* More information to be included.
 
 
 
+# **Cross-sectional analyses [Kelsey]**
 
-
+## False negative rapid diagnostic tests
+* Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result. 
+* Compare the WHO lot testing reported pseudo-false negative rate for the rapid diagnostic test used (Carestart?) at 200 parasites/uL to the false negative rate observed in the cross-sectional data.
+* Calculate the limit of detection for P. falciparum parasitemia for the cross-sectional study. 
 

@@ -232,7 +232,7 @@ div.tocify {
 </div>
 
 
-<p>Last Updated 10/17/2018</p>
+<p>Last Updated 10/25/2018</p>
 <p><strong>Approach:</strong> Using cross-sectional case-control samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among three polymorphic gene targets: AMA1, CSP, HistB.</p>
 <p><strong>Data aggregation:</strong> Three primary data sets: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data.</p>
 <div id="sequence-processing-cleaning-in-terminal-joe" class="section level1">
@@ -311,9 +311,9 @@ div.tocify {
 <li>Input data: locations indicated in the R script (multiple files)</li>
 <li>Output data at Duke Box:
 <ul>
-<li>For AMA: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; AMA_haplotypes &gt; AMA &gt; 23AUG2018</code></li>
-<li>For CSP: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; CSP_haplotypes &gt; 23AUG2018</code></li>
-<li>For HistB: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; HistB_haplotypes &gt; 23AUG2018</code></li>
+<li>For AMA: <code>Deidentified data for Taylor lab &gt; clean_files_for_lab &gt; 23AUG2018 Haplotype Results &gt; 23AUG2018 AMA MESA Update</code></li>
+<li>For CSP: <code>Deidentified data for Taylor lab &gt; clean_files_for_lab &gt; 23AUG2018 Haplotype Results &gt; 23AUG2018 CSP MESA Update</code></li>
+<li>For HistB: <code>Deidentified data for Taylor lab &gt; clean_files_for_lab &gt; 23AUG2018 Haplotype Results &gt; 23AUG2018 HistB MESA Update</code></li>
 </ul></li>
 <li>Notes:
 <ol style="list-style-type: decimal">
@@ -322,51 +322,83 @@ div.tocify {
 </ul></li>
 </ul>
 </div>
-<div id="combining-haplotype-inference-social-demographic-data" class="section level2">
-<h2>Combining Haplotype Inference &amp; Social Demographic Data</h2>
+<div id="combining-haplotype-calling-qpcr-social-demographic-data" class="section level2">
+<h2>Combining Haplotype Calling, qPCR, &amp; Social Demographic Data</h2>
 <ul>
 <li>Clean the social demographic (meta data) data set.
 <ul>
 <li>Code for cleaning initial social demographic data set: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_clean_meta_data.R</code></li>
+<li>Cleaned social demographic data set (before the master merge with everything else): <code>Deidentified data for Taylor lab &gt; clean_files_for_lab &gt; mesa_data_clean.csv</code></li>
 </ul></li>
-<li>Merge the haplotype inference results with the social demographic data set:
+<li>Merge the haplotype calling results with the social demographic data set:
 <ul>
-<li>Code for merging the haplotype and social demographic data sets: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_merge_meta_sequence_data.R</code></li>
-</ul></li>
+<li>Code for merging the haplotype, social demographic data sets, qpcr, and lab key data sets: <code>taylorlab/MESA_project/code/haplotype_inference/MESA_finalstep_mergeall3datasets.R</code></li>
+<li>Output data set (final, clean, merged data set) for future analyses at Duke Box: <code>Deidentified data for Taylor lab &gt; clean_files_for_lab &gt; MESA_merged_final.csv</code></li>
+<li>Clean lab key (used to connect all inventories if needed): <code>Deidentified data for Taylor lab &gt; clean_files_for_lab &gt; clean_lab_key.csv</code></li>
+<li>Notes:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><em>Many input data sets were used which are all specified at the top of the R scripts for the specific cleaning processes.</em></li>
+<li><em>Duplicates that occurred on the same plate were removed from the data set. Duplicates that occurred on different plates were renamed with a unique ID.</em></li>
+</ol></li>
 </ul>
 </div>
 </div>
-<div id="haplotype-analyses-kelsey" class="section level1">
-<h1><strong>Haplotype Analyses [Kelsey]</strong></h1>
-<div id="haplotype-sharing" class="section level2">
-<h2>Haplotype Sharing</h2>
+<div id="haplotype-analyses-kelsey-cody" class="section level1">
+<h1><strong>Haplotype Analyses [Kelsey &amp; Cody]</strong></h1>
+<div id="haplotype-sharing-kelsey" class="section level2">
+<h2>Haplotype Sharing [Kelsey]</h2>
 <ul>
-<li>Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB).
+<li>Create one combined data set that is an edgelist of pairwise comparisons of samples. The edgelist shows the proportion of shared haplotypes, number of haplotypes shared, and total number of unique haplotypes between each pair of samples for each target (AMA, CSP, HistB). Note: this is calculating haplotype sharing at the individual-level.
 <ul>
-<li>Code for calculating haplotype sharing between pairs: <code>taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R</code></li>
-<li>Data for combined haplotype sharing:</li>
+<li>Code for calculating haplotype sharing between pairs (at the individual-level): <code>taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R</code></li>
+<li>Data for combined haplotype sharing: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; all_targets</code></li>
+</ul></li>
+<li>Calculate the amount of haplotype sharing at the household-level for the CSP haplotype (used this for a visualization for the 2018 ASMTH conference).
+<ul>
+<li>Code for calculating haplotype sharing between households (at the household-level): <code>taylorlab/MESA_project/code/haplotype_sharing/MESA_summarize_haplotype_sharing_HHlevel.R</code></li>
 </ul></li>
 </ul>
 </div>
-<div id="prevalence-csp-3d7-haplotype" class="section level2">
-<h2>Prevalence CSP 3D7 Haplotype</h2>
+<div id="prevalence-csp-3d7-haplotype-kelsey" class="section level2">
+<h2>Prevalence CSP 3D7 Haplotype [Kelsey]</h2>
 <ul>
-<li>Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online mulitalignment software (Clustal Omega: <a href="https://www.ebi.ac.uk/Tools/msa/clustalo/" class="uri">https://www.ebi.ac.uk/Tools/msa/clustalo/</a>)
+<li>Calculate the prevalence of the the CSP 3D7 haplotype among all the samples that had haplotypes in the CSP data set. Haplotype 3 was found to be the CSP 3D7 haplotype in the haplotype data set after haplotype sequences were aligned using an online multialignment software (Clustal Omega: <a href="https://www.ebi.ac.uk/Tools/msa/clustalo/" class="uri">https://www.ebi.ac.uk/Tools/msa/clustalo/</a>)
 <ul>
 <li>Code for calculating prevalence CSP 3D7 haplotype: <code>taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_prev_3D7_CSP_haplotype.R</code></li>
 </ul></li>
+<li>Create shapefiles of the prevalence of the CSP 3D7 haplotype in each household to use to perform local and global spatial autocorrelation tests in GeoDa.
+<ul>
+<li>Code for creating shapefiles of CSP haplotype prevalence in each household: <code>taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_make_CSP_shapefile.R</code></li>
+<li>Shapefiles created of the prevalence of the CSP haplotype in each household: <code>Webuye MESA Sequence Data &gt; Mapped Cut Reads &gt; CSP_haplotypes &gt; mesa_csp_shapefiles</code></li>
+</ul></li>
 </ul>
 </div>
-<div id="haplotype-spatial-relationships" class="section level2">
-<h2>Haplotype Spatial Relationships</h2>
-</div>
-<div id="haplotype-visualizations" class="section level2">
-<h2>Haplotype Visualizations</h2>
+<div id="haplotype-visualizations-kelsey" class="section level2">
+<h2>Haplotype Visualizations [Kelsey]</h2>
 <ul>
 <li>Created visualizations for the poster for the 2018 American Society of Tropical Medicine &amp; Hygiene conference in New Orleans
 <ul>
 <li>Code for creating ASTMH 2018 poster visualizations: <code>taylorlab/MESA_project/code/visualizations/MESA_ASTMH_visualizations.R</code></li>
+<li>Figures for the poster are located at: <code>Webuye MESA Sequence Data &gt; ASTMH &gt; Poster &gt; Figures</code></li>
 </ul></li>
+</ul>
+</div>
+<div id="haplotype-phylogenetic-analyses-cody" class="section level2">
+<h2>Haplotype Phylogenetic Analyses [Cody]</h2>
+<ul>
+<li>More information to be included.</li>
+</ul>
+</div>
+</div>
+<div id="cross-sectional-analyses-kelsey" class="section level1">
+<h1><strong>Cross-sectional analyses [Kelsey]</strong></h1>
+<div id="false-negative-rapid-diagnostic-tests" class="section level2">
+<h2>False negative rapid diagnostic tests</h2>
+<ul>
+<li>Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result.</li>
+<li>Compare the WHO lot testing reported pseudo-false negative rate for the rapid diagnostic test used (Carestart?) at 200 parasites/uL to the false negative rate observed in the cross-sectional data.</li>
+<li>Calculate the limit of detection for P. falciparum parasitemia for the cross-sectional study.</li>
 </ul>
 </div>
 </div>
