@@ -109,15 +109,21 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 * Create shapefiles of the prevalence of the CSP 3D7 haplotype in each household to use to perform local and global spatial autocorrelation tests in GeoDa.
     + Code for creating shapefiles of CSP haplotype prevalence in each household: `taylorlab/MESA_project/code/CSP_3D7_prevalence/MESA_make_CSP_shapefile.R`
     + Shapefiles created of the prevalence of the CSP haplotype in each household: `Webuye MESA Sequence Data > Mapped Cut Reads > CSP_haplotypes > mesa_csp_shapefiles`
+* Run a spatial regression model to assess if household prevalence of the 3D7 pfcsp haplotype is influenced by each household’s month of data collection, altitude, Anopheles mosquito density, and average distance to another household.
 
 
 ## Haplotype Visualizations [Kelsey]
 * Created visualizations for the poster for the 2018 American Society of Tropical Medicine & Hygiene conference in New Orleans
     + Code for creating ASTMH 2018 poster visualizations: `taylorlab/MESA_project/code/visualizations/MESA_ASTMH_visualizations.R`
     + Figures for the poster are located at: `Webuye MESA Sequence Data > ASTMH > Poster > Figures`
+* Created a visualization of when each haplotype was present over time with the x axis being each month during the cross-sectional study and the y-axis being every haplotype. 
+    + Will just do this for both the AMA1 and CSP haplotypes
+    + Code for creating haplotype visualization over time: `taylorlab/MESA_project/code/visualizations/MESA_haplotype_presence_over_time.R`
+    
 
-## Haplotype Phylogenetic Analyses [Cody]
+## Haplotype Phylogenetic Analyses and Pouplation Genetics [Cody]
 * More information to be included.
+* Could combine Cody's haplotype phlyogenetic analyses and pouplation genetics work with Kelsey's descriptive and spatial haplotype work in a manuscript. 
 
 
 
