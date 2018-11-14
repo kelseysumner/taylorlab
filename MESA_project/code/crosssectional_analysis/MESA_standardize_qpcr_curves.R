@@ -202,6 +202,10 @@ plot(log(as.numeric(unlist(qpcr_plates_table[1,22:41]))),as.numeric(unlist(qpcr_
 model10 = lm(as.numeric(unlist(qpcr_plates_table[1,2:21])) ~ log10(as.numeric(unlist(qpcr_plates_table[1,22:41]))), data=qpcr_plates_table)
 summary(model10)
 plot(log10(as.numeric(unlist(qpcr_plates_table[1,22:41]))),as.numeric(unlist(qpcr_plates_table[1,2:21])))
+# a second log10 model check
+model102 = lm(as.numeric(unlist(qpcr_plates_table[2,2:21])) ~ log10(as.numeric(unlist(qpcr_plates_table[2,22:41]))), data=qpcr_plates_table)
+summary(model102)
+plot(log10(as.numeric(unlist(qpcr_plates_table[1,22:41]))),as.numeric(unlist(qpcr_plates_table[1,2:21])))
 # try another model
 model2 = glm(as.numeric(unlist(qpcr_plates_table[1,2:21])) ~ log(as.numeric(unlist(qpcr_plates_table[1,22:41]))), data=qpcr_plates_table, gaussian("log"))
 summary(model2)
@@ -247,56 +251,11 @@ table(final_qpcr_merge$pfr364R_, useNA = "always")
 table(final_qpcr_merge$intercept_std, useNA = "always")
 table(final_qpcr_merge$`pfr364Y-Intercept`,useNA = "always")
 
-# make sure the qpcr values are numeric and change "Undetermined" to missing
-final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined"] = 40
-final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined"] = 40
-final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined"] = 40
-final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined"] = 40
-final_qpcr_merge$pfr364Q1[final_qpcr_merge$pfr364Q1 == "Undetermined"] = 0
-final_qpcr_merge$pfr364Q2[final_qpcr_merge$pfr364Q2 == "Undetermined"] = 0
-final_qpcr_merge$`pfr364Y-Intercept`[final_qpcr_merge$`pfr364Y-Intercept` == "Undetermined"] = NA
-final_qpcr_merge$pfr364R_[final_qpcr_merge$pfr364R_ == "Undetermined"] = NA
-final_qpcr_merge$pfr364Slope[final_qpcr_merge$pfr364Slope == "Undetermined"] = NA
-final_qpcr_merge$HbtubStd1a[final_qpcr_merge$HbtubStd1a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd1b[final_qpcr_merge$HbtubStd1b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd2a[final_qpcr_merge$HbtubStd2a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd2b[final_qpcr_merge$HbtubStd2b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd3a[final_qpcr_merge$HbtubStd3a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd3b[final_qpcr_merge$HbtubStd3b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd4a[final_qpcr_merge$HbtubStd4a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd4b[final_qpcr_merge$HbtubStd4b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd5a[final_qpcr_merge$HbtubStd5a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd5b[final_qpcr_merge$HbtubStd5b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd6a[final_qpcr_merge$HbtubStd6a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd6b[final_qpcr_merge$HbtubStd6b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd7a[final_qpcr_merge$HbtubStd7a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd7b[final_qpcr_merge$HbtubStd7b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd8a[final_qpcr_merge$HbtubStd8a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd8b[final_qpcr_merge$HbtubStd8b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd9a[final_qpcr_merge$HbtubStd9a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd9b[final_qpcr_merge$HbtubStd9b == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd10a[final_qpcr_merge$HbtubStd10a == "Undetermined"] = 40
-final_qpcr_merge$HbtubStd10b[final_qpcr_merge$HbtubStd10b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std1a[final_qpcr_merge$pfr364Std1a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std1b[final_qpcr_merge$pfr364Std1b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std2a[final_qpcr_merge$pfr364Std2a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std2b[final_qpcr_merge$pfr364Std2b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std3a[final_qpcr_merge$pfr364Std3a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std3b[final_qpcr_merge$pfr364Std3b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std4a[final_qpcr_merge$pfr364Std4a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std4b[final_qpcr_merge$pfr364Std4b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std5a[final_qpcr_merge$pfr364Std5a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std5b[final_qpcr_merge$pfr364Std5b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std6a[final_qpcr_merge$pfr364Std6a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std6b[final_qpcr_merge$pfr364Std6b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std7a[final_qpcr_merge$pfr364Std7a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std7b[final_qpcr_merge$pfr364Std7b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std8a[final_qpcr_merge$pfr364Std8a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std8b[final_qpcr_merge$pfr364Std8b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std9a[final_qpcr_merge$pfr364Std9a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std9b[final_qpcr_merge$pfr364Std9b == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std10a[final_qpcr_merge$pfr364Std10a == "Undetermined"] = 40
-final_qpcr_merge$pfr364Std10b[final_qpcr_merge$pfr364Std10b == "Undetermined"] = 40
+# make sure the qpcr values are numeric and change "Undetermined" to 99 to represent undetermined in numeric format
+final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined"] = 99
+final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined"] = 99
+final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined"] = 99
+final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined"] = 99
 
 # make sure the values for the standardization formula are numeric
 final_qpcr_merge$pfr364CT1 = as.numeric(final_qpcr_merge$pfr364CT1)
@@ -310,8 +269,18 @@ final_qpcr_merge$slope_std = as.numeric(final_qpcr_merge$slope_std)
 pfr364Q1_std = rep(NA,nrow(final_qpcr_merge))
 pfr364Q2_std = rep(NA,nrow(final_qpcr_merge))
 for (i in 1:nrow(final_qpcr_merge)){
-  pfr364Q1_std[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
-  pfr364Q2_std[i] = 10^((final_qpcr_merge$pfr364CT2[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
+  if (final_qpcr_merge$pfr364CT1[i] == 99 & !(is.na(final_qpcr_merge$pfr364CT1[i]))){
+    pfr364Q1_std[i] = 0
+  } else {
+    pfr364Q1_std[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
+  }
+}
+for (i in 1:nrow(final_qpcr_merge)){
+  if (final_qpcr_merge$pfr364CT2[i] == 99 & !(is.na(final_qpcr_merge$pfr364CT2[i]))){
+    pfr364Q2_std[i] = 0
+  } else {
+    pfr364Q2_std[i] = 10^((final_qpcr_merge$pfr364CT2[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
+  }
 }
 final_qpcr_merge$pfr364Q1_std = pfr364Q1_std
 final_qpcr_merge$pfr364Q2_std = pfr364Q2_std
@@ -326,18 +295,33 @@ summary(final_qpcr_merge$pfr364CT2)
 summary(final_qpcr_merge$pfr364Q1)
 summary(final_qpcr_merge$pfr364Q2)
 
+# export the data set
+write_csv(final_qpcr_merge,"final_qpcr_merge.csv")
+
 # test the formula
 pfr364Q1_test = rep(NA,nrow(final_qpcr_merge))
 for (i in 1:nrow(final_qpcr_merge)){
-  pfr364Q1_test[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$`pfr364Y-Intercept`[i])/final_qpcr_merge$pfr364Slope[i])
+  if (final_qpcr_merge$pfr364CT1[i] == 99 & !(is.na(final_qpcr_merge$pfr364CT1[i]))){
+    pfr364Q1_test[i] = 0
+  } else {
+    pfr364Q1_test[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$`pfr364Y-Intercept`[i])/final_qpcr_merge$pfr364Slope[i])
+  }
 }
 summary(pfr364Q1_test)
 summary(final_qpcr_merge$pfr364Q1)
 
+# looking at where differences occurred
+chck_val <- data.frame(newval = pfr364Q1_test,oldval = final_qpcr_merge$pfr364Q1)
+chck_val %>% apply(1,function(x){identical(x[1],x[2])})
+chck_val %<>% mutate(diff = newval - oldval)
+chck_val %>% ggplot(aes(x=newval,y=oldval)) + geom_point()
+# looks like the differences occur because of rounding of the values and the formula is working correctly
 
-
-
-
+# look at how Q1 was calculate when there were "undetermineds"
+table(final_qpcr_merge$pfr364CT1,useNA = "always")
+length(which(final_qpcr_merge$pfr364CT1=="Undetermined"))
+undeter = final_qpcr_merge[which(final_qpcr_merge$pfr364CT1=="Undetermined"),]
+undeter = undeter[,c("pfr364CT1","pfr364CT2","pfr364Q1","pfr364Q2","pfr364Y-Intercept","pfr364Slope")]
 
 
 
