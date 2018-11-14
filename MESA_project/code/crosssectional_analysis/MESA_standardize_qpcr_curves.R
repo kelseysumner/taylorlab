@@ -7,6 +7,8 @@
 #### --------- load packages ----------------- ####
 library(readr)
 library(dplyr)
+library(broom)
+library(tidyr)
 
 
 #### ------ standardize the qpcr curves ------ ####
@@ -50,34 +52,107 @@ qpcr_plates_table[qpcr_plates_table == "Undetermined"] = NA
 
 # run a linear regression model with the concentrations as the x values and ct values as the y value for the standards
 # run this model for each plate
-model1 = glm(as.numeric(unlist(qpcr_plates_table[1,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[1,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model2 = glm(as.numeric(unlist(qpcr_plates_table[2,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[2,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model3 = glm(as.numeric(unlist(qpcr_plates_table[3,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[3,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model4 = glm(as.numeric(unlist(qpcr_plates_table[4,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[4,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model5 = glm(as.numeric(unlist(qpcr_plates_table[5,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[5,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model6 = glm(as.numeric(unlist(qpcr_plates_table[6,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[6,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model7 = glm(as.numeric(unlist(qpcr_plates_table[7,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[7,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model8 = glm(as.numeric(unlist(qpcr_plates_table[8,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[8,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model9 = glm(as.numeric(unlist(qpcr_plates_table[9,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[9,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model10 = glm(as.numeric(unlist(qpcr_plates_table[10,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[10,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model11 = glm(as.numeric(unlist(qpcr_plates_table[11,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[11,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model12 = glm(as.numeric(unlist(qpcr_plates_table[12,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[12,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model13 = glm(as.numeric(unlist(qpcr_plates_table[13,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[13,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model14 = glm(as.numeric(unlist(qpcr_plates_table[14,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[14,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model15 = glm(as.numeric(unlist(qpcr_plates_table[15,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[15,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model16 = glm(as.numeric(unlist(qpcr_plates_table[16,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[16,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model17 = glm(as.numeric(unlist(qpcr_plates_table[17,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[17,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model18 = glm(as.numeric(unlist(qpcr_plates_table[18,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[18,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model19 = glm(as.numeric(unlist(qpcr_plates_table[19,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[19,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model20 = glm(as.numeric(unlist(qpcr_plates_table[20,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[20,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model21 = glm(as.numeric(unlist(qpcr_plates_table[21,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[21,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model22 = glm(as.numeric(unlist(qpcr_plates_table[22,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[22,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model23 = glm(as.numeric(unlist(qpcr_plates_table[23,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[23,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model24 = glm(as.numeric(unlist(qpcr_plates_table[24,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[24,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model25 = glm(as.numeric(unlist(qpcr_plates_table[25,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[25,18:33]))), data=qpcr_plates_table, gaussian("identity"))
-model26 = glm(as.numeric(unlist(qpcr_plates_table[26,2:17])) ~ log(as.numeric(unlist(qpcr_plates_table[26,18:33]))), data=qpcr_plates_table, gaussian("identity"))
+model1 = lm(as.numeric(unlist(qpcr_plates_table[1,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[1,18:33]))), data=qpcr_plates_table)
+model2 = lm(as.numeric(unlist(qpcr_plates_table[2,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[2,18:33]))), data=qpcr_plates_table)
+model3 = lm(as.numeric(unlist(qpcr_plates_table[3,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[3,18:33]))), data=qpcr_plates_table)
+model4 = lm(as.numeric(unlist(qpcr_plates_table[4,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[4,18:33]))), data=qpcr_plates_table)
+model5 = lm(as.numeric(unlist(qpcr_plates_table[5,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[5,18:33]))), data=qpcr_plates_table)
+model6 = lm(as.numeric(unlist(qpcr_plates_table[6,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[6,18:33]))), data=qpcr_plates_table)
+model7 = lm(as.numeric(unlist(qpcr_plates_table[7,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[7,18:33]))), data=qpcr_plates_table)
+model8 = lm(as.numeric(unlist(qpcr_plates_table[8,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[8,18:33]))), data=qpcr_plates_table)
+model9 = lm(as.numeric(unlist(qpcr_plates_table[9,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[9,18:33]))), data=qpcr_plates_table)
+model10 = lm(as.numeric(unlist(qpcr_plates_table[10,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[10,18:33]))), data=qpcr_plates_table)
+model11 = lm(as.numeric(unlist(qpcr_plates_table[11,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[11,18:33]))), data=qpcr_plates_table)
+model12 = lm(as.numeric(unlist(qpcr_plates_table[12,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[12,18:33]))), data=qpcr_plates_table)
+model13 = lm(as.numeric(unlist(qpcr_plates_table[13,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[13,18:33]))), data=qpcr_plates_table)
+model14 = lm(as.numeric(unlist(qpcr_plates_table[14,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[14,18:33]))), data=qpcr_plates_table)
+model15 = lm(as.numeric(unlist(qpcr_plates_table[15,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[15,18:33]))), data=qpcr_plates_table)
+model16 = lm(as.numeric(unlist(qpcr_plates_table[16,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[16,18:33]))), data=qpcr_plates_table)
+model17 = lm(as.numeric(unlist(qpcr_plates_table[17,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[17,18:33]))), data=qpcr_plates_table)
+model18 = lm(as.numeric(unlist(qpcr_plates_table[18,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[18,18:33]))), data=qpcr_plates_table)
+model19 = lm(as.numeric(unlist(qpcr_plates_table[19,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[19,18:33]))), data=qpcr_plates_table)
+model20 = lm(as.numeric(unlist(qpcr_plates_table[20,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[20,18:33]))), data=qpcr_plates_table)
+model21 = lm(as.numeric(unlist(qpcr_plates_table[21,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[21,18:33]))), data=qpcr_plates_table)
+model22 = lm(as.numeric(unlist(qpcr_plates_table[22,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[22,18:33]))), data=qpcr_plates_table)
+model23 = lm(as.numeric(unlist(qpcr_plates_table[23,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[23,18:33]))), data=qpcr_plates_table)
+model24 = lm(as.numeric(unlist(qpcr_plates_table[24,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[24,18:33]))), data=qpcr_plates_table)
+model25 = lm(as.numeric(unlist(qpcr_plates_table[25,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[25,18:33]))), data=qpcr_plates_table)
+model26 = lm(as.numeric(unlist(qpcr_plates_table[26,2:17])) ~ log10(as.numeric(unlist(qpcr_plates_table[26,18:33]))), data=qpcr_plates_table)
 
+# combine the models in a data frame
+m1_df = bind_cols(tidy(model1), confint_tidy(model1)) %>% mutate(model_name="M1: plate27-28") %>% mutate(r_value = summary(model1)$r.squared)
+m2_df = bind_cols(tidy(model2), confint_tidy(model2)) %>% mutate(model_name="M2: plate49-50") %>% mutate(r_value = summary(model2)$r.squared)
+m3_df = bind_cols(tidy(model3), confint_tidy(model3)) %>% mutate(model_name="M3: plate23-24") %>% mutate(r_value = summary(model3)$r.squared)
+m4_df = bind_cols(tidy(model4), confint_tidy(model4)) %>% mutate(model_name="M4: plate25-26") %>% mutate(r_value = summary(model4)$r.squared)
+m5_df = bind_cols(tidy(model5), confint_tidy(model5)) %>% mutate(model_name="M5: plate47-48") %>% mutate(r_value = summary(model5)$r.squared)
+m6_df = bind_cols(tidy(model6), confint_tidy(model6)) %>% mutate(model_name="M6: plate7-8") %>% mutate(r_value = summary(model6)$r.squared)
+m7_df = bind_cols(tidy(model7), confint_tidy(model7)) %>% mutate(model_name="M7: plate3-4") %>% mutate(r_value = summary(model7)$r.squared)
+m8_df = bind_cols(tidy(model8), confint_tidy(model8)) %>% mutate(model_name="M8: plate45-46") %>% mutate(r_value = summary(model8)$r.squared)
+m9_df = bind_cols(tidy(model9), confint_tidy(model9)) %>% mutate(model_name="M9: plate11-12") %>% mutate(r_value = summary(model9)$r.squared)
+m10_df = bind_cols(tidy(model10), confint_tidy(model10)) %>% mutate(model_name="M10: plate43-44") %>% mutate(r_value = summary(model10)$r.squared)
+m11_df = bind_cols(tidy(model11), confint_tidy(model11)) %>% mutate(model_name="M11: plate15-16") %>% mutate(r_value = summary(model11)$r.squared)
+m12_df = bind_cols(tidy(model12), confint_tidy(model12)) %>% mutate(model_name="M12: plate17-18") %>% mutate(r_value = summary(model12)$r.squared)
+m13_df = bind_cols(tidy(model13), confint_tidy(model13)) %>% mutate(model_name="M13: plate5-6") %>% mutate(r_value = summary(model13)$r.squared)
+m14_df = bind_cols(tidy(model14), confint_tidy(model14)) %>% mutate(model_name="M14: plate1-2") %>% mutate(r_value = summary(model14)$r.squared)
+m15_df = bind_cols(tidy(model15), confint_tidy(model15)) %>% mutate(model_name="M15: plate21-22") %>% mutate(r_value = summary(model15)$r.squared)
+m16_df = bind_cols(tidy(model16), confint_tidy(model16)) %>% mutate(model_name="M16: plate19-20") %>% mutate(r_value = summary(model16)$r.squared)
+m17_df = bind_cols(tidy(model17), confint_tidy(model17)) %>% mutate(model_name="M17: plate29-30") %>% mutate(r_value = summary(model17)$r.squared)
+m18_df = bind_cols(tidy(model18), confint_tidy(model18)) %>% mutate(model_name="M18: plate31-32") %>% mutate(r_value = summary(model18)$r.squared)
+m19_df = bind_cols(tidy(model19), confint_tidy(model19)) %>% mutate(model_name="M19: plate33-34") %>% mutate(r_value = summary(model19)$r.squared)
+m20_df = bind_cols(tidy(model20), confint_tidy(model20)) %>% mutate(model_name="M20: plate39-40") %>% mutate(r_value = summary(model20)$r.squared)
+m21_df = bind_cols(tidy(model21), confint_tidy(model21)) %>% mutate(model_name="M21: plate35-36") %>% mutate(r_value = summary(model21)$r.squared)
+m22_df = bind_cols(tidy(model22), confint_tidy(model22)) %>% mutate(model_name="M22: plate41-42") %>% mutate(r_value = summary(model22)$r.squared)
+m23_df = bind_cols(tidy(model23), confint_tidy(model23)) %>% mutate(model_name="M23: plate37-38") %>% mutate(r_value = summary(model23)$r.squared)
+m24_df = bind_cols(tidy(model24), confint_tidy(model24)) %>% mutate(model_name="M24: plate9-10") %>% mutate(r_value = summary(model24)$r.squared)
+m25_df = bind_cols(tidy(model25), confint_tidy(model25)) %>% mutate(model_name="M25: plate13-14") %>% mutate(r_value = summary(model25)$r.squared)
+m26_df = bind_cols(tidy(model26), confint_tidy(model26)) %>% mutate(model_name="M26: plate51") %>% mutate(r_value = summary(model26)$r.squared)
+model_results_df = bind_rows(m1_df,m2_df,m3_df,m4_df,m5_df,m6_df,m7_df,m8_df,m9_df,m10_df,m11_df,m12_df,m13_df,
+                             m14_df,m15_df,m16_df,m17_df,m18_df,m19_df,m20_df,m21_df,m22_df,m23_df,m24_df,m25_df,
+                             m26_df)
 
+# rename the slope value
+model_results_df[2,1] <- "slope"
+model_results_df[4,1] <- "slope"
+model_results_df[6,1] <- "slope"
+model_results_df[8,1] <- "slope"
+model_results_df[10,1] <- "slope"
+model_results_df[12,1] <- "slope"
+model_results_df[14,1] <- "slope"
+model_results_df[16,1] <- "slope"
+model_results_df[18,1] <- "slope"
+model_results_df[20,1] <- "slope"
+model_results_df[22,1] <- "slope"
+model_results_df[24,1] <- "slope"
+model_results_df[26,1] <- "slope"
+model_results_df[28,1] <- "slope"
+model_results_df[30,1] <- "slope"
+model_results_df[32,1] <- "slope"
+model_results_df[34,1] <- "slope"
+model_results_df[36,1] <- "slope"
+model_results_df[38,1] <- "slope"
+model_results_df[40,1] <- "slope"
+model_results_df[42,1] <- "slope"
+model_results_df[44,1] <- "slope"
+model_results_df[46,1] <- "slope"
+model_results_df[48,1] <- "slope"
+model_results_df[50,1] <- "slope"
+model_results_df[52,1] <- "slope"
+
+# remove the columns that aren't needed
+model_results_df$std.error <- NULL
+model_results_df$statistic <- NULL
+model_results_df$p.value <- NULL
+model_results_df$conf.low <- NULL
+model_results_df$conf.high <- NULL
+
+# switch this dataframe from long to wide format
+model_results_simplified = spread(data=model_results_df,key=term,value=estimate)
+
+# rename the intercept column
+colnames(model_results_simplified)[colnames(model_results_simplified) == '(Intercept)'] <- 'intercept'
+
+# write out the data frame
+write_csv(model_results_simplified,"model_results_simplified.csv")
 
 
 #### ------- check the model output --------- ####
@@ -109,19 +184,24 @@ qpcr_plates_table$Std7a_x = 2
 qpcr_plates_table$Std7b_x = 2
 qpcr_plates_table$Std8a_x = 1
 qpcr_plates_table$Std8b_x = 1
-qpcr_plates_table$Std9a_x = 0.02
-qpcr_plates_table$Std9b_x = 0.02
-qpcr_plates_table$Std10a_x = 0.01
-qpcr_plates_table$Std10b_x = 0.01
+qpcr_plates_table$Std9a_x = 0.2
+qpcr_plates_table$Std9b_x = 0.2
+qpcr_plates_table$Std10a_x = 0.1
+qpcr_plates_table$Std10b_x = 0.1
 
 # recode everything labeled "undetermined" as NA
 qpcr_plates_table[qpcr_plates_table == "Undetermined"] = NA
 
 # run a linear regression model with the concentrations as the x values and ct values as the y value for the standards
 # run this model for each plate
-model1 = glm(as.numeric(unlist(qpcr_plates_table[1,2:21])) ~ log(as.numeric(unlist(qpcr_plates_table[1,22:41]))), data=qpcr_plates_table, gaussian("identity"))
+model1 = lm(as.numeric(unlist(qpcr_plates_table[1,2:21])) ~ log(as.numeric(unlist(qpcr_plates_table[1,22:41]))), data=qpcr_plates_table)
 summary(model1)
 plot(log(as.numeric(unlist(qpcr_plates_table[1,22:41]))),as.numeric(unlist(qpcr_plates_table[1,2:21])))
+# log10 model
+# run this model for each plate
+model10 = lm(as.numeric(unlist(qpcr_plates_table[1,2:21])) ~ log10(as.numeric(unlist(qpcr_plates_table[1,22:41]))), data=qpcr_plates_table)
+summary(model10)
+plot(log10(as.numeric(unlist(qpcr_plates_table[1,22:41]))),as.numeric(unlist(qpcr_plates_table[1,2:21])))
 # try another model
 model2 = glm(as.numeric(unlist(qpcr_plates_table[1,2:21])) ~ log(as.numeric(unlist(qpcr_plates_table[1,22:41]))), data=qpcr_plates_table, gaussian("log"))
 summary(model2)
@@ -139,6 +219,125 @@ qpcr_original = merged_data %>%
 qpcr_original = unique(qpcr_original)
 # look at a plot of the x and y correlation
 plot(as.numeric(unlist(qpcr_plates_table[1,22:41])),as.numeric(unlist(qpcr_plates_table[1,2:21])))
+
+
+#### -------- standardize the qpcr values for each plate --------- #####
+
+# first clear the working directory
+# read in the merged data set
+merged_data = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/mesa_merged_final.csv")
+# read in the new model results table for the standards 1-2000 p/uL (with experiment name manually added in in Excel)
+model_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/qPCR_results/model_results_simplified.csv")
+
+# remove 6, 7 columns from model_results because empty
+model_results$X6 <- NULL
+model_results$X7 <- NULL
+
+# change the column names for model_results to represent the new standardization
+colnames(model_results)[colnames(model_results) == 'r_value'] <- 'r_value_std'
+colnames(model_results)[colnames(model_results) == 'intercept'] <- 'intercept_std'
+colnames(model_results)[colnames(model_results) == 'slope'] <- 'slope_std'
+
+# now merge in the model_results with the merged data set for MESA
+final_qpcr_merge = left_join(merged_data,model_results,by="Experiment Name")
+
+# check the merge
+table(final_qpcr_merge$r_value_std, useNA = "always")
+table(final_qpcr_merge$pfr364R_, useNA = "always")
+table(final_qpcr_merge$intercept_std, useNA = "always")
+table(final_qpcr_merge$`pfr364Y-Intercept`,useNA = "always")
+
+# make sure the qpcr values are numeric and change "Undetermined" to missing
+final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined"] = 40
+final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined"] = 40
+final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined"] = 40
+final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined"] = 40
+final_qpcr_merge$pfr364Q1[final_qpcr_merge$pfr364Q1 == "Undetermined"] = 0
+final_qpcr_merge$pfr364Q2[final_qpcr_merge$pfr364Q2 == "Undetermined"] = 0
+final_qpcr_merge$`pfr364Y-Intercept`[final_qpcr_merge$`pfr364Y-Intercept` == "Undetermined"] = NA
+final_qpcr_merge$pfr364R_[final_qpcr_merge$pfr364R_ == "Undetermined"] = NA
+final_qpcr_merge$pfr364Slope[final_qpcr_merge$pfr364Slope == "Undetermined"] = NA
+final_qpcr_merge$HbtubStd1a[final_qpcr_merge$HbtubStd1a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd1b[final_qpcr_merge$HbtubStd1b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd2a[final_qpcr_merge$HbtubStd2a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd2b[final_qpcr_merge$HbtubStd2b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd3a[final_qpcr_merge$HbtubStd3a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd3b[final_qpcr_merge$HbtubStd3b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd4a[final_qpcr_merge$HbtubStd4a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd4b[final_qpcr_merge$HbtubStd4b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd5a[final_qpcr_merge$HbtubStd5a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd5b[final_qpcr_merge$HbtubStd5b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd6a[final_qpcr_merge$HbtubStd6a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd6b[final_qpcr_merge$HbtubStd6b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd7a[final_qpcr_merge$HbtubStd7a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd7b[final_qpcr_merge$HbtubStd7b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd8a[final_qpcr_merge$HbtubStd8a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd8b[final_qpcr_merge$HbtubStd8b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd9a[final_qpcr_merge$HbtubStd9a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd9b[final_qpcr_merge$HbtubStd9b == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd10a[final_qpcr_merge$HbtubStd10a == "Undetermined"] = 40
+final_qpcr_merge$HbtubStd10b[final_qpcr_merge$HbtubStd10b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std1a[final_qpcr_merge$pfr364Std1a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std1b[final_qpcr_merge$pfr364Std1b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std2a[final_qpcr_merge$pfr364Std2a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std2b[final_qpcr_merge$pfr364Std2b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std3a[final_qpcr_merge$pfr364Std3a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std3b[final_qpcr_merge$pfr364Std3b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std4a[final_qpcr_merge$pfr364Std4a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std4b[final_qpcr_merge$pfr364Std4b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std5a[final_qpcr_merge$pfr364Std5a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std5b[final_qpcr_merge$pfr364Std5b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std6a[final_qpcr_merge$pfr364Std6a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std6b[final_qpcr_merge$pfr364Std6b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std7a[final_qpcr_merge$pfr364Std7a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std7b[final_qpcr_merge$pfr364Std7b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std8a[final_qpcr_merge$pfr364Std8a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std8b[final_qpcr_merge$pfr364Std8b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std9a[final_qpcr_merge$pfr364Std9a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std9b[final_qpcr_merge$pfr364Std9b == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std10a[final_qpcr_merge$pfr364Std10a == "Undetermined"] = 40
+final_qpcr_merge$pfr364Std10b[final_qpcr_merge$pfr364Std10b == "Undetermined"] = 40
+
+# make sure the values for the standardization formula are numeric
+final_qpcr_merge$pfr364CT1 = as.numeric(final_qpcr_merge$pfr364CT1)
+final_qpcr_merge$pfr364CT2 = as.numeric(final_qpcr_merge$pfr364CT2)
+final_qpcr_merge$intercept_std = as.numeric(final_qpcr_merge$intercept_std)
+final_qpcr_merge$slope_std = as.numeric(final_qpcr_merge$slope_std)
+                                            
+# create two new columns for each of the replicates that are restandardized to the new slope and intercept for standards 1-2000 p/uL
+# will use the columns pfr364CT1 and pfr364CT2 as the observed y-values
+# plug in those to y=mx+b equation solved for x -> x = (y-b)/m
+pfr364Q1_std = rep(NA,nrow(final_qpcr_merge))
+pfr364Q2_std = rep(NA,nrow(final_qpcr_merge))
+for (i in 1:nrow(final_qpcr_merge)){
+  pfr364Q1_std[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
+  pfr364Q2_std[i] = 10^((final_qpcr_merge$pfr364CT2[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
+}
+final_qpcr_merge$pfr364Q1_std = pfr364Q1_std
+final_qpcr_merge$pfr364Q2_std = pfr364Q2_std
+
+# compare the output
+summary(final_qpcr_merge$pfr364Q1_std)
+summary(final_qpcr_merge$pfr364Q2_std)
+summary(final_qpcr_merge$slope_std)
+summary(final_qpcr_merge$intercept_std)
+summary(final_qpcr_merge$pfr364CT1)
+summary(final_qpcr_merge$pfr364CT2)
+summary(final_qpcr_merge$pfr364Q1)
+summary(final_qpcr_merge$pfr364Q2)
+
+# test the formula
+pfr364Q1_test = rep(NA,nrow(final_qpcr_merge))
+for (i in 1:nrow(final_qpcr_merge)){
+  pfr364Q1_test[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$`pfr364Y-Intercept`[i])/final_qpcr_merge$pfr364Slope[i])
+}
+summary(pfr364Q1_test)
+summary(final_qpcr_merge$pfr364Q1)
+
+
+
+
+
 
 
 

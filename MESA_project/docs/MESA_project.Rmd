@@ -130,6 +130,8 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 # **Cross-sectional analyses [Kelsey]**
 
 ## False negative rapid diagnostic tests
+* Standardize Ct values for each sample to calculate the parasites/uL in each sample
+    + Code for standardizing qPCR curves: `taylorlab/MESA_project/code/crosssectional_analyses/MESA_standardize_qpcr_curves.R`
 * Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result. 
 * Compare the WHO lot testing reported pseudo-false negative rate for the rapid diagnostic test used (Carestart?) at 200 parasites/uL to the false negative rate observed in the cross-sectional data.
 * Calculate the limit of detection for P. falciparum parasitemia for the cross-sectional study. 
