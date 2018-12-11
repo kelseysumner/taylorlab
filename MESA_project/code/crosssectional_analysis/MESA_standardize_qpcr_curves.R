@@ -9,6 +9,7 @@ library(readr)
 library(dplyr)
 library(broom)
 library(tidyr)
+library(ggplot2)
 
 
 #### ------ standardize the qpcr curves ------ ####
@@ -324,4 +325,19 @@ undeter = final_qpcr_merge[which(final_qpcr_merge$pfr364CT1=="Undetermined"),]
 undeter = undeter[,c("pfr364CT1","pfr364CT2","pfr364Q1","pfr364Q2","pfr364Y-Intercept","pfr364Slope")]
 
 
+#### ------------ look over standardized Q1 and Q1 for new standardizations ------------- ####
 
+# read back in the final qpcr data set
+final_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/qPCR_results/final_qpcr_merge.csv")
+
+# look at summaries of the distribution of the old Q1 and Q2 from the 10 standards (0.1-2000 p/uL)
+summary(final_results$pfr364Q1)
+summary(final_results$pfr364Q2)
+boxplot(final_results$pfr364Q1)
+boxplot(final_results$pfr364Q2)
+
+# look at summaries of the distribution of the new Q1 and Q2 from the 8 standards (1-2000 p/uL)
+summary(final_results$pfr364Q1_std)
+summary(final_results$pfr364Q2_std)
+boxplot(final_results$pfr364Q1_std)
+boxplot(final_results$pfr364Q2_std)

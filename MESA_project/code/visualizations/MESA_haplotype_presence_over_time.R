@@ -14,6 +14,8 @@ library(ggthemes)
 library(wesanderson)
 library(tidyr)
 library(lubridate)
+library(plotly)
+packageVersion('plotly')
 
 
 #### ----- creating the figure of haplotype presence over time ----- ####
@@ -99,8 +101,9 @@ csp_month_plot = ggplot(merged_summary, aes(x=month, y=haplotypes, size=n_sample
        x = "Month and year",y="Haplotype", color = "Number of villages", size = "Number of samples")
 csp_month_plot
 
-ggsave(csp_month_plot, filename="/Users/kelseysumner/Desktop/csp_month_plot.png", device="png",
-       height=14, width=11.2, units="in", dpi=500)
+#ggsave(csp_month_plot, filename="/Users/kelseysumner/Desktop/csp_month_plot.png", device="png",
+#       height=14, width=11.2, units="in", dpi=500)
+
 
 
 # ---------- #
@@ -187,8 +190,8 @@ ama_month_plot = ggplot(merged_summary, aes(x=month, y=haplotypes, size=n_sample
        x = "Month and year",y="Haplotype", color = "Number of villages", size = "Number of samples")
 ama_month_plot
 
-ggsave(ama_month_plot, filename="/Users/kelseysumner/Desktop/ama_month_plot.png", device="png",
-       height=20, width=11.2, units="in", dpi=500)
+#ggsave(ama_month_plot, filename="/Users/kelseysumner/Desktop/ama_month_plot.png", device="png",
+#       height=20, width=11.2, units="in", dpi=500)
 
 
 
