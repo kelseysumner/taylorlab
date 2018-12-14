@@ -1,5 +1,6 @@
 # ----------------------------------------- #
 #        Spat21 Data Set Cleaning           #
+#                Human Data                 #
 #            November 26, 2018              #
 #                K. Sumner                  #
 # ----------------------------------------- #
@@ -1890,5 +1891,16 @@ table(hum_sick_data$memID, useNA = "always")
 head(hum_sick_data$unq_memID)
 head(hum_sick_data$HH_ID)
 head(hum_sick_data$memID)
+
+
+#### --------------- write out rds files for each file ----------------- ####
+
+
+
+
+
+
+
+
 
 

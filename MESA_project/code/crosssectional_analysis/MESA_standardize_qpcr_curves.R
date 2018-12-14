@@ -328,7 +328,7 @@ undeter = undeter[,c("pfr364CT1","pfr364CT2","pfr364Q1","pfr364Q2","pfr364Y-Inte
 #### ------------ look over standardized Q1 and Q1 for new standardizations ------------- ####
 
 # read back in the final qpcr data set
-final_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/qPCR_results/final_qpcr_merge.csv")
+final_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/qPCR_results/final_qpcr_merge.csv")
 
 # look at summaries of the distribution of the old Q1 and Q2 from the 10 standards (0.1-2000 p/uL)
 summary(final_results$pfr364Q1)
@@ -341,3 +341,106 @@ summary(final_results$pfr364Q1_std)
 summary(final_results$pfr364Q2_std)
 boxplot(final_results$pfr364Q1_std)
 boxplot(final_results$pfr364Q2_std)
+
+
+#### ---------------- create a composite parasitemia value (combine Q1 & Q2) ------------------ ####
+
+
+# read back in the final qpcr data set
+final_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/qPCR_results/final_qpcr_merge.csv")
+
+# change the 99 pfr364CT values to NA and make numeric
+final_results$pfr364CT1 = as.numeric(final_results$pfr364CT1)
+final_results$pfr364CT2 = as.numeric(final_results$pfr364CT2)
+final_results$pfr364CT1[final_results$pfr364CT1 == 99] = NA
+final_results$pfr364CT2[final_results$pfr364CT2 == 99] = NA
+summary(final_results$pfr364CT1)
+summary(final_results$pfr364CT2)
+
+# change all the 0 pfr364Q parasitemia values to NA as well
+final_results$pfr364Q1_std[final_results$pfr364Q1_std == 0] = NA
+final_results$pfr364Q2_std[final_results$pfr364Q2_std == 0] = NA
+summary(final_results$pfr364Q1_std)
+summary(final_results$pfr364Q2_std)
+
+# determine labid_new that have human beta tubulin CT values >= 35 or missing and need to be excluded
+hbcriteria_1 = final_results[which((as.numeric(final_results$HbtubCT1) >= 35 | is.na(final_results$HbtubCT1)) 
+                                        & !(is.na(final_results$r_value_std))),]
+# 9236_2, 2349_4, 0015_C, 9037_1
+hbcriteria_2 = final_results[which((as.numeric(final_results$HbtubCT2) >= 35 | is.na(final_results$HbtubCT2)) 
+                                        & !(is.na(final_results$r_value_std))),]
+# 9236_2, 9349_4, 0015_C, 9484_D
+
+# make a variable that censors for human beta tublin CT values >= 35 or missing
+final_results$pfr364Q1_std_censored = ifelse(final_results$labid_new == "9236_2" | final_results$labid_new == "9349_4" | final_results$labid_new == "0015_C" | final_results$labid_new == "9037_1",NA,final_results$pfr364Q1_std)
+final_results$pfr364Q2_std_censored = ifelse(final_results$labid_new == "9236_2" | final_results$labid_new == "9349_4" | final_results$labid_new == "0015_C" | final_results$labid_new == "9484_D",NA,final_results$pfr364Q2_std)
+summary(final_results$pfr364Q1_std_censored)
+summary(final_results$pfr364Q2_std_censored)
+
+# build off that variable to now make a variable that censors for pf CT values >= 38 or missing and rename to pfr364Q_std_censored_v2
+final_results$pfr364Q1_std_censored_v2 = ifelse(final_results$pfr364CT1 >= 38,NA,final_results$pfr364Q1_std_censored)
+final_results$pfr364Q2_std_censored_v2 = ifelse(final_results$pfr364CT2 >= 38,NA,final_results$pfr364Q2_std_censored)
+summary(final_results$pfr364Q1_std_censored_v2)
+summary(final_results$pfr364Q2_std_censored_v2)
+# check the output
+length(which(final_results$pfr364CT1 >= 38))
+length(which(final_results$pfr364CT2 >= 38))
+
+# create a variable that indicates whether the sample is positive or negative for Pf malaria infection
+# if at least 1 duplicate has parasitemia > 0 after criteria enforced (ie. in pfr364Q_std_censored_v2 variable), then saying sample is positive
+# 1 is positive, 0 negative
+pf_infection_status = rep(NA,nrow(final_results))
+for (i in 1:nrow(final_results)){
+  if (!(is.na(final_results$r_value_std[i])) & (is.na(final_results$pfr364Q1_std_censored_v2[i]) & is.na(final_results$pfr364Q2_std_censored_v2[i]))){
+    pf_infection_status[i] = 0
+  } else if ((final_results$pfr364Q1_std_censored_v2[i] > 0 | final_results$pfr364Q2_std_censored_v2[i] > 0) & !(is.na(final_results$r_value_std[i])) & (!(is.na(final_results$pfr364Q1_std_censored_v2[i])) | !(is.na(final_results$pfr364Q2_std_censored_v2[i])))){
+    pf_infection_status[i] = 1
+  } else {
+    pf_infection_status[i] = NA
+  }
+}
+table(pf_infection_status,useNA = "always")
+# check the output
+length(which(final_results$pfr364Q1_std_censored_v2 > 0 | final_results$pfr364Q2_std_censored_v2 > 0))
+length(which(!(is.na(final_results$r_value_std)))) - length(which(final_results$pfr364Q1_std_censored_v2 > 0 | final_results$pfr364Q2_std_censored_v2 > 0))
+length(which((is.na(final_results$r_value_std))))
+# make a factor
+final_results$pf_pcr_infection_status = factor(pf_infection_status,levels = c(0,1), labels = c("negative", "positive"))
+# look at the output
+table(final_results$pf_pcr_infection_status,useNA = "always")
+
+# create a combined standardized new variable (combining Q1 and Q2) that was standardized from the 8 standards (1-2000 p/uL)
+# if both positive parasitemia for both, then is an average of the two parasitemia for the duplicates.
+# if only 1 positive parasitemia then is the value of the positive parasitemia
+pfr364Q_std_combined = rep(NA,nrow(final_results))
+for (k in 1:nrow(final_results)){
+ if (final_results$pf_pcr_infection_status[k] == "positive" & !(is.na(final_results$pf_pcr_infection_status[k]))){
+   pfr364Q_std_combined[k] = (sum(final_results$pfr364Q1_std_censored_v2[k],final_results$pfr364Q2_std_censored_v2[k],na.rm = T))/(2-(is.na(final_results$pfr364Q1_std_censored_v2[k])+is.na(final_results$pfr364Q2_std_censored_v2[k])))
+ } else
+   pfr364Q_std_combined[k] = NA
+}
+summary(pfr364Q_std_combined,useNA = "always")
+# add to the data set
+final_results$pfr364Q_std_combined = pfr364Q_std_combined
+# check the output
+summary(final_results$pfr364Q1_std)
+summary(final_results$pfr364Q2_std)
+checkdata = final_results[which(!(is.na(final_results$pfr364Q_std_combined))),]
+head(checkdata$HbtubCT1)
+head(checkdata$HbtubCT2)
+head(checkdata$pfr364CT1)
+head(checkdata$pfr364CT2)
+head(checkdata$pfr364Q1_std_censored_v2)
+head(checkdata$pfr364Q2_std_censored_v2)
+head(checkdata$pf_pcr_infection_status)
+head(checkdata$pfr364Q_std_combined)
+anothercheck = checkdata[,c(135:145)]
+
+# final check through all the data processing for the qPCR data
+summary(checkdata$HbtubCT1)
+summary(checkdata$HbtubCT2)
+summary(checkdata$pfr364CT1)
+summary(checkdata$pfr364CT2)
+
+# export the data set as a CSV file
+write_csv(final_results,"final_results_13DEC2018.csv")

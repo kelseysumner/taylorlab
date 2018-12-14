@@ -99,8 +99,8 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     + Code for calculating haplotype sharing between pairs (at the individual-level): `taylorlab/MESA_project/code/haplotype_sharing/MESA_pairwise_comparisons.R`
     + Data for combined haplotype sharing: 
 `Webuye MESA Sequence Data > Mapped Cut Reads > all_targets`
-* Calculate the amount of haplotype sharing at the household-level for the CSP haplotype (used this for a visualization for the 2018 ASMTH conference).
-    + Code for calculating haplotype sharing between households (at the household-level): `taylorlab/MESA_project/code/haplotype_sharing/MESA_summarize_haplotype_sharing_HHlevel.R`
+* Calculate the amount of haplotype sharing at the village level for the CSP haplotype (used this for a visualization for the 2018 ASMTH conference).
+    + Code for calculating haplotype sharing between households (at the village level): `taylorlab/MESA_project/code/haplotype_sharing/MESA_summarize_haplotype_sharing_HHlevel.R`
 
 
 ## Prevalence CSP 3D7 Haplotype [Kelsey]
@@ -132,6 +132,15 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 ## False negative rapid diagnostic tests
 * Standardize Ct values for each sample to calculate the parasites/uL in each sample
     + Code for standardizing qPCR curves: `taylorlab/MESA_project/code/crosssectional_analyses/MESA_standardize_qpcr_curves.R`
+    + Notes:
+    1. *Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL).*
+    2. *Censoring criteria for parasitemia:*
+        - *Samples with Hb CT values < 35*
+        - *Samples with Pf CT values < 38*
+    3. *Indicated sample was positive for Pf if at least one Pf CT values was < 38 and met Hb CT value criteria (pf_pcr_infection_status)*
+    4. *Standardized and combined parasitemia (pfr364Q_std_combined) as follows:*
+        - *If 1 duplicate Pf positive, used that duplicates standardized parasitemia for the participant*
+        - *If both duplicates Pf positive, averaged the duplicates standardized parasitemia for the participant*
 * Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result. 
 * Compare the WHO lot testing reported pseudo-false negative rate for the rapid diagnostic test used (Carestart?) at 200 parasites/uL to the false negative rate observed in the cross-sectional data.
 * Calculate the limit of detection for P. falciparum parasitemia for the cross-sectional study. 
