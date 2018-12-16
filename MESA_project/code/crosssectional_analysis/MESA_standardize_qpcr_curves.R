@@ -232,7 +232,7 @@ plot(as.numeric(unlist(qpcr_plates_table[1,22:41])),as.numeric(unlist(qpcr_plate
 # read in the merged data set
 merged_data = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/mesa_merged_final.csv")
 # read in the new model results table for the standards 1-2000 p/uL (with experiment name manually added in in Excel)
-model_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/qPCR_results/model_results_simplified.csv")
+model_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/qPCR_results/model_results_simplified.csv")
 
 # remove 6, 7 columns from model_results because empty
 model_results$X6 <- NULL
@@ -252,11 +252,31 @@ table(final_qpcr_merge$pfr364R_, useNA = "always")
 table(final_qpcr_merge$intercept_std, useNA = "always")
 table(final_qpcr_merge$`pfr364Y-Intercept`,useNA = "always")
 
-# make sure the qpcr values are numeric and change "Undetermined" to 99 to represent undetermined in numeric format
-final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined"] = 99
-final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined"] = 99
-final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined"] = 99
-final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined"] = 99
+# make sure the qpcr values are numeric and change "Undetermined" to NA to represent missing because undetectable
+# make sure all the qpcr values with CT values < 20 are also changed to NA
+# first check how many <20, undetermined, and missing
+length(which(final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 < 20)) # 12
+length(which(final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 < 20)) # 9
+length(which(final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 < 20)) # 2116
+length(which(final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 < 20)) # 2090
+length(which(is.na(final_qpcr_merge$HbtubCT1))) # 1009
+length(which(is.na(final_qpcr_merge$HbtubCT2))) # 1010
+length(which(is.na(final_qpcr_merge$pfr364CT1))) # 1006
+length(which(is.na(final_qpcr_merge$pfr364CT2))) # 1006
+# then change the values
+final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 < 20] = NA
+final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 < 20] = NA
+final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 < 20] = NA
+final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 < 20] = NA
+# then check how many are now missing
+length(which(final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 < 20)) # 0
+length(which(final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 < 20)) # 0
+length(which(final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 < 20)) # 0
+length(which(final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 < 20)) # 0
+length(which(is.na(final_qpcr_merge$HbtubCT1))) # 1021
+length(which(is.na(final_qpcr_merge$HbtubCT2))) # 1019
+length(which(is.na(final_qpcr_merge$pfr364CT1))) # 3122
+length(which(is.na(final_qpcr_merge$pfr364CT2))) # 3096
 
 # make sure the values for the standardization formula are numeric
 final_qpcr_merge$pfr364CT1 = as.numeric(final_qpcr_merge$pfr364CT1)
@@ -270,15 +290,15 @@ final_qpcr_merge$slope_std = as.numeric(final_qpcr_merge$slope_std)
 pfr364Q1_std = rep(NA,nrow(final_qpcr_merge))
 pfr364Q2_std = rep(NA,nrow(final_qpcr_merge))
 for (i in 1:nrow(final_qpcr_merge)){
-  if (final_qpcr_merge$pfr364CT1[i] == 99 & !(is.na(final_qpcr_merge$pfr364CT1[i]))){
-    pfr364Q1_std[i] = 0
+  if (is.na(final_qpcr_merge$pfr364CT1[i])){
+    pfr364Q1_std[i] = NA
   } else {
     pfr364Q1_std[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
   }
 }
 for (i in 1:nrow(final_qpcr_merge)){
-  if (final_qpcr_merge$pfr364CT2[i] == 99 & !(is.na(final_qpcr_merge$pfr364CT2[i]))){
-    pfr364Q2_std[i] = 0
+  if (is.na(final_qpcr_merge$pfr364CT2[i])){
+    pfr364Q2_std[i] = NA
   } else {
     pfr364Q2_std[i] = 10^((final_qpcr_merge$pfr364CT2[i] - final_qpcr_merge$intercept_std[i])/final_qpcr_merge$slope_std[i])
   }
@@ -299,11 +319,15 @@ summary(final_qpcr_merge$pfr364Q2)
 # export the data set
 write_csv(final_qpcr_merge,"final_qpcr_merge.csv")
 
+# change all the original Q1 and Q2 values that are 0 to missing
+final_qpcr_merge$pfr364Q1[final_qpcr_merge$pfr364Q1 < 0.00000001] = NA
+final_qpcr_merge$pfr364Q2[final_qpcr_merge$pfr364Q2 < 0.00000001] = NA
+
 # test the formula
 pfr364Q1_test = rep(NA,nrow(final_qpcr_merge))
 for (i in 1:nrow(final_qpcr_merge)){
-  if (final_qpcr_merge$pfr364CT1[i] == 99 & !(is.na(final_qpcr_merge$pfr364CT1[i]))){
-    pfr364Q1_test[i] = 0
+  if (is.na(final_qpcr_merge$pfr364CT1[i])){
+    pfr364Q1_test[i] = NA
   } else {
     pfr364Q1_test[i] = 10^((final_qpcr_merge$pfr364CT1[i] - final_qpcr_merge$`pfr364Y-Intercept`[i])/final_qpcr_merge$pfr364Slope[i])
   }
@@ -350,30 +374,29 @@ boxplot(final_results$pfr364Q2_std)
 final_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/qPCR_results/final_qpcr_merge.csv")
 
 # change the 99 pfr364CT values to NA and make numeric
-final_results$pfr364CT1 = as.numeric(final_results$pfr364CT1)
-final_results$pfr364CT2 = as.numeric(final_results$pfr364CT2)
-final_results$pfr364CT1[final_results$pfr364CT1 == 99] = NA
-final_results$pfr364CT2[final_results$pfr364CT2 == 99] = NA
 summary(final_results$pfr364CT1)
 summary(final_results$pfr364CT2)
-
-# change all the 0 pfr364Q parasitemia values to NA as well
-final_results$pfr364Q1_std[final_results$pfr364Q1_std == 0] = NA
-final_results$pfr364Q2_std[final_results$pfr364Q2_std == 0] = NA
-summary(final_results$pfr364Q1_std)
-summary(final_results$pfr364Q2_std)
+final_results$pfr364CT1 = as.numeric(final_results$pfr364CT1)
+final_results$pfr364CT2 = as.numeric(final_results$pfr364CT2)
 
 # determine labid_new that have human beta tubulin CT values >= 35 or missing and need to be excluded
 hbcriteria_1 = final_results[which((as.numeric(final_results$HbtubCT1) >= 35 | is.na(final_results$HbtubCT1)) 
                                         & !(is.na(final_results$r_value_std))),]
-# 9236_2, 2349_4, 0015_C, 9037_1
+# pull out the vector of labid_new
+hbcriteria_1_ids = hbcriteria_1$labid_new
+# now the second CT value for Hb
 hbcriteria_2 = final_results[which((as.numeric(final_results$HbtubCT2) >= 35 | is.na(final_results$HbtubCT2)) 
                                         & !(is.na(final_results$r_value_std))),]
-# 9236_2, 9349_4, 0015_C, 9484_D
+# pull out the vector of labid_new
+hbcriteria_2_ids = hbcriteria_2$labid_new
+
+# look at original summaries of pfr364Q variables
+summary(final_results$pfr364Q1_std) # 3122 missing
+summary(final_results$pfr364Q2_std) # 2096 missing
 
 # make a variable that censors for human beta tublin CT values >= 35 or missing
-final_results$pfr364Q1_std_censored = ifelse(final_results$labid_new == "9236_2" | final_results$labid_new == "9349_4" | final_results$labid_new == "0015_C" | final_results$labid_new == "9037_1",NA,final_results$pfr364Q1_std)
-final_results$pfr364Q2_std_censored = ifelse(final_results$labid_new == "9236_2" | final_results$labid_new == "9349_4" | final_results$labid_new == "0015_C" | final_results$labid_new == "9484_D",NA,final_results$pfr364Q2_std)
+final_results$pfr364Q1_std_censored = ifelse(final_results$labid_new %in% hbcriteria_1_ids,NA,final_results$pfr364Q1_std)
+final_results$pfr364Q2_std_censored = ifelse(final_results$labid_new %in% hbcriteria_2_ids,NA,final_results$pfr364Q2_std)
 summary(final_results$pfr364Q1_std_censored)
 summary(final_results$pfr364Q2_std_censored)
 
@@ -443,4 +466,4 @@ summary(checkdata$pfr364CT1)
 summary(checkdata$pfr364CT2)
 
 # export the data set as a CSV file
-write_csv(final_results,"final_results_13DEC2018.csv")
+write_csv(final_results,"final_results_16DEC2018.csv")
