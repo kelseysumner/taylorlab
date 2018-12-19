@@ -15,10 +15,10 @@ library(lubridate)
 #### --------- read in human data ----------------- ####
 # read in the human data sets (have to import as stata data sets)
 hum_monthly_data = MozzieMonthlyData_to_31July2018_deID
-hum_sleeping_data = MozzieSleepingSpaces_Baseline2017_deID
+hum_sleeping_data = MozzieSleepingSpaces_Baseline2017_deID_Dec2018
 hum_table_household_data = MozzieHHMembershipTable_Baseline2017_deID
 hum_ann_household_data = MozzieAnnualHouseholdData_Baseline2017_deID
-hum_sick_data = MozzieSickVisitData_to_31July2018_deID
+hum_sick_data = MozzieSickVisitData_to_31July2018_deID_Dec2018
 
 # look at summaries of all the data sets
 summary(hum_monthly_data)

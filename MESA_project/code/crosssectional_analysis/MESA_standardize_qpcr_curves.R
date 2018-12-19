@@ -253,30 +253,30 @@ table(final_qpcr_merge$intercept_std, useNA = "always")
 table(final_qpcr_merge$`pfr364Y-Intercept`,useNA = "always")
 
 # make sure the qpcr values are numeric and change "Undetermined" to NA to represent missing because undetectable
-# make sure all the qpcr values with CT values < 20 are also changed to NA
-# first check how many <20, undetermined, and missing
-length(which(final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 < 20)) # 12
-length(which(final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 < 20)) # 9
-length(which(final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 < 20)) # 2116
-length(which(final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 < 20)) # 2090
+# make sure all the qpcr values with CT values ==0  are also changed to NA
+# first check how many are 0, undetermined, and missing
+length(which(final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 == 0)) # 8
+length(which(final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 == 0)) # 9
+length(which(final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 == 0)) # 1889
+length(which(final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 == 0)) # 1869
 length(which(is.na(final_qpcr_merge$HbtubCT1))) # 1009
 length(which(is.na(final_qpcr_merge$HbtubCT2))) # 1010
 length(which(is.na(final_qpcr_merge$pfr364CT1))) # 1006
 length(which(is.na(final_qpcr_merge$pfr364CT2))) # 1006
 # then change the values
-final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 < 20] = NA
-final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 < 20] = NA
-final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 < 20] = NA
-final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 < 20] = NA
+final_qpcr_merge$HbtubCT1[final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 == 0] = NA
+final_qpcr_merge$HbtubCT2[final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 == 0] = NA
+final_qpcr_merge$pfr364CT1[final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 == 0] = NA
+final_qpcr_merge$pfr364CT2[final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 == 0] = NA
 # then check how many are now missing
-length(which(final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 < 20)) # 0
-length(which(final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 < 20)) # 0
-length(which(final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 < 20)) # 0
-length(which(final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 < 20)) # 0
-length(which(is.na(final_qpcr_merge$HbtubCT1))) # 1021
+length(which(final_qpcr_merge$HbtubCT1 == "Undetermined" | final_qpcr_merge$HbtubCT1 == 0)) # 0
+length(which(final_qpcr_merge$HbtubCT2 == "Undetermined" | final_qpcr_merge$HbtubCT2 == 0)) # 0
+length(which(final_qpcr_merge$pfr364CT1 == "Undetermined" | final_qpcr_merge$pfr364CT1 == 0)) # 0
+length(which(final_qpcr_merge$pfr364CT2 == "Undetermined" | final_qpcr_merge$pfr364CT2 == 0)) # 0
+length(which(is.na(final_qpcr_merge$HbtubCT1))) # 1017
 length(which(is.na(final_qpcr_merge$HbtubCT2))) # 1019
-length(which(is.na(final_qpcr_merge$pfr364CT1))) # 3122
-length(which(is.na(final_qpcr_merge$pfr364CT2))) # 3096
+length(which(is.na(final_qpcr_merge$pfr364CT1))) # 2895
+length(which(is.na(final_qpcr_merge$pfr364CT2))) # 2875
 
 # make sure the values for the standardization formula are numeric
 final_qpcr_merge$pfr364CT1 = as.numeric(final_qpcr_merge$pfr364CT1)
@@ -320,10 +320,10 @@ summary(final_qpcr_merge$pfr364Q2)
 write_csv(final_qpcr_merge,"final_qpcr_merge.csv")
 
 # change all the original Q1 and Q2 values that are 0 to missing
-final_qpcr_merge$pfr364Q1[final_qpcr_merge$pfr364Q1 < 0.00000001] = NA
-final_qpcr_merge$pfr364Q2[final_qpcr_merge$pfr364Q2 < 0.00000001] = NA
+final_qpcr_merge$pfr364Q1[final_qpcr_merge$pfr364Q1 == 0] = NA
+final_qpcr_merge$pfr364Q2[final_qpcr_merge$pfr364Q2 == 0] = NA
 
-# test the formula
+# test the formula for Q1
 pfr364Q1_test = rep(NA,nrow(final_qpcr_merge))
 for (i in 1:nrow(final_qpcr_merge)){
   if (is.na(final_qpcr_merge$pfr364CT1[i])){
@@ -335,10 +335,23 @@ for (i in 1:nrow(final_qpcr_merge)){
 summary(pfr364Q1_test)
 summary(final_qpcr_merge$pfr364Q1)
 
+# add the test variable to the final_qpcr_merge data set
+final_qpcr_merge$pfr364Q1_test = pfr364Q1_test
+
+# pull out where there's an extra missing value in pfr364Q1 compared ot the new value
+testdata = final_qpcr_merge[which(is.na(final_qpcr_merge$pfr364Q1) & !(is.na(final_qpcr_merge$pfr364Q1_test))),]
+testdata$pfr364Q1_test
+# difference could be due to high Pf CT1 value
+length(which(final_qpcr_merge$pfr364CT1 > 38)) # 30 with Pf CT1 value greater than 38
+# reread in the original merged_data set (before you edited it with censoring criteria to look at original CT and Q values)
+highpfct = merged_data[which(as.numeric(merged_data$pfr364CT1) > 38 & merged_data$pfr364CT1 != "undetermined"),]
+# difference is not due to high Pf CT1 value but I think instead in the machine saying that the sample had 0 parasitemia for both duplicates beacause both duplicates had high CT values >38
+# therefore, coding looks good
+
 # looking at where differences occurred
 chck_val <- data.frame(newval = pfr364Q1_test,oldval = final_qpcr_merge$pfr364Q1)
 chck_val %>% apply(1,function(x){identical(x[1],x[2])})
-chck_val %<>% mutate(diff = newval - oldval)
+diff = chck_val %>% mutate(diff = newval - oldval)
 chck_val %>% ggplot(aes(x=newval,y=oldval)) + geom_point()
 # looks like the differences occur because of rounding of the values and the formula is working correctly
 
@@ -347,6 +360,39 @@ table(final_qpcr_merge$pfr364CT1,useNA = "always")
 length(which(final_qpcr_merge$pfr364CT1=="Undetermined"))
 undeter = final_qpcr_merge[which(final_qpcr_merge$pfr364CT1=="Undetermined"),]
 undeter = undeter[,c("pfr364CT1","pfr364CT2","pfr364Q1","pfr364Q2","pfr364Y-Intercept","pfr364Slope")]
+
+# test the formula for Q2
+pfr364Q2_test = rep(NA,nrow(final_qpcr_merge))
+for (i in 1:nrow(final_qpcr_merge)){
+  if (is.na(final_qpcr_merge$pfr364CT2[i])){
+    pfr364Q2_test[i] = NA
+  } else {
+    pfr364Q2_test[i] = 10^((final_qpcr_merge$pfr364CT2[i] - final_qpcr_merge$`pfr364Y-Intercept`[i])/final_qpcr_merge$pfr364Slope[i])
+  }
+}
+summary(pfr364Q2_test)
+summary(final_qpcr_merge$pfr364Q2)
+
+# add the test variable to the final_qpcr_merge data set
+final_qpcr_merge$pfr364Q2_test = pfr364Q2_test
+
+# pull out where there's an extra missing value in pfr364Q2 compared ot the new value
+testdata = final_qpcr_merge[which(is.na(final_qpcr_merge$pfr364Q2) & !(is.na(final_qpcr_merge$pfr364Q2_test))),]
+testdata$pfr364Q2_test
+# difference could be due to high Pf CT2 value
+length(which(final_qpcr_merge$pfr364CT2 > 38)) # 26 with Pf CT2 value greater than 38
+# reread in the original merged_data set (before you edited it with censoring criteria to look at original CT and Q values)
+highpfct = merged_data[which(as.numeric(merged_data$pfr364CT2) > 38 & merged_data$pfr364CT2 != "undetermined"),]
+# difference is not due to high Pf CT2 value but I think instead in the machine saying that the sample had 0 parasitemia for both duplicates beacause both duplicates had high CT values >38
+# therefore, coding looks good
+
+# looking at where differences occurred
+chck_val <- data.frame(newval = pfr364Q2_test,oldval = final_qpcr_merge$pfr364Q2)
+chck_val %>% apply(1,function(x){identical(x[1],x[2])})
+diffcheck = chck_val %>% mutate(diff = newval - oldval)
+chck_val %>% ggplot(aes(x=newval,y=oldval)) + geom_point()
+# looks like the differences occur because of rounding of the values and the formula is working correctly
+
 
 
 #### ------------ look over standardized Q1 and Q1 for new standardizations ------------- ####
@@ -373,7 +419,7 @@ boxplot(final_results$pfr364Q2_std)
 # read back in the final qpcr data set
 final_results = read_csv("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Meta Data/clean_files_for_lab/qPCR_results/final_qpcr_merge.csv")
 
-# change the 99 pfr364CT values to NA and make numeric
+# make pfr364CT numeric
 summary(final_results$pfr364CT1)
 summary(final_results$pfr364CT2)
 final_results$pfr364CT1 = as.numeric(final_results$pfr364CT1)
@@ -391,23 +437,25 @@ hbcriteria_2 = final_results[which((as.numeric(final_results$HbtubCT2) >= 35 | i
 hbcriteria_2_ids = hbcriteria_2$labid_new
 
 # look at original summaries of pfr364Q variables
-summary(final_results$pfr364Q1_std) # 3122 missing
-summary(final_results$pfr364Q2_std) # 2096 missing
+summary(final_results$pfr364Q1_std) # 2895 missing
+summary(final_results$pfr364Q2_std) # 2875 missing
 
 # make a variable that censors for human beta tublin CT values >= 35 or missing
 final_results$pfr364Q1_std_censored = ifelse(final_results$labid_new %in% hbcriteria_1_ids,NA,final_results$pfr364Q1_std)
 final_results$pfr364Q2_std_censored = ifelse(final_results$labid_new %in% hbcriteria_2_ids,NA,final_results$pfr364Q2_std)
-summary(final_results$pfr364Q1_std_censored)
-summary(final_results$pfr364Q2_std_censored)
+summary(final_results$pfr364Q1_std_censored) # 2896 missing
+summary(final_results$pfr364Q2_std_censored) # 2876 missing
+hbcriteria_1$pfr364Q1_std
+hbcriteria_2$pfr364Q2_std
 
 # build off that variable to now make a variable that censors for pf CT values >= 38 or missing and rename to pfr364Q_std_censored_v2
 final_results$pfr364Q1_std_censored_v2 = ifelse(final_results$pfr364CT1 >= 38,NA,final_results$pfr364Q1_std_censored)
 final_results$pfr364Q2_std_censored_v2 = ifelse(final_results$pfr364CT2 >= 38,NA,final_results$pfr364Q2_std_censored)
-summary(final_results$pfr364Q1_std_censored_v2)
-summary(final_results$pfr364Q2_std_censored_v2)
-# check the output
-length(which(final_results$pfr364CT1 >= 38))
-length(which(final_results$pfr364CT2 >= 38))
+summary(final_results$pfr364Q1_std_censored_v2) # 2926 missing
+summary(final_results$pfr364Q2_std_censored_v2) # 2902 missing
+# check the output one more time
+length(which(final_results$pfr364CT1 >= 38)) # 30 observations
+length(which(final_results$pfr364CT2 >= 38)) # 26 observations
 
 # create a variable that indicates whether the sample is positive or negative for Pf malaria infection
 # if at least 1 duplicate has parasitemia > 0 after criteria enforced (ie. in pfr364Q_std_censored_v2 variable), then saying sample is positive
@@ -448,6 +496,7 @@ final_results$pfr364Q_std_combined = pfr364Q_std_combined
 # check the output
 summary(final_results$pfr364Q1_std)
 summary(final_results$pfr364Q2_std)
+summary(final_results$pfr364Q_std_combined)
 checkdata = final_results[which(!(is.na(final_results$pfr364Q_std_combined))),]
 head(checkdata$HbtubCT1)
 head(checkdata$HbtubCT2)
@@ -458,12 +507,58 @@ head(checkdata$pfr364Q2_std_censored_v2)
 head(checkdata$pf_pcr_infection_status)
 head(checkdata$pfr364Q_std_combined)
 anothercheck = checkdata[,c(135:145)]
+anothercheck2 = final_results[,c(135:145)]
 
 # final check through all the data processing for the qPCR data
 summary(checkdata$HbtubCT1)
 summary(checkdata$HbtubCT2)
 summary(checkdata$pfr364CT1)
 summary(checkdata$pfr364CT2)
+summary(final_results$pfr364Q_std_combined)
+table(final_results$pf_pcr_infection_status, useNA = "always")
+negatives_search = final_results[which(final_results$rdt_negative == "yes" & final_results$pfr364Q_std_combined > 1000),]
+negatives_search_sub = negatives_search[,c(135:145)]
+
+# final check for samples to change to missing
+orig_zeroes_1 = merged_data[which(merged_data$pfr364CT1 == 0 | merged_data$HbtubCT1 == 0),]
+orig_zeroes_2 = merged_data[which(merged_data$pfr364CT2 == 0 | merged_data$HbtubCT2 == 0),]
+# pull out the labid_new for the samples with CT values of 0 for Pf
+orig_zeroes_1_labid = orig_zeroes_1$labid_new
+orig_zeroes_2_labid = orig_zeroes_2$labid_new
+# subset the standardized parasitemia data set to look at these labid values
+subset1 = final_results[which(final_results$labid_new %in% orig_zeroes_1_labid),]
+subset2 = final_results[which(final_results$labid_new %in% orig_zeroes_2_labid),]
+# pull out the new parasitemia values (standardized)
+subset1_small = subset1[,c(135:145)]
+subset2_small = subset2[,c(135:145)]
+# these values were all changed to negative for pf_pcr_infection_status but 
+# two values had zeroes for all Hb and Pf CT 1 and 2 values, which means they did not amplify correctly 
+# and have been changed from "negative" to "missing" for the pf_pcr_infection_status column
+# these two values are 9229_4 and 9330_2
+final_results$pf_pcr_infection_status[final_results$labid_new == "9229_4"] = NA
+final_results$pf_pcr_infection_status[final_results$labid_new == "9330_2"] = NA
+# check the change
+final_results$pf_pcr_infection_status[which(final_results$labid_new == "9229_4")]
+final_results$pf_pcr_infection_status[which(final_results$labid_new == "9330_2")]
+# look at the new summary of pf_pcr_infection_status
+summary(final_results$pf_pcr_infection_status)
+table(final_results$pf_pcr_infection_status, useNA = "always")
+
+# also need to change values that have a hb CT value > 35 or NA from negative to missing in pf_pcr_infection_status
+# do this for labid_new observations that have both Hb CT values as NA or > 35
+hbctbothmissing = final_results[which((is.na(final_results$HbtubCT1) | final_results$HbtubCT1 > 35) & is.na((final_results$HbtubCT2 | final_results$HbtubCT2 > 35)) & !(is.na(final_results$r_value_std))),]
+# 9236_2, 9299_4, 9330_2, 9349_4, 0015_C are all missing all Hb CT values
+# already did 9229_4 and 9330_2 above
+final_results$pf_pcr_infection_status[final_results$labid_new == "9236_2"] = NA
+final_results$pf_pcr_infection_status[final_results$labid_new == "9349_4"] = NA
+final_results$pf_pcr_infection_status[final_results$labid_new == "0015_C"] = NA
+# check the change
+final_results$pf_pcr_infection_status[which(final_results$labid_new == "9236_2")]
+final_results$pf_pcr_infection_status[which(final_results$labid_new == "9349_4")]
+final_results$pf_pcr_infection_status[which(final_results$labid_new == "0015_C")]
+# look at the new summary of pf_pcr_infection_status
+summary(final_results$pf_pcr_infection_status)
+table(final_results$pf_pcr_infection_status, useNA = "always")
 
 # export the data set as a CSV file
-write_csv(final_results,"final_results_16DEC2018.csv")
+write_csv(final_results,"final_results_18DEC2018.csv")
