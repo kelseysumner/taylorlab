@@ -232,7 +232,7 @@ div.tocify {
 </div>
 
 
-<p>Last Updated 12/13/2018</p>
+<p>Last Updated 12/20/2018</p>
 <p><strong>Approach:</strong> Using cross-sectional case-control samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among three polymorphic gene targets: AMA1, CSP, HistB.</p>
 <p><strong>Data aggregation:</strong> Three primary data sets: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data.</p>
 <div id="sequence-processing-cleaning-in-terminal-joe" class="section level1">
@@ -390,8 +390,8 @@ div.tocify {
 </ul></li>
 </ul>
 </div>
-<div id="haplotype-phylogenetic-analyses-and-pouplation-genetics-cody" class="section level2">
-<h2>Haplotype Phylogenetic Analyses and Pouplation Genetics [Cody]</h2>
+<div id="haplotype-phylogenetic-analyses-and-population-genetics-cody" class="section level2">
+<h2>Haplotype Phylogenetic Analyses and Population Genetics [Cody]</h2>
 <ul>
 <li>More information to be included.</li>
 <li>Could combine Cody’s haplotype phlyogenetic analyses and pouplation genetics work with Kelsey’s descriptive and spatial haplotype work in a manuscript.</li>
@@ -412,14 +412,32 @@ div.tocify {
 <li><em>Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL).</em></li>
 <li><em>Censoring criteria for parasitemia:</em>
 <ul>
-<li><em>Samples with Hb CT values &lt; 35</em></li>
-<li><em>Samples with Pf CT values &lt; 38</em></li>
-</ul></li>
-<li><em>Indicated sample was positive for Pf if at least one Pf CT values was &lt; 38 and met Hb CT value criteria (pf_pcr_infection_status)</em></li>
-<li><em>Standardized and combined parasitemia (pfr364Q_std_combined) as follows:</em>
+<li><em>Recoding of CT values:</em>
 <ul>
-<li><em>If 1 duplicate Pf positive, used that duplicates standardized parasitemia for the participant</em></li>
-<li><em>If both duplicates Pf positive, averaged the duplicates standardized parasitemia for the participant</em></li>
+<li><em>CT values of 0 recoded to missing (NA).</em></li>
+<li><em>CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.</em></li>
+<li><em>CT values 0 &lt; CT &lt; 40 for human beta-tubulin (Hb) are considered valid detection.</em></li>
+<li><em>CT values of 0 &lt; CT &lt; 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 &lt; CT &lt; 38 for Plasmodium falciparum to be considered valid.</em></li>
+<li><em>Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.</em></li>
+</ul></li>
+<li><em>CT value censoring rules:</em>
+<ul>
+<li><em>Pf positive via PCR:</em>
+<ul>
+<li><em>If 2 replicates amplified Pf: Pf CT values 0 &lt; CT &lt; 40</em></li>
+<li><em>If 1 replicate amplified Pf: Pf CT values 0 &lt; CT &lt; 38</em></li>
+</ul></li>
+<li><em>Pf negative via PCR: Pf CT undetermined (or Pf CT &gt; 38 if one replicate), Hb CT values 0 &lt; CT &lt; 40</em></li>
+<li><em>Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR</em></li>
+</ul></li>
+</ul></li>
+<li><em>Rules for determining if participant is positive/negative/missing for Pf parasitemia:</em>
+<ul>
+<li><em>If 1 replicate Pf positive per criteria above, used that replicate’s standardized parasitemia for the participant to create combined parasitemia. Mosquito is positive for Pf in pf_pcr_infection_status variable.</em></li>
+<li><em>If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Mosquito is positive for Pf in pf_pcr_infection_status variable.</em></li>
+<li><em>If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Mosquito is negative for Pf in pf_pcr_infection_status variable.</em></li>
+<li><em>If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Mosquito is missing data for Pf in pf_pcr_infection_status variable.</em><br />
+</li>
 </ul></li>
 </ol></li>
 <li>Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result.</li>

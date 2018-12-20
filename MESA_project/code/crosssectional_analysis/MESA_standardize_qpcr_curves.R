@@ -425,14 +425,12 @@ summary(final_results$pfr364CT2)
 final_results$pfr364CT1 = as.numeric(final_results$pfr364CT1)
 final_results$pfr364CT2 = as.numeric(final_results$pfr364CT2)
 
-# determine labid_new that have human beta tubulin CT values >= 35 or missing and need to be excluded
-hbcriteria_1 = final_results[which((as.numeric(final_results$HbtubCT1) >= 35 | is.na(final_results$HbtubCT1)) 
-                                        & !(is.na(final_results$r_value_std))),]
+# determine labid_new that have human beta tubulin missing and need to be excluded
+hbcriteria_1 = final_results[which(is.na(final_results$HbtubCT1) & !(is.na(final_results$r_value_std))),]
 # pull out the vector of labid_new
 hbcriteria_1_ids = hbcriteria_1$labid_new
 # now the second CT value for Hb
-hbcriteria_2 = final_results[which((as.numeric(final_results$HbtubCT2) >= 35 | is.na(final_results$HbtubCT2)) 
-                                        & !(is.na(final_results$r_value_std))),]
+hbcriteria_2 = final_results[which(is.na(final_results$HbtubCT2) & !(is.na(final_results$r_value_std))),]
 # pull out the vector of labid_new
 hbcriteria_2_ids = hbcriteria_2$labid_new
 
@@ -440,7 +438,7 @@ hbcriteria_2_ids = hbcriteria_2$labid_new
 summary(final_results$pfr364Q1_std) # 2895 missing
 summary(final_results$pfr364Q2_std) # 2875 missing
 
-# make a variable that censors for human beta tublin CT values >= 35 or missing
+# make a variable that censors for human beta tublin CT values missing
 final_results$pfr364Q1_std_censored = ifelse(final_results$labid_new %in% hbcriteria_1_ids,NA,final_results$pfr364Q1_std)
 final_results$pfr364Q2_std_censored = ifelse(final_results$labid_new %in% hbcriteria_2_ids,NA,final_results$pfr364Q2_std)
 summary(final_results$pfr364Q1_std_censored) # 2896 missing
@@ -448,14 +446,17 @@ summary(final_results$pfr364Q2_std_censored) # 2876 missing
 hbcriteria_1$pfr364Q1_std
 hbcriteria_2$pfr364Q2_std
 
-# build off that variable to now make a variable that censors for pf CT values >= 38 or missing and rename to pfr364Q_std_censored_v2
-final_results$pfr364Q1_std_censored_v2 = ifelse(final_results$pfr364CT1 >= 38,NA,final_results$pfr364Q1_std_censored)
-final_results$pfr364Q2_std_censored_v2 = ifelse(final_results$pfr364CT2 >= 38,NA,final_results$pfr364Q2_std_censored)
-summary(final_results$pfr364Q1_std_censored_v2) # 2926 missing
-summary(final_results$pfr364Q2_std_censored_v2) # 2902 missing
+# build off that variable to now make a variable that censors for pf CT values >38 and other replicate missing and rename to pfr364Q_std_censored_v2
+final_results$pfr364Q1_std_censored_v2 = ifelse(final_results$pfr364CT1 >= 38 & is.na(final_results$pfr364CT2),NA,final_results$pfr364Q1_std_censored)
+final_results$pfr364Q2_std_censored_v2 = ifelse(final_results$pfr364CT2 >= 38 & is.na(final_results$pfr364CT1),NA,final_results$pfr364Q2_std_censored)
+summary(final_results$pfr364Q1_std_censored_v2) # 2909 missing
+summary(final_results$pfr364Q2_std_censored_v2) # 2885 missing
 # check the output one more time
-length(which(final_results$pfr364CT1 >= 38)) # 30 observations
-length(which(final_results$pfr364CT2 >= 38)) # 26 observations
+length(which(final_results$pfr364CT1 >= 38 & is.na(final_results$pfr364CT2))) # 13 observations
+length(which(final_results$pfr364CT2 >= 38 & is.na(final_results$pfr364CT1))) # 9 observations
+# look at the original data sets with this criteria
+test1 = final_results[which(final_results$pfr364CT1 >= 38 & is.na(final_results$pfr364CT2)),]
+test2 = final_results[which(final_results$pfr364CT2 >= 38 & is.na(final_results$pfr364CT1)),]
 
 # create a variable that indicates whether the sample is positive or negative for Pf malaria infection
 # if at least 1 duplicate has parasitemia > 0 after criteria enforced (ie. in pfr364Q_std_censored_v2 variable), then saying sample is positive
@@ -544,16 +545,14 @@ final_results$pf_pcr_infection_status[which(final_results$labid_new == "9330_2")
 summary(final_results$pf_pcr_infection_status)
 table(final_results$pf_pcr_infection_status, useNA = "always")
 
-# also need to change values that have a hb CT value > 35 or NA from negative to missing in pf_pcr_infection_status
-# do this for labid_new observations that have both Hb CT values as NA or > 35
-hbctbothmissing = final_results[which((is.na(final_results$HbtubCT1) | final_results$HbtubCT1 > 35) & is.na((final_results$HbtubCT2 | final_results$HbtubCT2 > 35)) & !(is.na(final_results$r_value_std))),]
-# 9236_2, 9299_4, 9330_2, 9349_4, 0015_C are all missing all Hb CT values
+# also need to change values that have a hb CT value NA from negative to missing in pf_pcr_infection_status
+# do this for labid_new observations that have both Hb CT values as NA
+hbctbothmissing = final_results[which(is.na(final_results$HbtubCT1) & is.na(final_results$HbtubCT2) & !(is.na(final_results$r_value_std))),]
+# 9299_4, 9330_2, 9349_4, 0015_C are all missing all Hb CT values
 # already did 9229_4 and 9330_2 above
-final_results$pf_pcr_infection_status[final_results$labid_new == "9236_2"] = NA
 final_results$pf_pcr_infection_status[final_results$labid_new == "9349_4"] = NA
 final_results$pf_pcr_infection_status[final_results$labid_new == "0015_C"] = NA
 # check the change
-final_results$pf_pcr_infection_status[which(final_results$labid_new == "9236_2")]
 final_results$pf_pcr_infection_status[which(final_results$labid_new == "9349_4")]
 final_results$pf_pcr_infection_status[which(final_results$labid_new == "0015_C")]
 # look at the new summary of pf_pcr_infection_status
@@ -561,4 +560,4 @@ summary(final_results$pf_pcr_infection_status)
 table(final_results$pf_pcr_infection_status, useNA = "always")
 
 # export the data set as a CSV file
-write_csv(final_results,"final_results_18DEC2018.csv")
+write_csv(final_results,"final_results_20DEC2018.csv")

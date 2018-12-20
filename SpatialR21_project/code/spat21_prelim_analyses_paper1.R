@@ -124,6 +124,9 @@ prop.table(gendertable,2)
 participant_data = hum_merged_data %>%
   group_by(unq_memID) %>%
   summarize(n=n(), n_gender = n_distinct(gender_hum_monthly_data))
+# look at those where there are two gender entries
+twoentries = participant_data$unq_memID[participant_data$n_gender>1]
+twogenders = hum_merged_data[which(hum_merged_data$unq_memID %in% twoentries),]
 
 
 #### --------- create table 2 based on the mosquito data ----------------- ####

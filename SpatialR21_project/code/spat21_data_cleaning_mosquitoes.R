@@ -17,8 +17,9 @@ library(lubridate)
 # read in the mosquito descriptive data sets
 # read in the data set with all mosquito species
 allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/MOZZIECollectionSummary_June2017_July2018.csv")
-# read in the data set with only anopheles mosquitoes
-anopheles_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/MOZZIEFemaleAnophele_June2017_July2018.csv")
+# read in the data set with only anopheles mosquitoes (Wendy's version that's already converted to long format)
+# in stata format
+anopheles_data = individual_female_anoph_long
 
 # read in the mosquito qpcr data sets
 qpcr_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/Mozzie mosquito compiled detection results 18Dec2018.csv")

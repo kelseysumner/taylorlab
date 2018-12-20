@@ -121,7 +121,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     + Code for creating haplotype visualization over time: `taylorlab/MESA_project/code/visualizations/MESA_haplotype_presence_over_time.R`
     
 
-## Haplotype Phylogenetic Analyses and Pouplation Genetics [Cody]
+## Haplotype Phylogenetic Analyses and Population Genetics [Cody]
 * More information to be included.
 * Could combine Cody's haplotype phlyogenetic analyses and pouplation genetics work with Kelsey's descriptive and spatial haplotype work in a manuscript. 
 
@@ -135,12 +135,23 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     + Notes:
     1. *Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL).*
     2. *Censoring criteria for parasitemia:*
-        - *Samples with Hb CT values < 35*
-        - *Samples with Pf CT values < 38*
-    3. *Indicated sample was positive for Pf if at least one Pf CT values was < 38 and met Hb CT value criteria (pf_pcr_infection_status)*
-    4. *Standardized and combined parasitemia (pfr364Q_std_combined) as follows:*
-        - *If 1 duplicate Pf positive, used that duplicates standardized parasitemia for the participant*
-        - *If both duplicates Pf positive, averaged the duplicates standardized parasitemia for the participant*
+        - *Recoding of CT values:*
+            - *CT values of 0 recoded to missing (NA).*
+            - *CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.*
+            - *CT values 0 < CT < 40 for human beta-tubulin (Hb) are considered valid detection.*
+            - *CT values of 0 < CT < 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 < CT < 38 for Plasmodium falciparum to be considered valid.*
+            - *Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.*
+        - *CT value censoring rules:*
+            - *Pf positive via PCR:* 
+                - *If 2 replicates amplified Pf: Pf CT values 0 < CT < 40*
+                - *If 1 replicate amplified Pf: Pf CT values 0 < CT < 38*
+            - *Pf negative via PCR: Pf CT undetermined (or Pf CT > 38 if one replicate), Hb CT values 0 < CT < 40*
+            - *Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR*
+    3. *Rules for determining if participant is positive/negative/missing for Pf parasitemia:*
+        - *If 1 replicate Pf positive per criteria above, used that replicate's standardized parasitemia for the participant to create combined parasitemia. Mosquito is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Mosquito is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Mosquito is negative for Pf in pf_pcr_infection_status variable.* 
+        - *If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Mosquito is missing data for Pf in pf_pcr_infection_status variable.*  
 * Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result. 
 * Compare the WHO lot testing reported pseudo-false negative rate for the rapid diagnostic test used (Carestart?) at 200 parasites/uL to the false negative rate observed in the cross-sectional data.
 * Calculate the limit of detection for P. falciparum parasitemia for the cross-sectional study. 
