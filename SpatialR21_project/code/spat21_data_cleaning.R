@@ -10,6 +10,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(data.table)
 
 
 #### --------- read in human data ----------------- ####
@@ -379,8 +380,8 @@ table(hum_monthly_data$malaria_al, useNA = "always")
 # key
 table(hum_monthly_data$key, useNA = "always")
 str(hum_monthly_data$key)
-# remove from data set, don't need
-hum_monthly_data$key <- NULL
+length(is.na(as.factor(hum_monthly_data$key))==T)
+head(hum_monthly_data$key)
 
 # test_type_oth
 table(hum_monthly_data$test_type_oth, useNA = "always")
@@ -586,7 +587,7 @@ summary(hum_monthly_data$date_today)
 summary(hum_monthly_data$today)
 table(hum_monthly_data$today, useNA = "always")
 str(hum_monthly_data$today)
-# delete date_today variable because same as today
+# rename to stata date_today variable because same as today
 hum_monthly_data$date_today <- NULL
 
 # create a new variable for the unique member id (unq_memID)
@@ -625,6 +626,11 @@ str(hum_sleeping_data$roof)
 hum_sleeping_data$roof = factor(hum_sleeping_data$roof,levels = c(1,2,3,4,5,6), labels = c("thatched","mabati","cement","tiles","no roof/open","other"))
 table(hum_sleeping_data$roof, useNA = "always")
 
+# oth_roof
+table(hum_sleeping_data$oth_roof, useNA = "always")
+# all missing so remove from data set
+hum_sleeping_data$oth_roof <- NULL
+
 # floor
 table(hum_sleeping_data$floor, useNA = "always")
 str(hum_sleeping_data$floor)
@@ -633,6 +639,11 @@ str(hum_sleeping_data$floor)
 hum_sleeping_data$floor = factor(hum_sleeping_data$floor,levels = c(1,2,3,4,5), labels = c("mud/earth","cement","tiles","wooden planks","other"))
 table(hum_sleeping_data$floor, useNA = "always")
 
+# oth_floor
+table(hum_sleeping_data$oth_floor, useNA = "always")
+# all observations missing so removed from data set
+hum_sleeping_data$oth_floor <- NULL
+
 # wall
 table(hum_sleeping_data$wall, useNA = "always")
 str(hum_sleeping_data$wall)
@@ -640,6 +651,11 @@ str(hum_sleeping_data$wall)
 # recode as a factor
 hum_sleeping_data$wall = factor(hum_sleeping_data$wall,levels = c(1,2,3,4,5,6,7), labels = c("mud/earth","mabati","cement/blocks","bricks","wooden planks","stone","other"))
 table(hum_sleeping_data$wall, useNA = "always")
+
+# oth_wall
+table(hum_sleeping_data$oth_wall, useNA = "always")
+# all observations missing so removed from data set
+hum_sleeping_data$oth_wall <- NULL
 
 # gap
 table(hum_sleeping_data$gap, useNA = "always")
@@ -668,8 +684,6 @@ table(hum_sleeping_data$sleeping_s, useNA = "always")
 # parent_key
 table(hum_sleeping_data$parent_key, useNA = "always")
 str(hum_sleeping_data$parent_key)
-# don't need, remove
-hum_sleeping_data$parent_key <- NULL
 
 # net
 table(hum_sleeping_data$net, useNA = "always")
@@ -958,9 +972,6 @@ table(hum_sleeping_data$hh_mem_name1, useNA = "always")
 str(hum_sleeping_data$hh_mem_name1)
 # recode the blanks to missing
 hum_sleeping_data$hh_mem_name1[hum_sleeping_data$hh_mem_name1 == ""] = NA
-# recode de-identified names to missing
-hum_sleeping_data$hh_mem_name1[hum_sleeping_data$hh_mem_name1 == "ABRAHAM_WAMUKOTA"] = NA
-hum_sleeping_data$hh_mem_name1[hum_sleeping_data$hh_mem_name1 == "ISAIAH_WEKESA"] = NA
 # check the recode
 table(hum_sleeping_data$hh_mem_name1, useNA = "always")
 
@@ -1003,6 +1014,24 @@ str(hum_sleeping_data$hh_mem_name6)
 hum_sleeping_data$hh_mem_name6[hum_sleeping_data$hh_mem_name6 == ""] = NA
 # check the recode
 table(hum_sleeping_data$hh_mem_name6, useNA = "always")
+
+# unq_slp_space_id
+# look at the bld_slpid
+table(hum_sleeping_data$bld_slpid, useNA = "always")
+length(which(is.na(hum_sleeping_data$bld_slpid)))
+# look at the HH_ID
+table(hum_sleeping_data$HH_ID, useNA = "always")
+length(which(is.na(hum_sleeping_data$HH_ID)))
+# merge the two variables togther with a /
+hum_sleeping_data$unq_slp_space_id = ifelse(is.na(hum_sleeping_data$bld_slpid),NA,paste0(hum_sleeping_data$HH_ID,"/",hum_sleeping_data$bld_slpid))
+# look at the new variable to check
+table(hum_sleeping_data$unq_slp_space_id, useNA = "always")
+head(hum_sleeping_data$HH_ID)
+head(hum_sleeping_data$bld_slpid)
+head(hum_sleeping_data$unq_slp_space_id)
+tail(hum_sleeping_data$HH_ID)
+tail(hum_sleeping_data$bld_slpid)
+tail(hum_sleeping_data$unq_slp_space_id)
 
 
 #--------------- hum_table_household_data
@@ -1152,14 +1181,10 @@ table(hum_table_household_data$malaria_al, useNA = "always")
 # parent_key
 table(hum_table_household_data$parent_key, useNA = "always")
 str(hum_table_household_data$parent_key)
-# don't need this variable, remove from data set
-hum_table_household_data$parent_key <- NULL
 
 # key
 table(hum_table_household_data$key, useNA = "always")
 str(hum_table_household_data$key)
-# don't need this variable, remove from data set
-hum_table_household_data$key <- NULL
 
 # HH_ID
 table(hum_table_household_data$HH_ID, useNA = "always")
@@ -1251,8 +1276,6 @@ table(hum_ann_household_data$sleeping_s, useNA = "always")
 # parent_key
 table(hum_ann_household_data$parent_key, useNA = "always")
 str(hum_ann_household_data$parent_key)
-# not needed, remove from data set
-hum_ann_household_data$parent_key <- NULL
 
 # HH_ID
 table(hum_ann_household_data$HH_ID, useNA = "always")
@@ -1700,8 +1723,6 @@ table(hum_sick_data$why, useNA = "always")
 # key
 table(hum_sick_data$key, useNA = "always")
 str(hum_sick_data$key)
-# don't need, remove from data set
-hum_sick_data$key <- NULL
 
 # HH_ID
 table(hum_sick_data$HH_ID, useNA = "always")
@@ -1881,19 +1902,160 @@ str(hum_sick_data$date_today)
 # remove, because already have date variable formatted
 hum_sick_data$date_today <- NULL
 
-# create a new variable for the unique member id (unq_memID)
-# this variable combines the HH_ID and memID variables to create a unique identifier for each person in the data set
-hum_sick_data$unq_memID = paste0(hum_sick_data$HH_ID,"_",hum_sick_data$memID)
-# check the variable creation
-table(hum_sick_data$unq_memID, useNA = "always")
-table(hum_sick_data$HH_ID, useNA = "always")
-table(hum_sick_data$memID, useNA = "always")
-head(hum_sick_data$unq_memID)
-head(hum_sick_data$HH_ID)
-head(hum_sick_data$memID)
+# PID
+table(hum_sick_data$PID, useNA = "always")
+str(hum_sick_data$PID)
+# change variable name from PID to unq_memID
+names(hum_sick_data)[names(hum_sick_data) == "PID"] <- "unq_memID"
+# check the rename
+names(hum_sick_data)
 
 
-#### --------------- write out rds files for each file ----------------- ####
+#### -------- make variables that are not unique have unique names ------------ ####
+
+# floor
+names(hum_ann_household_data)[names(hum_ann_household_data) == "floor"] <- "floor_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "floor"] <- "floor_hum_sleeping_data"
+
+# gap
+names(hum_ann_household_data)[names(hum_ann_household_data) == "gap"] <- "gap_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "gap"] <- "gap_hum_sleeping_data"
+
+# gap_net
+names(hum_ann_household_data)[names(hum_ann_household_data) == "gap_net"] <- "gap_net_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "gap_net"] <- "gap_net_hum_sleeping_data"
+
+# gender
+names(hum_monthly_data)[names(hum_monthly_data) == "gender"] <- "gender_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "gender"] <- "gender_hum_sick_data"
+
+# key
+names(hum_monthly_data)[names(hum_monthly_data) == "key"] <- "key_hum_monthly_data"
+names(hum_table_household_data)[names(hum_table_household_data) == "key"] <- "key_hum_table_household_data"
+names(hum_sick_data)[names(hum_sick_data) == "key"] <- "key_hum_sick_data"
+
+# mal_likely
+names(hum_monthly_data)[names(hum_monthly_data) == "mal_likely"] <- "mal_likely_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "mal_likely"] <- "mal_likely_hum_sick_data"
+
+# malaria_al
+names(hum_monthly_data)[names(hum_monthly_data) == "malaria_al"] <- "malaria_al_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "malaria_al"] <- "malaria_al_hum_sick_data"
+names(hum_table_household_data)[names(hum_table_household_data) == "malaria_al"] <- "malaria_al_hum_table_household_data"
+
+# malaria_likely
+names(hum_monthly_data)[names(hum_monthly_data) == "malaria_likely"] <- "malaria_likely_hum_monthly_data"
+names(hum_table_household_data)[names(hum_table_household_data) == "malaria_likely"] <- "malaria_likely_hum_table_household_data"
+
+# med_oth
+names(hum_monthly_data)[names(hum_monthly_data) == "med_oth"] <- "med_oth_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "med_oth"] <- "med_oth_hum_sick_data"
+
+# medicine
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine"] <- "medicine_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine"] <- "medicine_hum_sick_data"
+
+# medicine_ACT
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_ACT"] <- "medicine_ACT_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_ACT"] <- "medicine_ACT_hum_sick_data"
+
+# medicine_AMO
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_AMO"] <- "medicine_AMO_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_AMO"] <- "medicine_AMO_hum_sick_data"
+
+# medicine_CIP
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_CIP"] <- "medicine_CIP_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_CIP"] <- "medicine_CIP_hum_sick_data"
+
+# medicine_DNT
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_DNT"] <- "medicine_DNT_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_DNT"] <- "medicine_DNT_hum_sick_data"
+
+# medicine_OACT
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_OACT"] <- "medicine_OACT_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_OACT"] <- "medicine_OACT_hum_sick_data"
+
+# medicine_OTH
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_OTH"] <- "medicine_OTH_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_OTH"] <- "medicine_OTH_hum_sick_data"
+
+# medicine_PAN
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_PAN"] <- "medicine_PAN_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_PAN"] <- "medicine_PAN_hum_sick_data"
+
+# medicine_Qui
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_Qui"] <- "medicine_Qui_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_Qui"] <- "medicine_Qui_hum_sick_data"
+
+# medicine_SP
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_SP"] <- "medicine_SP_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_SP"] <- "medicine_SP_hum_sick_data"
+
+# medicine_SPT
+names(hum_monthly_data)[names(hum_monthly_data) == "medicine_SPT"] <- "medicine_SPT_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "medicine_SPT"] <- "medicine_SPT_hum_sick_data"
+
+# mrdt_n
+names(hum_monthly_data)[names(hum_monthly_data) == "mrdt_n"] <- "mrdt_n_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "mrdt_n"] <- "mrdt_n_hum_sick_data"
+
+# mrdt_p
+names(hum_monthly_data)[names(hum_monthly_data) == "mrdt_p"] <- "mrdt_p_hum_monthly_data"
+names(hum_sick_data)[names(hum_sick_data) == "mrdt_p"] <- "mrdt_p_hum_sick_data"
+
+# parent_key
+names(hum_ann_household_data)[names(hum_ann_household_data) == "parent_key"] <- "parent_key_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "parent_key"] <- "parent_key_hum_sleeping_data"
+names(hum_table_household_data)[names(hum_table_household_data) == "parent_key"] <- "parent_key_hum_table_household_data"
+
+# roof
+names(hum_ann_household_data)[names(hum_ann_household_data) == "roof"] <- "roof_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "roof"] <- "roof_hum_sleeping_data"
+
+# sleeping_s
+names(hum_ann_household_data)[names(hum_ann_household_data) == "sleeping_s"] <- "sleeping_s_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "sleeping_s"] <- "sleeping_s_hum_sleeping_data"
+
+# today
+names(hum_ann_household_data)[names(hum_ann_household_data) == "today2"] <- "today_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "today"] <- "today_hum_sleeping_data"
+names(hum_monthly_data)[names(hum_monthly_data) == "today"] <- "today_hum_monthly_data"
+names(hum_table_household_data)[names(hum_table_household_data) == "today"] <- "today_hum_table_household_data"
+names(hum_sick_data)[names(hum_sick_data) == "today"] <- "today_hum_sick_data"
+
+# village_name
+names(hum_ann_household_data)[names(hum_ann_household_data) == "village_name"] <- "village_name_hum_ann_household_data"
+names(hum_sick_data)[names(hum_sick_data) == "village_name"] <- "village_name_hum_sick_data"
+names(hum_monthly_data)[names(hum_monthly_data) == "village_name"] <- "village_name_hum_monthly_data"
+
+# wall
+names(hum_ann_household_data)[names(hum_ann_household_data) == "wall"] <- "wall_hum_ann_household_data"
+names(hum_sleeping_data)[names(hum_sleeping_data) == "wall"] <- "wall_hum_sleeping_data"
+
+
+#### --------- export each separate data set as a CSV or RDS file --------- ####
+
+# export each separate data file as a RDS and CSV
+# for hum_ann_household_data
+write_csv(hum_ann_household_data, "hum_ann_household_data_19DEC2018.csv")
+write_rds(hum_ann_household_data, "hum_ann_household_data_19DEC2018.RDS")
+# for hum_sleeping_data
+write_csv(hum_sleeping_data, "hum_sleeping_data_19DEC2018.csv")
+write_rds(hum_sleeping_data, "hum_sleeping_data_19DEC2018.RDS")
+# for hum_monthly_data
+write_csv(hum_monthly_data, "hum_monthly_data_19DEC2018.csv")
+write_rds(hum_monthly_data, "hum_monthly_data_19DEC2018.RDS")
+# for hum_table_household_data
+write_csv(hum_table_household_data, "hum_table_household_data_19DEC2018.csv")
+write_rds(hum_table_household_data, "hum_table_household_data_19DEC2018.RDS")
+# for hum_sleeping_data
+write_csv(hum_sick_data, "hum_sick_data_19DEC2018.csv")
+write_rds(hum_sick_data, "hum_sick_data_19DEC2018.RDS")
+
+
+
+
+
 
 
 
