@@ -10,6 +10,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(stringr)
 
 
 #### --------- read in mosquito data ----------------- ####
@@ -330,6 +331,10 @@ summary(qpcr_data$HbtubCT2)
 summary(qpcr_data$pfr364CT1)
 summary(qpcr_data$pfr364CT2)
 
+# export the data set as a CSV file and RDS file
+# write_csv(qpcr_data,"spat21_mosquito_qpcr_data_22DEC2018.csv")
+# write_rds(qpcr_data,"spat21_mosquito_qpcr_data_22DEC2018.RDS")
+
 # create another variable that is the sample_id_mosquito
 table(nchar(qpcr_data$`Sample Name`))
 new_sample_name = rep(NA,nrow(qpcr_data))
@@ -345,14 +350,146 @@ length(which(is.na(new_sample_name))) # no missing, which is good
 # add the variable to the data set as sample_id_mosquito
 qpcr_data$sample_id_mosquito = new_sample_name
 
+# take out the standards, experiment name, well position, and Intercept, R, and Slope information because no longer needed
+colnames_to_exclude_in_qpcr = c("Experiment Name","Well Position","pfr364Y-Intercept","pfr364R_","pfr364Slope","pfr364Std1a",
+                                "pfr364Std1b","pfr364Std2a","pfr364Std2b","pfr364Std3a","pfr364Std3b","pfr364Std4a","pfr364Std4b",
+                                "pfr364Std5a","pfr364Std5b","pfr364Std6a","pfr364Std6b")
+qpcr_data = qpcr_data[,-which(colnames(qpcr_data) %in% colnames_to_exclude_in_qpcr)]
+
+# check the number of sample ids that only occur once (only received a head or an abdomen)
+number_1 = table(qpcr_data$sample_id_mosquito, useNA = "always")
+number_1[which(number_1 == 1)]
+length(number_1[which(number_1 == 1)]) # 46 sample ids only occur once
+once_table = number_1[which(number_1 == 1)]
+length(number_1[which(number_1 == 2)]) # 1434 sample ids occur twice
+twice_table = number_1[which(number_1 == 2)]
+length(number_1[which(number_1 > 2)]) # 0 sample ids occur more than twice
+# looks like we have 1480 unique sample ids in this data set
+# when switch the data to wide format should have 1480 rows
+
 # now make the data in wide format by sample_id_mosquito
-# qpcr_data_wide = 
+# first sort the data set by the sample_id_mosquito and create index number
+result <- qpcr_data %>% 
+  group_by(sample_id_mosquito) %>%
+  arrange(desc(`Sample Name`)) %>%
+  mutate(eval_index = row_number()) %>%
+  ungroup %>%
+  arrange(sample_id_mosquito)
+# loop through each row, and check if the corresponding sample id
+new_row = rep(0,21)
+for (i in 1:nrow(result)){
+  if (result$eval_index[i] == 1 & result$eval_index[i+1] == 2 & str_count(result$`Sample Name`[i], "H") > 0){
+    next_row = c(result[i,11],result[i,1:10],result[i+1,1:10])
+  } else if (result$eval_index[i] == 1 & result$eval_index[i+1] != 2 & str_count(result$`Sample Name`[i], "H") > 0) {
+    next_row = c(result[i,11],result[i,1:10],rep(NA,10))
+  } else if (result$eval_index[i] == 1 & result$eval_index[i+1] != 2 & str_count(result$`Sample Name`[i], "A") > 0){
+    next_row = c(result[i,11],rep(NA,10),result[i,1:10])
+  } else {
+    next
+  }
+  new_row = rbind(new_row,next_row)
+}
+# remove the first row
+new_row = new_row[-1,]
+# make it a data frame
+qpcr_data_wide = as_data_frame(new_row)
+str(qpcr_data_wide)
+colnames(qpcr_data_wide)
+
+# rename the column names
+qpcr_data_wide = rename(qpcr_data_wide, "sample_id_head" = "Sample Name", "HbtubCT1_h" = "HbtubCT1", "HbtubCT2_h" = "HbtubCT2",
+                        "pfr364CT1_h" = "pfr364CT1", "pfr364CT2_h" = "pfr364CT2", "pfr364Q1_h" = "pfr364Q1", "pfr364Q2_h" = "pfr364Q2",
+                        "pf_pcr_infection_status_sample_level_h" = "pf_pcr_infection_status_sample_level", "pfr364Q_combined_h" = "pfr364Q_combined",
+                        "hb_status_sample_level_h" = "hb_status_sample_level","sample_id_abdomen" = "Sample Name1", "HbtubCT1_a" = "HbtubCT11", "HbtubCT2_a" = "HbtubCT21",
+                        "pfr364CT1_a" = "pfr364CT11", "pfr364CT2_a" = "pfr364CT21", "pfr364Q1_a" = "pfr364Q11", "pfr364Q2_a" = "pfr364Q21",
+                        "pf_pcr_infection_status_sample_level_a" = "pf_pcr_infection_status_sample_level1", "pfr364Q_combined_a" = "pfr364Q_combined1",
+                        "hb_status_sample_level_a" = "hb_status_sample_level1")
+colnames(qpcr_data_wide)
+
+# reformat the variables because formating was messed up in the processing
+qpcr_data_wide$sample_id_mosquito = as.character(qpcr_data_wide$sample_id_mosquito)
+qpcr_data_wide$sample_id_abdomen = as.character(qpcr_data_wide$sample_id_abdomen)
+qpcr_data_wide$HbtubCT1_a = as.numeric(qpcr_data_wide$HbtubCT1_a)
+qpcr_data_wide$HbtubCT2_a = as.numeric(qpcr_data_wide$HbtubCT2_a)
+qpcr_data_wide$pfr364CT1_a = as.numeric(qpcr_data_wide$pfr364CT1_a)
+qpcr_data_wide$pfr364CT2_a = as.numeric(qpcr_data_wide$pfr364CT2_a)
+qpcr_data_wide$pfr364Q1_a = as.numeric(qpcr_data_wide$pfr364Q1_a)
+qpcr_data_wide$pfr364Q2_a = as.numeric(qpcr_data_wide$pfr364Q2_a)
+qpcr_data_wide$pf_pcr_infection_status_sample_level_a = factor(qpcr_data_wide$pf_pcr_infection_status_sample_level_a, levels = c(1,2), labels = c("negative", "positive"))
+qpcr_data_wide$pfr364Q_combined_a = as.numeric(qpcr_data_wide$pfr364Q_combined_a)
+qpcr_data_wide$hb_status_sample_level_a = factor(qpcr_data_wide$hb_status_sample_level_a, levels = c(1,2), labels = c("negative", "positive"))
+qpcr_data_wide$sample_id_head = as.character(qpcr_data_wide$sample_id_head)
+qpcr_data_wide$HbtubCT1_h = as.numeric(qpcr_data_wide$HbtubCT1_h)
+qpcr_data_wide$HbtubCT2_h = as.numeric(qpcr_data_wide$HbtubCT2_h)
+qpcr_data_wide$pfr364CT1_h = as.numeric(qpcr_data_wide$pfr364CT1_h)
+qpcr_data_wide$pfr364CT2_h = as.numeric(qpcr_data_wide$pfr364CT2_h)
+qpcr_data_wide$pfr364Q1_h = as.numeric(qpcr_data_wide$pfr364Q1_h)
+qpcr_data_wide$pfr364Q2_h = as.numeric(qpcr_data_wide$pfr364Q2_h)
+qpcr_data_wide$pf_pcr_infection_status_sample_level_h = factor(qpcr_data_wide$pf_pcr_infection_status_sample_level_h, levels = c(1,2), labels = c("negative", "positive"))
+qpcr_data_wide$pfr364Q_combined_h = as.numeric(qpcr_data_wide$pfr364Q_combined_h)
+qpcr_data_wide$hb_status_sample_level_h = factor(qpcr_data_wide$hb_status_sample_level_h, levels = c(1,2), labels = c("negative", "positive"))
+
+# check missingness in the IDs
+length(which(is.na(qpcr_data_wide$sample_id_mosquito))) # no missing, good
+length(which(qpcr_data_wide$sample_id_mosquito == "NA"))
+length(which(is.na(qpcr_data_wide$sample_id_abdomen))) 
+length(which(qpcr_data_wide$sample_id_abdomen == "NA")) # 30 NAs needs to be recoded
+length(which(is.na(qpcr_data_wide$sample_id_head))) 
+length(which(qpcr_data_wide$sample_id_head == "NA")) # 16 NAs need to be recoded
+# recode NAs to missing 
+qpcr_data_wide$sample_id_head[qpcr_data_wide$sample_id_head == "NA"] = NA
+qpcr_data_wide$sample_id_abdomen[qpcr_data_wide$sample_id_abdomen == "NA"] = NA
+length(which(is.na(qpcr_data_wide$sample_id_head))) # 16 missing, correct
+length(which(is.na(qpcr_data_wide$sample_id_abdomen))) # 30 missing, correct
+
+# check how many heads and abdomens were in the original data set
+sum(str_count(qpcr_data$`Sample Name`, "H")) # 1464 heads out of 1480 mosquitoes (16 missing)
+sum(str_count(qpcr_data$`Sample Name`, "A")) # 1450 abdomens out of 1480 mosquitoes (30 missing)
+
+# check if any heads and abdomens in the wrong columns
+sum(str_count(qpcr_data_wide$sample_id_abdomen, "H"))
+sum(str_count(qpcr_data_wide$sample_id_head, "A"))
+# looks good
+
+# create a new column that tells whether or not the mosquito is positive for malaria
+# if at least 1 mosquito part (head or abdomen) is positive, then saying mosquito is positive
+# 1 is positive, 0 negative
+pf_infection_status_mosquito_level = ifelse((qpcr_data_wide$pf_pcr_infection_status_sample_level_a == "negative" & qpcr_data_wide$pf_pcr_infection_status_sample_level_h == "negative") |
+                                              (qpcr_data_wide$pf_pcr_infection_status_sample_level_a == "negative" & is.na(qpcr_data_wide$pf_pcr_infection_status_sample_level_h)) |
+                                              (qpcr_data_wide$pf_pcr_infection_status_sample_level_h == "negative" & is.na(qpcr_data_wide$pf_pcr_infection_status_sample_level_a)),0,1)
+table(pf_infection_status_mosquito_level,useNA = "always")
+# make a factor
+qpcr_data_wide$pf_infection_status_mosquito_level = factor(pf_infection_status_mosquito_level, levels = c(0,1), labels = c("negative", "positive"))
+# check the recode
+table(qpcr_data_wide$pf_infection_status_mosquito_level, useNA = "always")
+length(which(is.na(qpcr_data_wide$pf_pcr_infection_status_sample_level_a))) # 30
+length(which(is.na(qpcr_data_wide$pf_pcr_infection_status_sample_level_h))) # 17
+length(which(is.na(qpcr_data_wide$pf_pcr_infection_status_sample_level_a) & is.na(qpcr_data_wide$pf_pcr_infection_status_sample_level_h))) # 0
+length(which(qpcr_data_wide$pf_pcr_infection_status_sample_level_a == "positive" | qpcr_data_wide$pf_pcr_infection_status_sample_level_h == "positive")) # 244
+
+# create a new column that tells whether or not the mosquito is positive for human beta tubulin
+# if at least 1 mosquito part (head or abdomen) is positive, then saying mosquito is positive
+# 1 is positive, 0 negative
+hb_status_mosquito_level = ifelse((qpcr_data_wide$hb_status_sample_level_a == "negative" & qpcr_data_wide$hb_status_sample_level_h == "negative") |
+                                              (qpcr_data_wide$hb_status_sample_level_a == "negative" & is.na(qpcr_data_wide$hb_status_sample_level_h)) |
+                                              (qpcr_data_wide$hb_status_sample_level_h == "negative" & is.na(qpcr_data_wide$hb_status_sample_level_a)),0,1)
+table(hb_status_mosquito_level,useNA = "always")
+# make a factor
+qpcr_data_wide$hb_status_mosquito_level = factor(hb_status_mosquito_level, levels = c(0,1), labels = c("negative", "positive"))
+# check the recode
+table(qpcr_data_wide$hb_status_mosquito_level, useNA = "always")
+length(which(is.na(qpcr_data_wide$hb_status_sample_level_h))) # 30
+length(which(is.na(qpcr_data_wide$hb_status_sample_level_a))) # 17
+length(which(is.na(qpcr_data_wide$hb_status_sample_level_h) & is.na(qpcr_data_wide$hb_status_sample_level_a))) # 0
+length(which(qpcr_data_wide$hb_status_sample_level_h == "positive" | qpcr_data_wide$hb_status_sample_level_a == "positive")) # 244
 
 # export the data set as a CSV file and RDS file
-# write_csv(qpcr_data,"spat21_mosquito_qpcr_data_22DEC2018.csv")
-# write_rds(qpcr_data,"spat21_mosquito_qpcr_data_22DEC2018.RDS")
-
-
+# write_csv(qpcr_data_wide,"spat21_mosquito_qpcr_data_wide_3JAN2019.csv")
+# write_rds(qpcr_data_wide,"spat21_mosquito_qpcr_data_wide_3JAN2019.RDS")  
+  
+  
+  
+  
 ## ------------ anopheles data
 
 # take out the variables that aren't needed in the wide anopheles data set (anopheles_data_original)
@@ -751,6 +888,6 @@ mismatched_hhs = new_long_data[which(new_long_data$HH_ID != sample_hh_id),]
 
 
 # save the cleaned anopheles mosquito descriptive data set as a csv file and an rds file
-write_csv(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_2JAN2019.csv")
-write_rds(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_2JAN2019.RDS")
+write_csv(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_4JAN2019.csv")
+write_rds(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_4JAN2019.RDS")
 
