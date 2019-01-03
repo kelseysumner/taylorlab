@@ -16,17 +16,20 @@ library(lubridate)
 
 # read in the mosquito descriptive data sets
 # read in the data set with all mosquito species
-allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/MOZZIECollectionSummary_June2017_July2018.csv")
+allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIECollectionSummary_June2017_July2018.csv")
 # read in the data set with only anopheles mosquitoes (Wendy's version that's already converted to long format)
 # in stata format
-anopheles_data = individual_female_anoph_long
+anopheles_data_long = Individual_female_anoph_long
+# this is the original version
+anopheles_data_original = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIEFemaleAnophele_June2017_July2018.csv")
 
 # read in the mosquito qpcr data sets
-qpcr_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/Mozzie mosquito compiled detection results 18Dec2018.csv")
+qpcr_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/Mozzie mosquito compiled detection results 18Dec2018.csv")
 
 # look at summaries of all the data sets
 summary(allspecies_data)
-summary(anopheles_data)
+summary(anopheles_data_original)
+summary(anopheles_data_long)
 summary(qpcr_data)
 str(allspecies_data)
 str(anopheles_data)
@@ -243,7 +246,7 @@ head(checkdata$pfr364Q_combined)
 
 # final check for samples to change to missing
 # read back in the original qpcr data set but rename to merged_data
-merged_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/Mozzie mosquito compiled detection results 18Dec2018.csv")
+merged_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/Mozzie mosquito compiled detection results 18Dec2018.csv")
 # clean up the sample names
 new_sample_name = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
@@ -287,6 +290,467 @@ qpcr_data$pf_pcr_infection_status_sample_level[which(qpcr_data$`Sample Name` == 
 summary(qpcr_data$pf_pcr_infection_status_sample_level)
 table(qpcr_data$pf_pcr_infection_status_sample_level, useNA = "always")
 
+# create a variable that indicates whether the sample is positive or negative for Human beta-tubulin
+# if at least 1 duplicate has Hb CT > 0, then saying sample is positive
+# 1 is positive, 0 negative
+hb_status_sample_level = rep(NA,nrow(qpcr_data))
+for (i in 1:nrow(qpcr_data)){
+  if (is.na(qpcr_data$HbtubCT1[i]) & is.na(qpcr_data$HbtubCT2[i])){
+    hb_status_sample_level[i] = 0
+  } else {
+    hb_status_sample_level[i] = 1
+  }
+}
+table(hb_status_sample_level,useNA = "always")
+# check the output
+length(which(qpcr_data$HbtubCT1 > 0 | qpcr_data$HbtubCT2 > 0)) # 1372
+length(which((is.na(qpcr_data$HbtubCT1) & is.na(qpcr_data$HbtubCT2)))) # 1542
+# make a factor
+qpcr_data$hb_status_sample_level = factor(hb_status_sample_level,levels = c(0,1), labels = c("negative", "positive"))
+# look at the output
+table(qpcr_data$hb_status_sample_level,useNA = "always")
+
+# these values were all changed to negative for hb_status_sample_level but 
+# one value had zeroes for all Hb and Pf CT 1 and 2 values, which means they did not amplify correctly 
+# and have been changed from "negative" to "missing" for the hb_status_sample_level column
+# this value is M15 H00056
+qpcr_data$hb_status_sample_level[qpcr_data$`Sample Name` == "M15 H00056"] = NA
+# check the change
+qpcr_data$hb_status_sample_level[which(qpcr_data$`Sample Name` == "M15 H00056")]
+
+# look at the new summary of pf_pcr_infection_status_sample_level and hb_status_sample_level
+summary(qpcr_data$pf_pcr_infection_status_sample_level)
+table(qpcr_data$pf_pcr_infection_status_sample_level, useNA = "always")
+summary(qpcr_data$hb_status_sample_level)
+table(qpcr_data$hb_status_sample_level, useNA = "always")
+
+# look at summaries of the CT values
+summary(qpcr_data$HbtubCT1)
+summary(qpcr_data$HbtubCT2)
+summary(qpcr_data$pfr364CT1)
+summary(qpcr_data$pfr364CT2)
+
+# create another variable that is the sample_id_mosquito
+table(nchar(qpcr_data$`Sample Name`))
+new_sample_name = rep(NA,nrow(qpcr_data))
+for (i in 1:nrow(qpcr_data)){
+    new_name = strsplit(qpcr_data$`Sample Name`[i],"")[[1]]
+    new_name_p1 = paste(new_name[1:3], collapse="")
+    new_name_p2 = paste(new_name[6:10], collapse="")
+    new_sample_name[i] = paste0(new_name_p1," ",new_name_p2)
+}
+# look at the new_sample_name
+table(new_sample_name, useNA = "always")
+length(which(is.na(new_sample_name))) # no missing, which is good
+# add the variable to the data set as sample_id_mosquito
+qpcr_data$sample_id_mosquito = new_sample_name
+
+# now make the data in wide format by sample_id_mosquito
+# qpcr_data_wide = 
+
 # export the data set as a CSV file and RDS file
-write_csv(qpcr_data,"spat21_mosquito_qpcr_data_21DEC2018.csv")
-write_rds(qpcr_data,"spat21_mosquito_qpcr_data_21DEC2018.RDS")
+# write_csv(qpcr_data,"spat21_mosquito_qpcr_data_22DEC2018.csv")
+# write_rds(qpcr_data,"spat21_mosquito_qpcr_data_22DEC2018.RDS")
+
+
+## ------------ anopheles data
+
+# take out the variables that aren't needed in the wide anopheles data set (anopheles_data_original)
+vars_to_exclude = c("Repeat Instrument","Collection Time","Collection done by:","Samples prepared by:",
+                    "Species ID done by","Comment 1","Comment 2","Comment 3","Comment 4","Comment 5",
+                    "Comment 6","Comment 7","Comment 8","Comment 9","Comment 10","Comment 11","Comment 12",
+                    "Comment 13","Comment 14","Comment 15","Comment 16","Form Checked by:","Form checked date",
+                    "Form Entered By:","Form Entered on:","Complete?")
+short_data = anopheles_data_original[,-which(colnames(anopheles_data_original) %in% vars_to_exclude)]
+
+# switch from wide to long format using a form loop
+new_long_data = c(rep(0,10))
+for (i in 1:nrow(short_data)){
+  new_row_1 = c(short_data[i,1:5],short_data[i,6:10])
+  new_row_2 = c(short_data[i,1:5],short_data[i,11:15])
+  new_row_3 = c(short_data[i,1:5],short_data[i,16:20])
+  new_row_4 = c(short_data[i,1:5],short_data[i,21:25])
+  new_row_5 = c(short_data[i,1:5],short_data[i,26:30])
+  new_row_6 = c(short_data[i,1:5],short_data[i,31:35])
+  new_row_7 = c(short_data[i,1:5],short_data[i,36:40])
+  new_row_8 = c(short_data[i,1:5],short_data[i,41:45])
+  new_row_9 = c(short_data[i,1:5],short_data[i,46:50])
+  new_row_10 = c(short_data[i,1:5],short_data[i,51:55])
+  new_row_11 = c(short_data[i,1:5],short_data[i,56:60])
+  new_row_12 = c(short_data[i,1:5],short_data[i,61:65])
+  new_row_13 = c(short_data[i,1:5],short_data[i,66:70])
+  new_row_14 = c(short_data[i,1:5],short_data[i,71:75])
+  new_row_15 = c(short_data[i,1:5],short_data[i,76:80])
+  new_row_16 = c(short_data[i,1:5],short_data[i,81:85])
+  new_long_data = rbind(new_long_data,new_row_1, new_row_2, new_row_3, new_row_4, new_row_5, new_row_6, new_row_7, new_row_8, 
+                        new_row_9, new_row_10, new_row_11, new_row_12, new_row_13, new_row_14, new_row_15, new_row_16)
+}
+# remove the first row
+new_long_data = new_long_data[-1,]
+# make it a data frame
+new_long_data = as_data_frame(new_long_data)
+str(new_long_data)
+colnames(new_long_data)
+# remove rows with all missing observations for columns 6:10
+test = new_long_data[-which(is.na(new_long_data$`Sample ID Head #1`) & is.na(new_long_data$`Sample ID Abdomen#1`) & is.na(new_long_data$`Abdominal status #1`) & is.na(new_long_data$`Species type #1`) & is.na(new_long_data$`Specify Species #1`)),]
+length(which(is.na(new_long_data$`Sample ID Head #1`) & is.na(new_long_data$`Sample ID Abdomen#1`) & is.na(new_long_data$`Abdominal status #1`) & is.na(new_long_data$`Species type #1`) & is.na(new_long_data$`Specify Species #1`)))
+# 9209 observations should have been removed from the original for loop output for having all missing
+# looks like those were removed correctly
+new_long_data = test
+
+# change the column names
+colnames(new_long_data)
+new_long_data = rename(new_long_data, "HH_ID" = "Household ID", "repeat_instance" = "Repeat Instance",
+                       "collection_date" = "Collection Date", "village" = "Village", "total_num_mosq_in_hh" = "Total Number of mosquitos in the household",
+                       "sample_id_head" = "Sample ID Head #1", "sample_id_abdomen" = "Sample ID Abdomen#1","abdominal_status" = "Abdominal status #1",
+                       "species_type" = "Species type #1", "specify_species" = "Specify Species #1")
+colnames(new_long_data)
+
+# make all the columns a specific data type
+new_long_data$HH_ID = as.character(new_long_data$HH_ID)
+new_long_data$repeat_instance = as.numeric(new_long_data$repeat_instance)
+new_long_data$collection_date = as.character(new_long_data$collection_date)
+new_long_data$village = as.character(new_long_data$village)
+new_long_data$total_num_mosq_in_hh = as.numeric(new_long_data$total_num_mosq_in_hh)
+new_long_data$sample_id_head = as.character(new_long_data$sample_id_head)
+new_long_data$sample_id_abdomen = as.character(new_long_data$sample_id_abdomen)
+new_long_data$abdominal_status = as.character(new_long_data$abdominal_status)
+new_long_data$species_type = as.character(new_long_data$species_type)
+new_long_data$specify_species = as.character(new_long_data$specify_species)
+
+# look at each variable in the long data set
+colnames(new_long_data)
+
+# HH_ID
+table(new_long_data$HH_ID, useNA = "always")
+str(new_long_data$HH_ID)
+# looks good, clean
+
+# repeat_instance
+table(new_long_data$repeat_instance, useNA = "always")
+str(new_long_data$repeat_instance)
+# looks good, clean
+
+# collection_date
+table(new_long_data$collection_date, useNA = "always")
+str(new_long_data$collection_date)
+# change to date format
+test_date = mdy(new_long_data$collection_date)
+head(test_date)
+head(new_long_data$collection_date)
+tail(test_date)
+tail(new_long_data$collection_date)
+table(test_date, useNA = "always")
+new_long_data$collection_date = test_date
+str(new_long_data$collection_date)
+
+# create week, month, and year variables from collection_date
+# for week
+collection_week = epiweek(new_long_data$collection_date)
+head(collection_week)
+head(new_long_data$collection_date)
+new_long_data$collection_week = collection_week
+# for month
+collection_month = month(new_long_data$collection_date)
+head(collection_month)
+head(new_long_data$collection_date)
+new_long_data$collection_month = collection_month
+summary(new_long_data$collection_month)
+table(new_long_data$collection_month, useNA = "always")
+# create a factor 
+new_long_data$collection_month = factor(new_long_data$collection_month, levels = c(1:12), labels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+table(new_long_data$collection_month, useNA = "always")
+# for year
+collection_year = epiyear(new_long_data$collection_date)
+head(collection_year)
+head(new_long_data$collection_date)
+new_long_data$collection_year = collection_year
+summary(new_long_data$collection_year)
+# create a variable that is month and year combined
+collection_month_year_combo = paste0(collection_month,"-",collection_year)
+head(collection_month_year_combo)
+head(new_long_data$collection_date)
+new_long_data$collection_month_year_combo = collection_month_year_combo
+table(new_long_data$collection_month_year_combo, useNA = "always")
+
+# village
+table(new_long_data$village, useNA = "always")
+str(new_long_data$village)
+# make a factor
+new_long_data$village = as.factor(new_long_data$village)
+str(new_long_data$village)
+
+# total_num_mosq_in_hh
+table(new_long_data$total_num_mosq_in_hh, useNA = "always")
+str(new_long_data$total_num_mosq_in_hh)
+summary(new_long_data$total_num_mosq_in_hh)
+# looks good, clean
+
+# sample_id_head
+table(new_long_data$sample_id_head, useNA = "always")
+str(new_long_data$sample_id_head)
+# check for duplicate sample names
+length(unique(new_long_data$sample_id_head)) # 1493 unique 
+length(which(is.na(new_long_data$sample_id_head) == T)) # 0 missing
+count_table = table(new_long_data$sample_id_head, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # looks like there are two duplicates
+# the two duplicates: M03 H00021, M13 H00035
+# M03 H00021 looks like it was just entered twice, will remove one row
+# M13 H00035 looks like it should be M16 H00035 in one of the rows (the blood fed one), changed this in the long data set
+# look where these duplicates occurred
+dup_data = new_long_data[which(new_long_data$sample_id_head == "M03 H00021" | new_long_data$sample_id_head == "M13 H00035"),]
+new_long_data$sample_id_head[new_long_data$sample_id_head == "M13 H00035" & new_long_data$repeat_instance == 22] = "M16 H00035"
+# also did made the change for the sample_id_abdomen for M13 H00035
+new_long_data$sample_id_abdomen[new_long_data$sample_id_abdomen == "M13 A00035" & new_long_data$repeat_instance == 22] = "M16 A00035"
+new_long_data = new_long_data[-which(new_long_data$sample_id_head == "M03 H00021" & new_long_data$repeat_instance == 9),]
+# check to see if any duplicates are left
+length(unique(new_long_data$sample_id_head)) # 1494 unique 
+length(which(is.na(new_long_data$sample_id_head) == T)) # 0 missing
+count_table = table(new_long_data$sample_id_head, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
+# clean up the sample names
+new_sample_name = rep(NA,nrow(new_long_data))
+for (i in 1:nrow(new_long_data)){
+  if (nchar(new_long_data$sample_id_head[i]) == 9){
+    new_name = strsplit(new_long_data$sample_id_head[i],"")[[1]]
+    new_name_p1 = paste(new_name[1:3], collapse="")
+    new_name_p2 = paste(new_name[4:9], collapse="")
+    new_sample_name[i] = paste0(new_name_p1," ",new_name_p2)
+  }
+  if (nchar(new_long_data$sample_id_head[i]) == 10 & new_long_data$sample_id_head[i] != "K1 H 00027"){
+    new_name = strsplit(new_long_data$sample_id_head[i]," ")[[1]]
+    new_sample_name[i] = paste0(new_name[1]," ",new_name[2])
+  }
+  if (nchar(new_long_data$sample_id_head[i]) == 11){
+    new_name = strsplit(new_long_data$sample_id_head[i]," ")[[1]]
+    new_sample_name[i] = paste0(new_name[1]," ",new_name[2],new_name[3])
+  }
+  if (nchar(new_long_data$sample_id_head[i]) == 10 & new_long_data$sample_id_head[i] == "K1 H 00027"){
+    new_sample_name[i] = "K14 H00027"
+  }
+}
+# look at the new_sample_name
+table(new_sample_name, useNA = "always")
+length(which(is.na(new_sample_name))) # 0 missing
+table(nchar(new_sample_name)) # 1 sample is 4 characters long
+# pull out the sample that is 4 characters long
+new_sample_name[nchar(new_sample_name)==4]
+table(nchar(new_long_data$sample_id_head))
+# add the new sample name to the data set
+new_long_data$new_sample_name = new_sample_name
+# figure out where the 4 character sample id head is coming in
+four_character = new_long_data[which(nchar(new_long_data$new_sample_name) == 4),]
+# K1 H was the four character ID
+# sample ID head K1 H 00027 seems to be a typo. Changed to K14 H00027 to match the household and abdomen IDs
+new_long_data$new_sample_name[new_long_data$new_sample_name == "K1 H"] = "K14 H00027"
+summary(nchar(new_long_data$new_sample_name)) # all sample names 10 characters long as they should be
+# now add the new_sample name to the data set
+new_long_data$sample_id_head = new_long_data$new_sample_name
+head(new_long_data$sample_id_head)
+str(new_long_data$sample_id_head)
+summary(nchar(new_long_data$sample_id_head))
+# keep as a character
+
+# sample_id_abdomen
+table(new_long_data$sample_id_abdomen, useNA = "always")
+str(new_long_data$sample_id_abdomen)
+# check for duplicate sample names
+length(unique(new_long_data$sample_id_abdomen)) # 1493 unique (remember already fixed M13 A00035 duplicate)
+length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 1 missing
+count_table = table(new_long_data$sample_id_abdomen, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # looks like there is 1 duplicate left
+# the duplicate is: K05 A 00005
+# look where these duplicates occurred
+dup_data2 = new_long_data[which(new_long_data$sample_id_abdomen == "K05 A 00005"),]
+new_long_data$sample_id_abdomen[new_long_data$sample_id_abdomen == "K05 A 00005" & new_long_data$repeat_instance == 4] = "K05 A00008"
+# missing value probably S02 A00001 so changed sample_id_abdomen to this value as well
+new_long_data$sample_id_abdomen[is.na(new_long_data$sample_id_abdomen) & new_long_data$sample_id_head == "S02 H00001"] = "S02 A00001"
+# check to see if any duplicates are left
+length(unique(new_long_data$sample_id_abdomen)) # 1494 unique 
+length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 0 missing
+count_table = table(new_long_data$sample_id_abdomen, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
+# clean up the sample names
+new_sample_name = rep(NA,nrow(new_long_data))
+for (i in 1:nrow(new_long_data)){
+  if (nchar(new_long_data$sample_id_abdomen[i]) == 9){
+    new_name = strsplit(new_long_data$sample_id_abdomen[i],"")[[1]]
+    new_name_p1 = paste(new_name[1:3], collapse="")
+    new_name_p2 = paste(new_name[4:9], collapse="")
+    new_sample_name[i] = paste0(new_name_p1," ",new_name_p2)
+  }
+  if (nchar(new_long_data$sample_id_abdomen[i]) == 10){
+    new_name = strsplit(new_long_data$sample_id_abdomen[i]," ")[[1]]
+    new_sample_name[i] = paste0(new_name[1]," ",new_name[2])
+  }
+  if (nchar(new_long_data$sample_id_abdomen[i]) == 11){
+    new_name = strsplit(new_long_data$sample_id_abdomen[i]," ")[[1]]
+    new_sample_name[i] = paste0(new_name[1]," ",new_name[2],new_name[3])
+  }
+}
+# look at the new_sample_name
+table(new_sample_name, useNA = "always")
+length(which(is.na(new_sample_name))) # 0 missing
+table(nchar(new_sample_name)) # all 10 characters long
+# now add the new_sample name to the data set
+new_long_data$sample_id_abdomen = new_sample_name
+head(new_long_data$sample_id_abdomen)
+str(new_long_data$sample_id_abdomen)
+summary(nchar(new_long_data$sample_id_abdomen))
+# keep as a character
+
+# abdominal_status and species_type
+table(new_long_data$abdominal_status, useNA = "always")
+str(new_long_data$abdominal_status)
+# looks like some species info in this column
+status_testdata = new_long_data[which(new_long_data$abdominal_status == "An. funestus" | new_long_data$abdominal_status == "An. gambiae"),]
+# looks like the abdominal status and species information were switched for some cases
+# fix these columns
+# abdominal_status
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00031" & new_long_data$repeat_instance == 4] = "Gravid"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M14 H00018" & new_long_data$repeat_instance == 3] = "Blood Fed"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "K01 H00026" & new_long_data$repeat_instance == 3] = "Gravid"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00047" & new_long_data$repeat_instance == 5] = "Blood Fed"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M09 H00038" & new_long_data$repeat_instance == 4] = "Blood Fed"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M14 H00031" & new_long_data$repeat_instance == 4] = "Unfed"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00062" & new_long_data$repeat_instance == 6] = "Half Gravid"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00092" & new_long_data$repeat_instance == 9] = "Blood Fed"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00109" & new_long_data$repeat_instance == 11] = "Half Gravid"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00128" & new_long_data$repeat_instance == 14] = "Half Gravid"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M09 H00103" & new_long_data$repeat_instance == 26] = "Gravid"
+new_long_data$abdominal_status[new_long_data$sample_id_head == "M07 H00185" & new_long_data$repeat_instance == 33] = "Unfed"
+# species_type
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00031" & new_long_data$repeat_instance == 4] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M14 H00018" & new_long_data$repeat_instance == 3] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "K01 H00026" & new_long_data$repeat_instance == 3] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00047" & new_long_data$repeat_instance == 5] = "An. funestus"
+new_long_data$species_type[new_long_data$sample_id_head == "M09 H00038" & new_long_data$repeat_instance == 4] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M14 H00031" & new_long_data$repeat_instance == 4] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00062" & new_long_data$repeat_instance == 6] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00092" & new_long_data$repeat_instance == 9] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00109" & new_long_data$repeat_instance == 11] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00128" & new_long_data$repeat_instance == 14] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M09 A00103" & new_long_data$repeat_instance == 26] = "An. gambiae"
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00185" & new_long_data$repeat_instance == 33] = "An. gambiae"
+# look at tables of both sepcies_type and abdominal_status
+table(new_long_data$abdominal_status, useNA = "always") # abdominal status looks good
+table(new_long_data$species_type, useNA = "always") # species type still needs to be cleaned up some
+# check these entries
+species_testdata = new_long_data[which(new_long_data$species_type == "Blood Fed" | new_long_data$species_type == "Gravid" | new_long_data$species_type == "Half Gravid"),]
+# looks like abdominal status was double entered into both the abdominal_status and species_type columns for three mosquitoes
+# defaulted to what was in the abdominal status column and changed those entries in the species_type to missing
+new_long_data$species_type[new_long_data$sample_id_head == "M07 H00011" & new_long_data$repeat_instance == 1] = NA
+new_long_data$species_type[new_long_data$sample_id_head == "M09 H00018" & new_long_data$repeat_instance == 2] = NA
+new_long_data$species_type[new_long_data$sample_id_head == "M09 H00103" & new_long_data$repeat_instance == 26] = NA
+# check species_type again
+table(new_long_data$species_type, useNA = "always") # looks good
+# make abdominal_status a factor
+new_long_data$abdominal_status = as.factor(new_long_data$abdominal_status)
+str(new_long_data$abdominal_status)
+table(new_long_data$abdominal_status, useNA = "always")
+# specify_species
+table(new_long_data$specify_species, useNA = "always")
+# the 13 "Other, Specify" species in species_type wre all An. Pretoriensis
+# make these "Other, Specify" entries for species_type An. pretoriensis
+new_long_data$species_type[new_long_data$species_type == "Other, Specify"] = "An. pretoriensis"
+table(new_long_data$species_type, useNA = "always")
+# make species_type a factor
+new_long_data$species_type = as.factor(new_long_data$species_type)
+str(new_long_data$species_type)
+table(new_long_data$species_type, useNA = "always")
+
+# remove specify_species column because no longer needed
+table(new_long_data$specify_species, useNA = "always")
+new_long_data$specify_species <- NULL
+
+# remove the new_sample_name column from the data set
+new_long_data$new_sample_name <- NULL
+
+# remove collection month and collection year columns
+new_long_data$collection_month <- NULL
+new_long_data$collection_year <- NULL
+
+# check that all the head and sample IDs are the same and create sample_id_mosquito variable
+split_check_head = rep(NA,nrow(new_long_data))
+split_check_abdomen = rep(NA,nrow(new_long_data))
+for (i in 1:nrow(new_long_data)){
+  new_name_head = strsplit(new_long_data$sample_id_head[i],"")[[1]]
+  new_name_p1_head = paste(new_name_head[1:3], collapse="")
+  new_name_p2_head = paste(new_name_head[6:10], collapse="")
+  split_check_head[i] = paste0(new_name_p1_head," ",new_name_p2_head)
+  
+  new_name_abdomen = strsplit(new_long_data$sample_id_abdomen[i],"")[[1]]
+  new_name_p1_abdomen = paste(new_name_abdomen[1:3], collapse="")
+  new_name_p2_abdomen = paste(new_name_abdomen[6:10], collapse="")
+  split_check_abdomen[i] = paste0(new_name_p1_abdomen," ",new_name_p2_abdomen)
+}
+table(split_check_head, useNA = "always")
+table(split_check_abdomen, useNA = "always")
+length(which(is.na(split_check_head))) # no missing, good
+length(which(is.na(split_check_abdomen))) # no missing, good
+# check if the two vectors are the same
+all.equal(split_check_head, split_check_abdomen)
+length(which(split_check_head == split_check_abdomen))
+# looks like one row is not exactly the same
+# examine this row
+which(split_check_head != split_check_abdomen)
+split_check_head[1124]
+split_check_abdomen[1124]
+# looks like M09 A0097 should be recoded to M09 A00097
+new_long_data$sample_id_abdomen[new_long_data$sample_id_abdomen == "M09  A0097" & new_long_data$repeat_instance == 26] = "M09 A00097"
+new_long_data$sample_id_abdomen[1124]
+# recheck that the head and abdomen vectors are the same
+split_check_head = rep(NA,nrow(new_long_data))
+split_check_abdomen = rep(NA,nrow(new_long_data))
+for (i in 1:nrow(new_long_data)){
+  new_name_head = strsplit(new_long_data$sample_id_head[i],"")[[1]]
+  new_name_p1_head = paste(new_name_head[1:3], collapse="")
+  new_name_p2_head = paste(new_name_head[6:10], collapse="")
+  split_check_head[i] = paste0(new_name_p1_head," ",new_name_p2_head)
+  
+  new_name_abdomen = strsplit(new_long_data$sample_id_abdomen[i],"")[[1]]
+  new_name_p1_abdomen = paste(new_name_abdomen[1:3], collapse="")
+  new_name_p2_abdomen = paste(new_name_abdomen[6:10], collapse="")
+  split_check_abdomen[i] = paste0(new_name_p1_abdomen," ",new_name_p2_abdomen)
+}
+table(split_check_head, useNA = "always")
+table(split_check_abdomen, useNA = "always")
+length(which(is.na(split_check_head))) # no missing, good
+length(which(is.na(split_check_abdomen))) # no missing, good
+# check if the two vectors are the same
+all.equal(split_check_head, split_check_abdomen)
+length(which(split_check_head == split_check_abdomen))
+# the two vectors are the same now so that's all good
+# add the new variable created to the data set as sample_id_mosquito
+new_long_data$sample_id_mosquito = split_check_head
+
+# check one last time for duplicates sample IDs
+# look for duplicates in sample_id_head
+length(unique(new_long_data$sample_id_head)) # 1494 unique 
+length(which(is.na(new_long_data$sample_id_head) == T)) # 0 missing
+count_table = table(new_long_data$sample_id_head, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
+# look for duplicates in sample_id_abdomen
+length(unique(new_long_data$sample_id_abdomen)) # 1494 unique 
+length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 0 missing
+count_table = table(new_long_data$sample_id_abdomen, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
+# check if sample_id_mosquito ever occurred more than 2 times
+count_table = table(new_long_data$sample_id_mosquito, useNA = "always")
+greater_dups_table = count_table[which(count_table > 2)] # none > 2 so good
+
+# check that the HH ID matched the sample ID
+sample_hh_id = sapply(strsplit(new_long_data$sample_id_mosquito," "),head,1)
+all.equal(new_long_data$HH_ID, sample_hh_id) 
+length(which(new_long_data$HH_ID != sample_hh_id))
+# looks like there are 23 instances of mismatches
+# when there are mismatches, go back to the original data set and see what happened
+mismatched_hhs = new_long_data[which(new_long_data$HH_ID != sample_hh_id),]
+# S04 H00001 - no other info, default to sample id hh
+## ACTUALLY STOP AND CHECK ON THIS
+
+
+# save the cleaned anopheles mosquito descriptive data set as a csv file and an rds file
+write_csv(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_2JAN2019.csv")
+write_rds(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_2JAN2019.RDS")
+

@@ -23,10 +23,9 @@ hum_sleeping_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/
 hum_table_household_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/hum_table_household_data_19DEC2018.RDS")
 
 # mosquito data sets
-allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/MOZZIECollectionSummary_June2017_July2018.csv")
-anopheles_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/MOZZIEFemaleAnophele_June2017_July2018.csv")
-
-# note: not reading in any qPCR data at the moment
+allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIECollectionSummary_June2017_July2018.csv")
+anopheles_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIEFemaleAnophele_June2017_July2018.csv")
+qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_qpcr_data_22DEC2018.RDS")
 
 
 #### --------- create table 1 based on the cohort data ----------------- ####
@@ -136,7 +135,17 @@ twogenders = hum_merged_data[which(hum_merged_data$unq_memID %in% twoentries),]
 # clean the anopheles data, switch from wide to long format
 names(anopheles_data)
 anopheles_data_long = gather_(data = anopheles_data, key_col = "Collection Number", value_col = "sample_ID_head", c("Sample ID Head #1","Sample ID Head #2","Sample ID Head #3","Sample ID Head #4","Sample ID Head #5","Sample ID Head #6","Sample ID Head #7","Sample ID Head #8","Sample ID Head #9","Sample ID Head #10","Sample ID Head #11","Sample ID Head #12","Sample ID Head #13","Sample ID Head #14","Sample ID Head #15","Sample ID Head #16"))
-write_csv(anopheles_data_long,"anopheles_data_long.csv")
+
+# take out the variables that aren't needed
+
+# another way to try to switch from wide to long format
+new_data = short_data %>%
+  gather(key="collection_number", value="sample_ID_head", -"Collection Date",-"Household ID",-"Repeat Instance") %>%
+  unite(col, key, times)
+
+
+
+
 
 # summarize variables across villages
 village_summary_mos = anopheles_data %>%
@@ -144,4 +153,7 @@ village_summary_mos = anopheles_data %>%
   summarize(total_female_anophs = sum(`Total Number of mosquitos in the household`, na.rm=T),
             avg_per_hh = mean(total_female_anophs, na.rm=T))
 
+# summarize qPCR data
+table(qpcr_data$pf_pcr_infection_status_sample_level, useNA = "always")
+table(qpcr_data$hb_status_sample_level, useNA = "always")
 
