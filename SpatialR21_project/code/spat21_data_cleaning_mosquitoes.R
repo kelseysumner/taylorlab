@@ -22,7 +22,7 @@ allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/S
 # in stata format
 anopheles_data_long = Individual_female_anoph_long
 # this is the original version
-anopheles_data_original = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIEFemaleAnophele_June2017_July2018.csv")
+anopheles_data_original = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/old/MOZZIEFemaleAnophele_June2017_July2018.csv")
 
 # read in the mosquito qpcr data sets
 qpcr_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/Mozzie mosquito compiled detection results 18Dec2018.csv")
