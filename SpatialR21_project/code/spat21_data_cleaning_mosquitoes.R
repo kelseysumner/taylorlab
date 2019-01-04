@@ -700,34 +700,35 @@ dups_table = count_table[which(count_table > 1)] # looks like there is 1 duplica
 # look where these duplicates occurred
 dup_data2 = new_long_data[which(new_long_data$sample_id_abdomen == "K05 A 00005"),]
 new_long_data$sample_id_abdomen[new_long_data$sample_id_abdomen == "K05 A 00005" & new_long_data$repeat_instance == 4] = "K05 A00008"
-# missing value probably S02 A00001 so changed sample_id_abdomen to this value as well
-new_long_data$sample_id_abdomen[is.na(new_long_data$sample_id_abdomen) & new_long_data$sample_id_head == "S02 H00001"] = "S02 A00001"
+# missing value should be missing, so keep missing
 # check to see if any duplicates are left
 length(unique(new_long_data$sample_id_abdomen)) # 1494 unique 
-length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 0 missing
+length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 1 missing, correct
 count_table = table(new_long_data$sample_id_abdomen, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
+# put in a placeholder for row 85 which is the missing adomen
+new_long_data$sample_id_abdomen[new_long_data$sample_id_head == "S02 H00001" & new_long_data$repeat_instance == 6] = "PLA CEHOLD"
 # clean up the sample names
 new_sample_name = rep(NA,nrow(new_long_data))
 for (i in 1:nrow(new_long_data)){
-  if (nchar(new_long_data$sample_id_abdomen[i]) == 9){
+  if (nchar(new_long_data$sample_id_abdomen[i]) == 9 & !(is.na(new_long_data$sample_id_abdomen))){
     new_name = strsplit(new_long_data$sample_id_abdomen[i],"")[[1]]
     new_name_p1 = paste(new_name[1:3], collapse="")
     new_name_p2 = paste(new_name[4:9], collapse="")
     new_sample_name[i] = paste0(new_name_p1," ",new_name_p2)
-  }
-  if (nchar(new_long_data$sample_id_abdomen[i]) == 10){
+  } 
+  if (nchar(new_long_data$sample_id_abdomen[i]) == 10 & !(is.na(new_long_data$sample_id_abdomen))){
     new_name = strsplit(new_long_data$sample_id_abdomen[i]," ")[[1]]
     new_sample_name[i] = paste0(new_name[1]," ",new_name[2])
-  }
-  if (nchar(new_long_data$sample_id_abdomen[i]) == 11){
+  } 
+  if (nchar(new_long_data$sample_id_abdomen[i]) == 11 & !(is.na(new_long_data$sample_id_abdomen))){
     new_name = strsplit(new_long_data$sample_id_abdomen[i]," ")[[1]]
     new_sample_name[i] = paste0(new_name[1]," ",new_name[2],new_name[3])
   }
 }
 # look at the new_sample_name
 table(new_sample_name, useNA = "always")
-length(which(is.na(new_sample_name))) # 0 missing
+length(which(is.na(new_sample_name))) # 0 missing (because of placeholder at row 85)
 table(nchar(new_sample_name)) # all 10 characters long
 # now add the new_sample name to the data set
 new_long_data$sample_id_abdomen = new_sample_name
@@ -828,7 +829,7 @@ length(which(is.na(split_check_abdomen))) # no missing, good
 # check if the two vectors are the same
 all.equal(split_check_head, split_check_abdomen)
 length(which(split_check_head == split_check_abdomen))
-# looks like one row is not exactly the same
+# looks like one row is not exactly the same (and there's the placeholder row - 85)
 # examine this row
 which(split_check_head != split_check_abdomen)
 split_check_head[1124]
@@ -857,9 +858,15 @@ length(which(is.na(split_check_abdomen))) # no missing, good
 # check if the two vectors are the same
 all.equal(split_check_head, split_check_abdomen)
 length(which(split_check_head == split_check_abdomen))
+which(split_check_head != split_check_abdomen) # good, just place holder row that is still different
 # the two vectors are the same now so that's all good
 # add the new variable created to the data set as sample_id_mosquito
 new_long_data$sample_id_mosquito = split_check_head
+
+# remove the place holder row for sample_id_abdomen (row 85) (change back to missing)
+new_long_data$sample_id_abdomen[new_long_data$sample_id_head == "S02 H00001" & new_long_data$repeat_instance == 6] = NA
+length(which(is.na(new_long_data$sample_id_abdomen))) # 1 missing, correct
+length(which(is.na(new_long_data$sample_id_head))) # 0 missing, correct
 
 # check one last time for duplicates sample IDs
 # look for duplicates in sample_id_head
@@ -869,7 +876,7 @@ count_table = table(new_long_data$sample_id_head, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
 # look for duplicates in sample_id_abdomen
 length(unique(new_long_data$sample_id_abdomen)) # 1494 unique 
-length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 0 missing
+length(which(is.na(new_long_data$sample_id_abdomen) == T)) # 1 missing
 count_table = table(new_long_data$sample_id_abdomen, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # looks like there are no duplicates left
 # check if sample_id_mosquito ever occurred more than 2 times
@@ -883,8 +890,62 @@ length(which(new_long_data$HH_ID != sample_hh_id))
 # looks like there are 23 instances of mismatches
 # when there are mismatches, go back to the original data set and see what happened
 mismatched_hhs = new_long_data[which(new_long_data$HH_ID != sample_hh_id),]
-# S04 H00001 - no other info, default to sample id hh
-## ACTUALLY STOP AND CHECK ON THIS
+# make the changes in the data set
+# M16 H00035 and M16 A00035 - change household ID manually to M16
+new_long_data$HH_ID[new_long_data$sample_id_head == "M16 H00035" & new_long_data$repeat_instance == 22] = "M16"
+# S04 H00001 - changed household ID to S04
+new_long_data$HH_ID[new_long_data$sample_id_head == "S04 H00001" & new_long_data$repeat_instance == 5] = "S04"
+# M15 H00016 - changed household ID to M15
+new_long_data$HH_ID[new_long_data$sample_id_head == "M15 H00016" & new_long_data$repeat_instance == 3] = "M15"
+# S02 H00005 - changed household ID to S02
+new_long_data$HH_ID[new_long_data$sample_id_head == "S02 H00005" & new_long_data$repeat_instance == 9] = "S02"
+# S02 H00006 - changed household ID to S02
+new_long_data$HH_ID[new_long_data$sample_id_head == "S02 H00006" & new_long_data$repeat_instance == 9] = "S02"
+# S02 H00007 - changed household ID to S02
+new_long_data$HH_ID[new_long_data$sample_id_head == "S02 H00007" & new_long_data$repeat_instance == 9] = "S02"
+# S02 H00008 - changed household ID to S02
+new_long_data$HH_ID[new_long_data$sample_id_head == "S02 H00008" & new_long_data$repeat_instance == 9] = "S02"
+# S12 H00005 - changed household ID to S12
+new_long_data$HH_ID[new_long_data$sample_id_head == "S12 H00005" & new_long_data$repeat_instance == 2] = "S12"
+# S08 H00004 - changed household ID to S08
+new_long_data$HH_ID[new_long_data$sample_id_head == "S08 H00004" & new_long_data$repeat_instance == 4] = "S08"
+# K07 H00010 - changed household ID to K07
+new_long_data$HH_ID[new_long_data$sample_id_head == "K07 H00010" & new_long_data$repeat_instance == 4] = "K07"
+# K05 H00013 - changed household ID to K05
+new_long_data$HH_ID[new_long_data$sample_id_head == "K05 H00013" & new_long_data$repeat_instance == 3] = "K05"
+# M12 H00002 - changed household ID to M12
+new_long_data$HH_ID[new_long_data$sample_id_head == "M12 H00002" & new_long_data$repeat_instance == 5] = "M12"
+# M12 H00003 - changed household ID to M12
+new_long_data$HH_ID[new_long_data$sample_id_head == "M12 H00003" & new_long_data$repeat_instance == 5] = "M12"
+# M12 H00004 - changed household ID to M12
+new_long_data$HH_ID[new_long_data$sample_id_head == "M12 H00004" & new_long_data$repeat_instance == 5] = "M12"
+# M12 H00005 - changed household ID to M12
+new_long_data$HH_ID[new_long_data$sample_id_head == "M12 H00005" & new_long_data$repeat_instance == 5] = "M12"
+# M05 H00023 - changed household ID to M05
+new_long_data$HH_ID[new_long_data$sample_id_head == "M05 H00023" & new_long_data$repeat_instance == 23] = "M05"
+# S06 H00015 - changed household ID to S06
+new_long_data$HH_ID[new_long_data$sample_id_head == "S06 H00015" & new_long_data$repeat_instance == 9] = "S06"
+# S05 H00014 - changed household ID to S05
+new_long_data$HH_ID[new_long_data$sample_id_head == "S05 H00014" & new_long_data$repeat_instance == 10] = "S05"
+# S05 H00014 - changed household ID to S05
+new_long_data$HH_ID[new_long_data$sample_id_head == "S05 H00014" & new_long_data$repeat_instance == 10] = "S05"
+# K05 H00035 - changed household ID to K05
+new_long_data$HH_ID[new_long_data$sample_id_head == "K05 H00035" & new_long_data$repeat_instance == 7] = "K05"
+# M16 H00033 - changed household ID to M16
+new_long_data$HH_ID[new_long_data$sample_id_head == "M16 H00033" & new_long_data$repeat_instance == 22] = "M16"
+# M16 H00034 - changed household ID to M16
+new_long_data$HH_ID[new_long_data$sample_id_head == "M16 H00034" & new_long_data$repeat_instance == 22] = "M16"
+# M16 H00035 - changed household ID to M16
+new_long_data$HH_ID[new_long_data$sample_id_head == "M16 H00035" & new_long_data$repeat_instance == 22] = "M16"
+# M16 H00036 - changed household ID to M16
+new_long_data$HH_ID[new_long_data$sample_id_head == "M16 H00036" & new_long_data$repeat_instance == 22] = "M16"
+# M05 H00040 - changed household ID to M05
+new_long_data$HH_ID[new_long_data$sample_id_head == "M05 H00040" & new_long_data$repeat_instance == 20] = "M05"
+# recheck that the HH ID matched the sample ID
+sample_hh_id = sapply(strsplit(new_long_data$sample_id_mosquito," "),head,1)
+all.equal(new_long_data$HH_ID, sample_hh_id) 
+length(which(new_long_data$HH_ID != sample_hh_id))
+# they all look like they've been successfully changed
 
 
 # save the cleaned anopheles mosquito descriptive data set as a csv file and an rds file
