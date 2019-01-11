@@ -52,10 +52,17 @@ anoph_merged_data_right = right_join(anoph_descriptive_data, anoph_qpcr_data, by
 unmerged_ids_qpcr_right = anoph_merged_data_right[which(is.na(anoph_merged_data_right$total_num_mosq_in_hh)),]
 unmerged_ids_descriptive_right = anoph_descriptive_data[-which(anoph_descriptive_data$sample_id_mosquito %in% anoph_merged_data_right$sample_id_mosquito),]
 
+# take out the the sample_id_head.x and sample_id_abdoomen.x columns
+anoph_merged_data$sample_id_head.x <- NULL
+anoph_merged_data$sample_id_abdomen.x <- NULL
+
+# rename some of the variable names
+anoph_merged_data = rename(anoph_merged_data, "sample_id_abdomen" = "sample_id_abdomen.y", "sample_id_head" = "sample_id_head.y")
+colnames(anoph_merged_data)
 
 # export the merged data for now
-# write_csv(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_4JAN2019.csv")
-# write_rds(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_4JAN2019.RDS")
+write_csv(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_11JAN2019.csv")
+write_rds(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_11JAN2019.RDS")
 
 # create tabulations of the mosquito data
 # create table 2
