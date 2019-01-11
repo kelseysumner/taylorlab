@@ -42,11 +42,16 @@ summary(anoph_qpcr_data)
 
 # looks like a few IDs did not merge correctly
 # check which IDs did not merge
-unmerged_ids_descriptive = anoph_descriptive_data[-which(anoph_merged_data$sample_id_mosquito %in% anoph_descriptive_data$sample_id_mosquito),]
-
+unmerged_ids_descriptive = anoph_merged_data[which(is.na(anoph_merged_data$pf_infection_status_mosquito_level)),]
+  
 # all the descriptive data IDs merged correctly
 unmerged_ids_qpcr = anoph_qpcr_data[-which(anoph_qpcr_data$sample_id_mosquito %in% anoph_merged_data$sample_id_mosquito),]
-# 3 mosquito sample IDs didn't merge from the qpcr data
+
+# test out the ids with a right join
+anoph_merged_data_right = right_join(anoph_descriptive_data, anoph_qpcr_data, by = "sample_id_mosquito")
+unmerged_ids_qpcr_right = anoph_merged_data_right[which(is.na(anoph_merged_data_right$total_num_mosq_in_hh)),]
+unmerged_ids_descriptive_right = anoph_descriptive_data[-which(anoph_descriptive_data$sample_id_mosquito %in% anoph_merged_data_right$sample_id_mosquito),]
+
 
 # export the merged data for now
 # write_csv(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_4JAN2019.csv")

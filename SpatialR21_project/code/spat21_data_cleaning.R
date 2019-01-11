@@ -15,7 +15,7 @@ library(data.table)
 
 #### --------- read in human data ----------------- ####
 # read in the human data sets (have to import as stata data sets)
-hum_monthly_data = MozzieMonthlyData_to_31July2018_deID
+hum_monthly_data = MozzieMonthlyData_to_31July2018_deID_xtset
 hum_sleeping_data = MozzieSleepingSpaces_Baseline2017_deID_Dec2018
 hum_table_household_data = MozzieHHMembershipTable_Baseline2017_deID
 hum_ann_household_data = MozzieAnnualHouseholdData_Baseline2017_deID
@@ -44,6 +44,42 @@ write_csv(allnames,"spat21_data_dictionary.csv")
 
 ## -------- hum_monthly_data
 
+# age_y_hum_monthly_data
+summary(as.factor(hum_monthly_data$age_y))
+table(hum_monthly_data$age_y, useNA = "always")
+# recode blanks to missing
+hum_monthly_data$age_y[hum_monthly_data$age_y == ""] = NA
+# check the recode
+summary(as.factor(hum_monthly_data$age_y))
+table(hum_monthly_data$age_y, useNA = "always")
+str(hum_monthly_data$age_y)
+# make numeric
+hum_monthly_data$age_y = as.numeric(hum_monthly_data$age_y)
+str(hum_monthly_data$age_y)
+# recode the variable name to be unique
+names(hum_monthly_data)[names(hum_monthly_data) == "age_y"] <- "age_y_hum_monthly_data"
+
+# age_m_hum_monthly_data
+summary(as.factor(hum_monthly_data$age_m))
+table(hum_monthly_data$age_m, useNA = "always")
+str(hum_monthly_data$age_m)
+# looks good, clean
+# recode the variable name to be unique
+names(hum_monthly_data)[names(hum_monthly_data) == "age_m"] <- "age_m_hum_monthly_data"
+
+# PID
+summary(as.factor(hum_monthly_data$PID))
+table(hum_monthly_data$PID, useNA = "always")
+
+# agecat
+summary(as.factor(hum_monthly_data$age_cat))
+table(hum_monthly_data$age_cat, useNA = "always")
+str(hum_monthly_data$age_cat)
+# 1 is "5 and under", 2 6-10y, 3 11-17y, 4 "18y and above"
+# code as a factor
+hum_monthly_data$age_cat = factor(hum_monthly_data$age_cat,levels = c(1,2,3,4), labels = c("5 and under", "6-10y","11-17y","18y and above"))
+table(hum_monthly_data$age_cat, useNA = "always")
+
 # today
 summary(hum_monthly_data$today)
 # originally not in date format but a character with MDY
@@ -66,34 +102,34 @@ table(hum_monthly_data$village_name, useNA = "always")
 
 # gender
 table(hum_monthly_data$gender, useNA = "always")
-# assuming that 1 is male, 2 is female
+# assuming that 1 is male, 0 is female
 str(hum_monthly_data$gender)
 # recode as a factor
-hum_monthly_data$gender = factor(hum_monthly_data$gender,levels = c(1,2), labels = c("male","female"))
+hum_monthly_data$gender = factor(hum_monthly_data$gender,levels = c(1,0), labels = c("male","female"))
 table(hum_monthly_data$gender, useNA = "always")
 
 # slept_home
 table(hum_monthly_data$slept_home, useNA = "always")
-# assuming that 1 is yes, 2 is no
+# assuming that 1 is yes, 0 is no
 str(hum_monthly_data$slept_home)
 # recode as a factor
-hum_monthly_data$slept_home = factor(hum_monthly_data$slept_home,levels = c(1,2), labels = c("yes","no"))
+hum_monthly_data$slept_home = factor(hum_monthly_data$slept_home,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$slept_home, useNA = "always")
 
 # slept_usual
 table(hum_monthly_data$slept_usual, useNA = "always")
-# assuming that 1 is yes, 2 is no
+# assuming that 1 is yes, 0 is no
 str(hum_monthly_data$slept_usual)
 # recode as a factor
-hum_monthly_data$slept_usual = factor(hum_monthly_data$slept_usual,levels = c(1,2), labels = c("yes","no"))
+hum_monthly_data$slept_usual = factor(hum_monthly_data$slept_usual,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$slept_usual, useNA = "always")
 
 # slept_net
 table(hum_monthly_data$slept_net, useNA = "always")
-# assuming that 1 is yes, 2 is no
+# assuming that 1 is yes, 0 is no
 str(hum_monthly_data$slept_net)
 # recode as a factor
-hum_monthly_data$slept_net = factor(hum_monthly_data$slept_net,levels = c(1,2), labels = c("yes","no"))
+hum_monthly_data$slept_net = factor(hum_monthly_data$slept_net,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$slept_net, useNA = "always")
 
 # time_under_net
@@ -119,7 +155,7 @@ table(hum_monthly_data$slept_times, useNA = "always")
 str(hum_monthly_data$slept_times)
 # looks good, doesn't need to be recoded
 
-# time_out_net
+# time_to_bed
 table(hum_monthly_data$time_to_bed, useNA = "always")
 str(hum_monthly_data$time_to_bed)
 # no missing, looks good
@@ -144,9 +180,9 @@ table(hum_monthly_data$to_bed_oth, useNA = "always")
 # travelled
 table(hum_monthly_data$travelled, useNA = "always")
 str(hum_monthly_data$travelled)
-# assuming that 1 is yes, 2 is no
+# assuming that 1 is yes, 0 is no
 # recode as a factor
-hum_monthly_data$travelled = factor(hum_monthly_data$travelled,levels = c(1,2), labels = c("yes","no"))
+hum_monthly_data$travelled = factor(hum_monthly_data$travelled,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$travelled, useNA = "always")
 
 # to_where
@@ -157,6 +193,7 @@ hum_monthly_data$to_where[hum_monthly_data$to_where == ""] = NA
 # need to standardize the coding for places but not sure what the correct coding would be
 # make a factor
 hum_monthly_data$to_where = as.factor(hum_monthly_data$to_where)
+table(hum_monthly_data$to_where, useNA = "always")
 
 # nights
 table(hum_monthly_data$nights, useNA = "always")
@@ -182,9 +219,9 @@ table(hum_monthly_data$blood_spot, useNA = "always")
 # mal_illness
 table(hum_monthly_data$mal_illness, useNA = "always")
 str(hum_monthly_data$mal_illness)
-# assuming that 1 is yes, 2 is no
+# assuming that 1 is yes, 0 is no
 # recode as a factor
-hum_monthly_data$mal_illness = factor(hum_monthly_data$mal_illness,levels = c(1,2), labels = c("yes","no"))
+hum_monthly_data$mal_illness = factor(hum_monthly_data$mal_illness,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$mal_illness, useNA = "always")
 
 # act_illness
@@ -215,9 +252,9 @@ hum_monthly_data$act_ill_other = as.factor(hum_monthly_data$act_ill_other)
 # blood_test
 table(hum_monthly_data$blood_test, useNA = "always")
 str(hum_monthly_data$blood_test)
-# assuming that 1 is yes, 2 is no, 3 is don't remember/don't know
+# assuming that 1 is yes, 0 is no
 # recode as a factor
-hum_monthly_data$blood_test = factor(hum_monthly_data$blood_test,levels = c(1,2,3), labels = c("yes","no","don't know/don't remember"))
+hum_monthly_data$blood_test = factor(hum_monthly_data$blood_test,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$blood_test, useNA = "always")
 
 # test_type
@@ -231,9 +268,9 @@ table(hum_monthly_data$test_type, useNA = "always")
 # test_result
 table(hum_monthly_data$test_result, useNA = "always")
 str(hum_monthly_data$test_result)
-# assuming that 1 is positive, 2 is negative, 3 is don't know/don't remember
+# assuming that 1 is positive, 0 is negative
 # recode as a factor
-hum_monthly_data$test_result = factor(hum_monthly_data$test_result,levels = c(1,2,3), labels = c("positive","negative","don't know/don't remember"))
+hum_monthly_data$test_result = factor(hum_monthly_data$test_result,levels = c(1,0), labels = c("positive","negative"))
 table(hum_monthly_data$test_result, useNA = "always")
 
 # test_obs
@@ -589,6 +626,61 @@ table(hum_monthly_data$today, useNA = "always")
 str(hum_monthly_data$today)
 # rename to stata date_today variable because same as today
 hum_monthly_data$date_today <- NULL
+
+# year
+table(hum_monthly_data$year, useNA = "always")
+str(hum_monthly_data$year)
+# looks good, clean
+
+# month
+table(hum_monthly_data$month, useNA = "always")
+str(hum_monthly_data$month)
+# looks good, clean
+
+# monthly
+table(hum_monthly_data$monthly, useNA = "always")
+str(hum_monthly_data$monthly)
+# not sure what this variable means, maybe a count?
+
+# PIN
+table(hum_monthly_data$PIN, useNA = "always")
+str(hum_monthly_data$PIN)
+summary(hum_monthly_data$PID)
+# not sure what this variable means
+
+# malaria_last30days
+table(hum_monthly_data$malaria_last30days, useNA = "always")
+str(hum_monthly_data$malaria_last30days)
+# coded with 0 as no and 1 as yes
+# recode as a factor
+hum_monthly_data$malaria_last30days = factor(hum_monthly_data$malaria_last30days,levels = c(1,0), labels = c("yes","no"))
+table(hum_monthly_data$malaria_last30days, useNA = "always")
+
+# netuse
+table(hum_monthly_data$netuse, useNA = "always")
+str(hum_monthly_data$netuse)
+# coded with 0 as low and 1 as high
+# recode as a factor
+hum_monthly_data$netuse = factor(hum_monthly_data$netuse,levels = c(1,0), labels = c("high","low"))
+table(hum_monthly_data$netuse, useNA = "always")
+
+# _merge
+table(hum_monthly_data$`_merge`, useNA = "always")
+str(hum_monthly_data$`_merge`)
+# don't need, remove from data set
+hum_monthly_data$`_merge` <- NULL
+
+# exposure
+table(hum_monthly_data$exposure, useNA = "always")
+str(hum_monthly_data$exposure)
+# not sure what this varible means
+# is this two weeks of exposure?
+
+# exposure
+table(hum_monthly_data$`_mergeExp`, useNA = "always")
+str(hum_monthly_data$`_mergeExp`)
+# remove from the data set
+hum_monthly_data$`_mergeExp` <- NULL
 
 # create a new variable for the unique member id (unq_memID)
 # this variable combines the HH_ID and memID variables to create a unique identifier for each person in the data set
@@ -2043,8 +2135,8 @@ write_rds(hum_ann_household_data, "hum_ann_household_data_19DEC2018.RDS")
 write_csv(hum_sleeping_data, "hum_sleeping_data_19DEC2018.csv")
 write_rds(hum_sleeping_data, "hum_sleeping_data_19DEC2018.RDS")
 # for hum_monthly_data
-write_csv(hum_monthly_data, "hum_monthly_data_19DEC2018.csv")
-write_rds(hum_monthly_data, "hum_monthly_data_19DEC2018.RDS")
+write_csv(hum_monthly_data, "hum_monthly_data_7JAN2019.csv")
+write_rds(hum_monthly_data, "hum_monthly_data_7JAN2019.RDS")
 # for hum_table_household_data
 write_csv(hum_table_household_data, "hum_table_household_data_19DEC2018.csv")
 write_rds(hum_table_household_data, "hum_table_household_data_19DEC2018.RDS")

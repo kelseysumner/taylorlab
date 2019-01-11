@@ -22,10 +22,11 @@ hum_sick_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/Spat
 hum_sleeping_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/hum_sleeping_data_19DEC2018.RDS")
 hum_table_household_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/hum_table_household_data_19DEC2018.RDS")
 
-# mosquito data sets
-allspecies_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIECollectionSummary_June2017_July2018.csv")
-anopheles_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/raw data/MOZZIEFemaleAnophele_June2017_July2018.csv")
-qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_qpcr_data_22DEC2018.RDS")
+# read in the anopheles mosquito data sets
+# first the cleaned descriptive data set
+anoph_descriptive_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_anopheles_descriptive_long_data_4JAN2019_v2.RDS")
+# next the cleaned qpcr data set
+anoph_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_qpcr_data_wide_3JAN2019.RDS")
 
 
 #### --------- create table 1 based on the cohort data ----------------- ####
@@ -132,28 +133,55 @@ twogenders = hum_merged_data[which(hum_merged_data$unq_memID %in% twoentries),]
 
 # look at anopheles only data
 
-# clean the anopheles data, switch from wide to long format
-names(anopheles_data)
-anopheles_data_long = gather_(data = anopheles_data, key_col = "Collection Number", value_col = "sample_ID_head", c("Sample ID Head #1","Sample ID Head #2","Sample ID Head #3","Sample ID Head #4","Sample ID Head #5","Sample ID Head #6","Sample ID Head #7","Sample ID Head #8","Sample ID Head #9","Sample ID Head #10","Sample ID Head #11","Sample ID Head #12","Sample ID Head #13","Sample ID Head #14","Sample ID Head #15","Sample ID Head #16"))
+# first make sure all the sample_id_mosquito variables in both data set sare in character format
+anoph_descriptive_data$sample_id_mosquito = as.character(anoph_descriptive_data$sample_id_mosquito)
+anoph_qpcr_data$sample_id_mosquito = as.character(anoph_qpcr_data$sample_id_mosquito)
 
-# take out the variables that aren't needed
+# left join the qpcr data with the descriptive data
+anoph_merged_data = left_join(anoph_descriptive_data, anoph_qpcr_data, by = "sample_id_mosquito")
 
-# another way to try to switch from wide to long format
-new_data = short_data %>%
-  gather(key="collection_number", value="sample_ID_head", -"Collection Date",-"Household ID",-"Repeat Instance") %>%
-  unite(col, key, times)
+# check the merge
+summary(anoph_merged_data)
+summary(anoph_descriptive_data)
+summary(anoph_qpcr_data)
 
+# looks like a few IDs did not merge correctly
+# check which IDs did not merge
+unmerged_ids_descriptive = anoph_descriptive_data[-which(anoph_descriptive_data$sample_id_mosquito %in% anoph_merged_data$sample_id_mosquito),]
 
+# all the descriptive data IDs merged correctly
+unmerged_ids_qpcr = anoph_qpcr_data[-which(anoph_qpcr_data$sample_id_mosquito %in% anoph_merged_data$sample_id_mosquito),]
+# 3 mosquito sample IDs didn't merge from the qpcr data
 
+# export the merged data for now
+# write_csv(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_4JAN2019.csv")
+# write_rds(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_4JAN2019.RDS")
 
+# create tabulations of the mosquito data
+# create table 2
+table(anoph_merged_data$abdominal_status, anoph_merged_data$village, useNA = "always")
+table(anoph_merged_data$species_type, anoph_merged_data$village, useNA = "always")
+table(anoph_merged_data$village, useNA = "always")
+average_mosquitoes = anoph_merged_data %>%
+  group_by(village,HH_ID,repeat_instance) %>%
+  summarize(total_n = max(total_num_mosq_in_hh, na.rm = T)) %>%
+  group_by(village,HH_ID) %>%
+  summarize(total_n_hh = sum(total_n)) %>%
+  group_by(village) %>%
+  summarize(avg_hh = mean(total_n_hh, na.rm = T), lower_bound = min(total_n_hh), upper_bound = max(total_n_hh))
+average_mosquitoes_total = anoph_merged_data %>%
+  group_by(village,HH_ID,repeat_instance) %>%
+  summarize(total_n = max(total_num_mosq_in_hh, na.rm = T)) %>%
+  group_by(village,HH_ID) %>%
+  summarize(total_n_hh = sum(total_n))
+summary(average_mosquitoes_total)
 
-# summarize variables across villages
-village_summary_mos = anopheles_data %>%
-  group_by(Village) %>%
-  summarize(total_female_anophs = sum(`Total Number of mosquitos in the household`, na.rm=T),
-            avg_per_hh = mean(total_female_anophs, na.rm=T))
+# create table 3
+table3 = table(anoph_merged_data$species_type, anoph_merged_data$abdominal_status, useNA = "always")
+table3 = table3[,1:3]
+table(anoph_merged_data$species_type, anoph_merged_data$hb_status_mosquito_level, useNA = "always")
+table(anoph_merged_data$species_type, anoph_merged_data$pf_infection_status_mosquito_level, useNA = "always")
+table(anoph_merged_data$species_type, anoph_merged_data$pf_pcr_infection_status_sample_level_h, useNA = "always")
+table(anoph_merged_data$species_type, anoph_merged_data$pf_pcr_infection_status_sample_level_a, useNA = "always")
 
-# summarize qPCR data
-table(qpcr_data$pf_pcr_infection_status_sample_level, useNA = "always")
-table(qpcr_data$hb_status_sample_level, useNA = "always")
 
