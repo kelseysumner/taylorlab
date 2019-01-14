@@ -1,0 +1,79 @@
+---
+title: "Mozzie/Spatial R21 project analysis pipeline"
+author: "Kelsey Sumner"
+date: "1/14/2019"
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    theme: lumen
+    highlight: default
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
+
+
+**Approach:** Using longitudinal samples from Webuye, Kenya, evaluate the life course of asymptomatic Plasmodium falciparum malaria infections.
+
+**Data aggregation:** Three primary data set types: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data. There are multiple data sets for each type. 
+
+
+# **Data set cleaning and compilation**
+
+## Created lab inventories of the human and mosquito samples the lab recieved 
+* Compiled and updated the lab inventories for the human DBS and mosquito samples the lab recieved and processed throughout the past year.
+    + Location of the raw, uncompiled lab inventories: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > lab_inventories > csv files`
+    + Code to clean and compile thte lab inventories: `taylorlab/SpatialR21_project/code/miscellaneous/spat21_create_lab_inventory.R`
+    + Location of the cleaned, compiled lab inventories: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > clean files`
+
+## Human data set cleaning and compliation
+* Received 5 social demographic data sets (1. human annual household data 2. human sleeping space data 3. human monthly follow-up data 4. human table household data (annual) 5. human sick visits data)
+    + Location of raw, uncleaned data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > raw_files`
+* Created through human DBS punching -> extraction -> qPCR a qPCR data set for the parasite densities in the human samples collected through monthly follow-up and sick visits.
+    + Location of raw, uncleaned data set:`Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > raw_files > qpcr_data`
+* Cleaned the 6 human data sets:
+    + Code for cleaning human social demographic data sets: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning.R`
+    + Code for cleaning human qpcr data set: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_qpcr.R`
+    + Location of cleaned separate data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > spat21_clean_human_files`
+* Merged the human data sets that could be merged:
+    + Code for merging human data sets: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R`
++ Notes: 
+    1. *To be written.*
+  
+## Mosquito data set cleaning and compilation
+* Received 2 descriptive data sets (1. culex and anopheles aggregate information 2. female Anopheles individual-level information)
+    + Location of raw, uncleaned data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Mosquito data > raw data`
+* Created through mosquito DNA extraction -> qPCR a qPCR data set for the parasite densities in the female Anopheles mosquito head and abdomen samples collected through weekly household follow-up visits.
+    + Location of raw, uncleaned data set:`Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Mosquito data > raw data`
+* Cleaned the 2 female Anopheles data sets: 
+    + Code for cleaning 2 female Anopheles data sets: `taylorlab/SpatialR21_project/code/mosquito_data_cleaning/spat21_data_cleaning_mosquitoes.R`
+    + Location of cleaned separate data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Mosquito data > clean data`
+* Merged the 2 female Anopheles data sets to create one wide format (each row is a different mosquito - head and abdomen for that mosquito are placed on that same row)
+    + Code for merging the data sets: `taylorlab/SpatialR21_project/code/mosquito_data_cleaning/spat21_data_merging_mosquitoes.R`
+    + Location of the cleaned merged data set: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Mosquito data > clean data > merged_data`
+* Pulled out the qpcr + mosquitoes for Betsy for sequencing.
+    + Code for identifying which mosquitoes were qpcr +: `taylorlab/SpatialR21_project/code/mosquito_data_cleaning/spat21_pcr_pos_id_mosquitoes.R`
+    + Location of the qpcr + mosquito IDs: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Mosquito data > Betsy data`
++ Notes:
+    1. *There were 3 mosquitoes in the qPCR data set that didn't merge the the female Anopheles descriptive data set.*
+    2. *There were 17 mosquitoes in the female Anopheles descriptive data set that didn't merge with the qPCR data set because they were contaminated in lab processing or not received in the lab.*
+ 
+  
+# **Paper 1: Descriptive overview of longitudinal study**
+* Created summaries of the malaria prevalence in humans and mosquitoes across villages. Very descriptive overview of the study.
+    + Code for creating these summaries: `taylorlab/SpatialR21_project/code/paper1_analyses/spat21_prelim_analyses_paper1.R`
+    + Location of preliminary tables: `Desktop/Cohort paper 1 tables_KS.xlsx`
+
+  
+  
+  
+  
+  
