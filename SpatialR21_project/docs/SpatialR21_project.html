@@ -232,7 +232,7 @@ div.tocify {
 </div>
 
 
-<p>Last Updated 01/14/2019</p>
+<p>Last Updated 01/16/2019</p>
 <p><strong>Approach:</strong> Using longitudinal samples from Webuye, Kenya, evaluate the life course of asymptomatic Plasmodium falciparum malaria infections.</p>
 <p><strong>Data aggregation:</strong> Three primary data set types: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data. There are multiple data sets for each type.</p>
 <div id="data-set-cleaning-and-compilation" class="section level1">
@@ -263,16 +263,47 @@ div.tocify {
 <ul>
 <li>Code for cleaning human social demographic data sets: <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning.R</code></li>
 <li>Code for cleaning human qpcr data set: <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_qpcr.R</code></li>
-<li>Location of cleaned separate data sets: <code>Dissertation Materials &gt; SpatialR21 Grant &gt; Final Dissertation Materials &gt; Final Data Sets &gt; Final Cohort data June 2017 to July 2018 &gt; Human data &gt; spat21_clean_human_files</code></li>
+<li>Location of cleaned separate data sets: <code>Dissertation Materials &gt; SpatialR21 Grant &gt; Final Dissertation Materials &gt; Final Data Sets &gt; Final Cohort data June 2017 to July 2018 &gt; Human data &gt; spat21_clean_human_files</code>
+<ul>
+<li>Notes:</li>
 </ul></li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><em>Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL).</em></li>
+<li><em>Censoring criteria for parasitemia:</em>
+<ul>
+<li><em>Recoding of CT values:</em>
+<ul>
+<li><em>CT values of 0 recoded to missing (NA).</em></li>
+<li><em>CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.</em></li>
+<li><em>CT values 0 &lt; CT &lt; 40 for human beta-tubulin (Hb) are considered valid detection.</em></li>
+<li><em>CT values of 0 &lt; CT &lt; 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 &lt; CT &lt; 38 for Plasmodium falciparum to be considered valid.</em></li>
+<li><em>Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.</em></li>
+</ul></li>
+<li><em>CT value censoring rules:</em>
+<ul>
+<li><em>Pf positive via PCR:</em>
+<ul>
+<li><em>If 2 replicates amplified Pf: Pf CT values 0 &lt; CT &lt; 40</em></li>
+<li><em>If 1 replicate amplified Pf: Pf CT values 0 &lt; CT &lt; 38</em></li>
+</ul></li>
+<li><em>Pf negative via PCR: Pf CT undetermined (or Pf CT &gt; 38 if one replicate), Hb CT values 0 &lt; CT &lt; 40</em></li>
+<li><em>Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR</em></li>
+</ul></li>
+</ul></li>
+<li><em>Rules for determining if participant is positive/negative/missing for Pf parasitemia:</em>
+<ul>
+<li><em>If 1 replicate Pf positive per criteria above, used that replicate’s standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.</em></li>
+<li><em>If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.</em></li>
+<li><em>If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.</em></li>
+<li><em>If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.</em><br />
+</li>
+</ul></li>
+</ol></li>
 <li>Merged the human data sets that could be merged:
 <ul>
 <li>Code for merging human data sets: <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R</code></li>
 </ul></li>
-<li>Notes:
-<ol style="list-style-type: decimal">
-<li><em>To be written.</em></li>
-</ol></li>
 </ul>
 </div>
 <div id="mosquito-data-set-cleaning-and-compilation" class="section level2">
@@ -305,6 +336,8 @@ div.tocify {
 <ol style="list-style-type: decimal">
 <li><em>There were 3 mosquitoes in the qPCR data set that didn’t merge the the female Anopheles descriptive data set.</em></li>
 <li><em>There were 17 mosquitoes in the female Anopheles descriptive data set that didn’t merge with the qPCR data set because they were contaminated in lab processing or not received in the lab.</em></li>
+<li><em>Mosquitoes were considered Pf + by qPCR if had any Pf CT value in either head or abdomen from 0 &lt; CT &lt; 40.</em></li>
+<li><em>Mosquitoes were considered Hb + by qPCR if had any Hb CT value in either head or abdomen from 0 &lt; CT &lt; 40.</em></li>
 </ol></li>
 </ul>
 </div>

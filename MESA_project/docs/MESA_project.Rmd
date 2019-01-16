@@ -148,10 +148,10 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
             - *Pf negative via PCR: Pf CT undetermined (or Pf CT > 38 if one replicate), Hb CT values 0 < CT < 40*
             - *Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR*
     3. *Rules for determining if participant is positive/negative/missing for Pf parasitemia:*
-        - *If 1 replicate Pf positive per criteria above, used that replicate's standardized parasitemia for the participant to create combined parasitemia. Mosquito is positive for Pf in pf_pcr_infection_status variable.*
-        - *If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Mosquito is positive for Pf in pf_pcr_infection_status variable.*
-        - *If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Mosquito is negative for Pf in pf_pcr_infection_status variable.* 
-        - *If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Mosquito is missing data for Pf in pf_pcr_infection_status variable.*  
+        - *If 1 replicate Pf positive per criteria above, used that replicate's standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.* 
+        - *If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.*  
 * Assess the amount of rapid diagnostic tests (RDTs) that produced false negative results comparing the RDT results to the qPCR results with a negative RDT result and positive qPCR result indicating a false negative RDT result. 
 * Compare the WHO lot testing reported pseudo-false negative rate for the rapid diagnostic test used (Carestart?) at 200 parasites/uL to the false negative rate observed in the cross-sectional data.
 * Calculate the limit of detection for P. falciparum parasitemia for the cross-sectional study. 

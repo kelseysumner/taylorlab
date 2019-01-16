@@ -43,10 +43,29 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     + Code for cleaning human social demographic data sets: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning.R`
     + Code for cleaning human qpcr data set: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_qpcr.R`
     + Location of cleaned separate data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > spat21_clean_human_files`
+        + Notes:
+    1. *Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL).*
+    2. *Censoring criteria for parasitemia:*
+        - *Recoding of CT values:*
+            - *CT values of 0 recoded to missing (NA).*
+            - *CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.*
+            - *CT values 0 < CT < 40 for human beta-tubulin (Hb) are considered valid detection.*
+            - *CT values of 0 < CT < 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 < CT < 38 for Plasmodium falciparum to be considered valid.*
+            - *Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.*
+        - *CT value censoring rules:*
+            - *Pf positive via PCR:* 
+                - *If 2 replicates amplified Pf: Pf CT values 0 < CT < 40*
+                - *If 1 replicate amplified Pf: Pf CT values 0 < CT < 38*
+            - *Pf negative via PCR: Pf CT undetermined (or Pf CT > 38 if one replicate), Hb CT values 0 < CT < 40*
+            - *Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR*
+    3. *Rules for determining if participant is positive/negative/missing for Pf parasitemia:*
+        - *If 1 replicate Pf positive per criteria above, used that replicate's standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.* 
+        - *If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.*  
 * Merged the human data sets that could be merged:
     + Code for merging human data sets: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R`
-+ Notes: 
-    1. *To be written.*
+
   
 ## Mosquito data set cleaning and compilation
 * Received 2 descriptive data sets (1. culex and anopheles aggregate information 2. female Anopheles individual-level information)
@@ -65,6 +84,8 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 + Notes:
     1. *There were 3 mosquitoes in the qPCR data set that didn't merge the the female Anopheles descriptive data set.*
     2. *There were 17 mosquitoes in the female Anopheles descriptive data set that didn't merge with the qPCR data set because they were contaminated in lab processing or not received in the lab.*
+    3. *Mosquitoes were considered Pf + by qPCR if had any Pf CT value in either head or abdomen from 0 < CT < 40.*
+    4. *Mosquitoes were considered Hb + by qPCR if had any Hb CT value in either head or abdomen from 0 < CT < 40.*
  
   
 # **Paper 1: Descriptive overview of longitudinal study**
