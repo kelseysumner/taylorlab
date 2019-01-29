@@ -17,7 +17,7 @@ library(stringr)
 
 # read in the anopheles mosquito data sets
 # first the cleaned descriptive data set
-anoph_descriptive_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_anopheles_descriptive_long_data_4JAN2019_v2.RDS")
+anoph_descriptive_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_anopheles_descriptive_long_data_18JAN2019.RDS")
 # next the cleaned qpcr data set
 anoph_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/spat21_mosquito_qpcr_data_wide_3JAN2019.RDS")
 
@@ -61,8 +61,8 @@ anoph_merged_data = rename(anoph_merged_data, "sample_id_abdomen" = "sample_id_a
 colnames(anoph_merged_data)
 
 # export the merged data for now
-write_csv(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_11JAN2019.csv")
-write_rds(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_11JAN2019.RDS")
+write_csv(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_18JAN2019.csv")
+write_rds(anoph_merged_data, "spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 
 # create tabulations of the mosquito data
 # create table 2

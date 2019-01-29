@@ -947,9 +947,21 @@ all.equal(sample_hh_id,sample_village_id)
 length(which(sample_hh_id != sample_village_id))
 # looks like they do, looks good, clean
 
+# change the NA/undetermined/unidentifed areas to unidentified 
+# for abdominal status
+table(new_long_data$abdominal_status, useNA = "always")
+new_long_data$abdominal_status[new_long_data$abdominal_status == "Undetermined"] = "Un-identified"
+new_long_data$abdominal_status[is.na(new_long_data$abdominal_status)] = "Un-identified"
+table(new_long_data$abdominal_status, useNA = "always")
+# for the species type
+table(new_long_data$species_type, useNA = "always")
+new_long_data$species_type[is.na(new_long_data$species_type)] = "Un-identified"
+table(new_long_data$species_type, useNA = "always")
+
+
 # save the cleaned anopheles mosquito descriptive data set as a csv file and an rds file
-write_csv(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_4JAN2019_v2.csv")
-write_rds(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_4JAN2019_v2.RDS")
+write_csv(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_18JAN2019.csv")
+write_rds(new_long_data,"spat21_mosquito_anopheles_descriptive_long_data_18JAN2019.RDS")
 
 
 

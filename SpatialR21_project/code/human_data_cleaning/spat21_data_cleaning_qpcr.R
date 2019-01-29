@@ -593,7 +593,8 @@ length(which(is.na(qpcr_data$`Sample Name`) == T)) # 0 missing
 count_table = table(qpcr_data$`Sample Name`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # 10 duplicates left
 # the duplicates left are the ones I'm going to pull out and rerun the qpcr on because are duplicates on the same plate
-# for now, remove these 10 duplicates from this data set because will have new qpcr data for them
+# for now, remove these 4 duplicates from this data set because will have new qpcr data for them (were discordant for pf)
+# and removing 1 of the each pair for the other 6 duplicates that all failed (pf -)
 # S12-240817-4
 qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S12-240817-4"),]
 # S02-211217-3
@@ -601,25 +602,25 @@ qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S02-211217-3"),]
 # M09-130717-5
 qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "M09-130717-5"),]
 # S09-161117-2
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-2"),]
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-2" & qpcr_data$`Well Position` == "B11"),]
 # S09-161117-3
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-3"),]
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-3" & qpcr_data$`Well Position` == "B13"),]
 # S09-161117-4
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-4"),]
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-4" & qpcr_data$`Well Position` == "B15"),]
 # S09-161117-5
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-5"),]
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-5" & qpcr_data$`Well Position` == "B17"),]
 # S09-161117-6
 qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-6"),]
 # S09-161117-7
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-7"),]
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-7" & qpcr_data$`Well Position` == "B19"),]
 # S09-161117-8
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-8"),]
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` == "S09-161117-8" & qpcr_data$`Well Position` == "B23"),]
 # recheck for duplicate sample names
 length(unique(qpcr_data$`Sample Name`)) # 2884 unique 
 length(which(is.na(qpcr_data$`Sample Name`) == T)) # 0 missing
 count_table = table(qpcr_data$`Sample Name`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # 0 duplicates left
-# will need to add in the 10 duplicates you just deleted when have new qpcr results
+# will need to add in the 4 duplicates you just deleted when have new qpcr results
 # now clean up the lab id for Sample Name
 table(qpcr_data$`Sample Name`, useNA = "always")
 table(nchar(qpcr_data$`Sample Name`), useNA = "always")
@@ -847,6 +848,12 @@ str(qpcr_data$pf_pcr_infection_status)
 summary(qpcr_data$pfr364Q_std_combined)
 str(qpcr_data$pfr364Q_std_combined)
 # looks good, clean
+
+# change Sample Names for a few that didn't have household ID after looking up ID on DBS
+qpcr_data$`Sample Name`[qpcr_data$`Sample Name` == "M-130617-2"] = "M09-130617-2"
+qpcr_data$`Sample Name`[qpcr_data$`Sample Name` == "M-130617-3"] = "M09-130617-3"
+qpcr_data$`Sample Name`[qpcr_data$`Sample Name` == "M-130617-4"] = "M09-130617-4"
+qpcr_data$`Sample Name`[qpcr_data$`Sample Name` == "M-130617-5"] = "M09-130617-5"
 
 # export the data set as CSV and RDS files
 write_csv(qpcr_data, "spat21_qpcr_data_clean_human_dbs_16JAN2019.csv")
