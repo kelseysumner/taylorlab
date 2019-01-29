@@ -112,7 +112,7 @@ for (i in 1:nrow(foo)){
 haplotype_summary = data.frame("Samples" = sample.names, "Haplotype.Number" = haplotype_num, "Haplotype.Reads" = haplotype_reads)
 
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$Haplotype.Reads == 0) # 5 additional reads were removed
+needtoremove = which(haplotype_summary$Haplotype.Reads == 0) # 1 additional read was removed
 haplotype_summary = haplotype_summary[-needtoremove,]
 write.csv(haplotype_summary,"/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Haplotype analysis ALL data/haplotype_output/CSP/CSP_haplotype_summary_censored.csv")
 
@@ -165,7 +165,7 @@ for (i in 1:nrow(foo)){
 haplotype_summary = data.frame("Samples" = sample.names, "Haplotype.Number" = haplotype_num, "Haplotype.Reads" = haplotype_reads)
 
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$Haplotype.Reads == 0) # 5 additional reads were removed
+needtoremove = which(haplotype_summary$Haplotype.Reads == 0) # 0 additional reads were removed
 haplotype_summary = haplotype_summary[-needtoremove,]
 write.csv(haplotype_summary,"/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Haplotype analysis ALL data/haplotype_output/HISTB/HISTB_haplotype_summary_censored.csv")
 
