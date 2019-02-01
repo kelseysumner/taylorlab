@@ -33,30 +33,6 @@ anoph_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/S
 
 ##  start out using the hum_table_household_data
 
-# for this data set, create a variable that is the age categories:
-# 1-5 years is 1, 6-10 years is 2, 11-17 years is 3, 18 and above is 4
-hum_table_household_data$age_cat = ifelse(hum_table_household_data$age_y >= 1 & hum_table_household_data$age_y <= 5,1,
-                                          ifelse(hum_table_household_data$age_y >= 6 & hum_table_household_data$age_y <= 10,2,
-                                                 ifelse(hum_table_household_data$age_y >= 11 & hum_table_household_data$age_y <= 17,3,
-                                                        ifelse(hum_table_household_data$age_y >=18,4,NA))))
-# make age_cat a factor
-hum_table_household_data$age_cat = factor(hum_table_household_data$age_cat,levels = c(1,2,3,4), labels = c("1-5","6-10","11-17","18+"))
-# check the variable coding
-table(hum_table_household_data$age_cat,hum_table_household_data$age_y)
-
-# check for duplicates and missingness in hum_monthly_data
-hum_monthly_dups = duplicated(hum_monthly_data)
-length(which(hum_monthly_dups == T))
-count_table = table(hum_monthly_data$unq_memID, useNA = "always")
-dups_table = count_table[which(count_table > 1)] # many instances of an ID in the data set
-
-# make sure that the unq_memIDs are read as characters for both data sets before the merge
-hum_monthly_data$unq_memID = as.character(hum_monthly_data$unq_memID)
-hum_table_household_data$unq_memID = as.character(hum_table_household_data$unq_memID)
-
-# remove unq_memID "S12_1" from hum_monthly_data because not in hum_table_household_data and no longer in study
-hum_monthly_data = hum_monthly_data[-which(hum_monthly_data$unq_memID == "S12_1"),]
-
 # merge the hum_monthly_data and hum_table_household_data data sets
 hum_merged_data = full_join(hum_monthly_data,hum_table_household_data,by="unq_memID")
 # check the merge
