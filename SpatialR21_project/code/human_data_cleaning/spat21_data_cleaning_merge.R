@@ -439,10 +439,7 @@ participant_data = hum_monthly_merged_data %>%
 twoentries = participant_data$unq_memID[participant_data$n_employment>1]
 # looks like none are miscoded which is good
 
-#### THIS IS WHERE YOU STOPPED WITH CLEANING - NEED TO DECIDE ABOUT <1 AND THOSE WITH NO MONTHLY FOLLOW-UP
-
-
-# remove participants from the data set who were less than 1 year old
+# looks at participants from the data set who were less than 1 year old
 table(hum_monthly_merged_data$age_type, useNA = "always") # 52 observations were less than 1 year old
 lessthan1 = hum_monthly_merged_data[-which(hum_monthly_merged_data$age_type == "below one year (<1 year)"),]
 length(unique(lessthan1$unq_memID)) # 257
@@ -456,6 +453,12 @@ uniquelist_monthlymerged = unique(hum_monthly_merged_data$unq_memID)
 length(intersect(uniquelist_no1s,uniquelist_monthlymerged)) # 257 in both
 setdiff(uniquelist_no1s,uniquelist_monthlymerged) # all monthly merged here
 setdiff(uniquelist_monthlymerged,uniquelist_no1s)
+# decide to have keep those participants in for now and decide on their follow-up later on
+
+# export the data set
+write_csv(hum_monthly_merged_data, "hum_monthly_merged_with_table_data_4FEB2019.csv")
+write_rds(hum_monthly_merged_data, "hum_monthly_merged_with_table_data_4FEB2019.RDS")
+
 
 
 
