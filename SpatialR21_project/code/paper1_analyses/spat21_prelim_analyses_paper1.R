@@ -21,6 +21,11 @@ human_monthly_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation M
 # read in the merged anpopheles mosquito data set
 anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 
+# read in the human sick data
+human_sick_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/hum_sick_data_19DEC2018.RDS")
+
+# read in the preliminary qpcr data
+human_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/spat21_qpcr_data_clean_human_dbs_16JAN2019.RDS")
 
 #### ----- decide who to exclude from longitudinal analyses ----- ####
 
@@ -243,7 +248,22 @@ table(anoph_merged_data$species_type, anoph_merged_data$hb_status_mosquito_level
 table(anoph_merged_data$species_type, anoph_merged_data$pf_infection_status_mosquito_level, useNA = "always")
 table(anoph_merged_data$species_type, anoph_merged_data$pf_pcr_infection_status_sample_level_h, useNA = "always")
 table(anoph_merged_data$species_type, anoph_merged_data$pf_pcr_infection_status_sample_level_a, useNA = "always")
+# create summaries across all villages
+table(anoph_merged_data$pf_infection_status_mosquito_level, useNA = "always")
+table(anoph_merged_data$pf_pcr_infection_status_sample_level_h, useNA = "always")
+table(anoph_merged_data$pf_pcr_infection_status_sample_level_a, useNA = "always")
 
 
+#### --------- create summaries of the sick data ---------- ####
+
+# look at an overall summary of the sick data
+summary(human_sick_data)
+
+
+
+#### ------- create summaries of the qpcr data ---------- ####
+
+# look at a summary of the qpcr data
+summary(human_qpcr_data)
 
 
