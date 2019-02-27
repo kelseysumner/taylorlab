@@ -815,11 +815,47 @@ duplicate_visits = human_merged_all_data_final[which(human_merged_all_data_final
 # quickly figure how many of these sick visits on monthly data collection days had a positive RDT
 table(duplicate_visits$rdt_rst, useNA = "always") # 71 positive, 150 negative
 
+# check to see if any people who had qpcr data for both monthly follow-up and sick visit
+length(which(!(is.na(duplicate_visits$today_hum_monthly_data)) & (!(is.na(duplicate_visits$`Experiment Name.x`)) | !(is.na(duplicate_visits$`Experiment Name.y`)))))
+length(which(!(is.na(duplicate_visits$today_hum_sick_data)) & (!(is.na(duplicate_visits$`Experiment Name.x`)) | !(is.na(duplicate_visits$`Experiment Name.y`)))))
+length(which(is.na(duplicate_visits$`Experiment Name.x`) & is.na(duplicate_visits$`Experiment Name.y`))) # 219 missing both so theoretically 2 that have two DBS
+# look at a dataframe of merge results
+small_df_for_merge_results = data.frame(duplicate_visits$double_visit_test, duplicate_visits$`Sample Name.x`,duplicate_visits$`Experiment Name.x`,duplicate_visits$`Experiment Name.y`)
+# 7 had asymp and symp DBS collected on same day:
+# K01-030817-2, K01-110717-9, K01-120617-4, K02-050817-9, M06-130617-4, M13-130717-1, S01-240817-6
+# check qpcr results to see if discrepant
+# K01-030817-2 - both positive
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "K01-030817-2"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+# K01-110717-9 - both positive
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "K01-110717-9"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+# K01-120617-4 - both positive
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "K01-120617-4"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+# K02-050817-9 - both positive
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "K02-050817-9"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+# M06-130617-4 - both positive
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "M06-130617-4"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+# M13-130717-1 - both negative
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "M13-130717-1"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+# S01-240817-6 - both negative
+test1 = duplicate_visits[which(duplicate_visits$double_visit_test == "S01-240817-6"),]
+test1$pf_pcr_infection_status.x
+test1$pf_pcr_infection_status.y
+
 # for each duplicate visit, write some code that pulls the duplicate sick visit information into the corresponding sick columns for the monthly visit
-
-
-
-
+# column where sick visit info starts:
+# FINISH!!!
 
 
 
