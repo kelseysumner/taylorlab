@@ -12,6 +12,10 @@ library(lme4)
 library(pwr)
 library(powerMediation)
 library(powerSurvEpi)
+library(ICCbin)
+
+
+#### ------- estimate the intracluster correlation coefficient ------ ####
 
 
 
