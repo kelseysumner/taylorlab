@@ -27,6 +27,11 @@ human_sick_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/S
 # read in the preliminary qpcr data
 human_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/spat21_qpcr_data_clean_human_dbs_16JAN2019.RDS")
 
+# read in the data set (preliminary)
+prelim_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/human_merged_all_data_final_6MAR2019.rds")
+
+
+
 #### ----- decide who to exclude from longitudinal analyses ----- ####
 
 # look at summaries of the people that will be excluded from longitudinal analyses
@@ -159,6 +164,19 @@ participant_data = human_monthly_merged_data %>%
   group_by(village_all_data, age_cat) %>%
   summarize(totaln = n())
 
+# create a new age categories variable
+# 1-5 years is 1, 6-15 years is 2, 16+ years is 3
+human_monthly_merged_data$age_cat_new = ifelse(human_monthly_merged_data$age_y >= 1 & human_monthly_merged_data$age_y <= 5,1,
+                                          ifelse(human_monthly_merged_data$age_y >= 6 & human_monthly_merged_data$age_y <= 15,2,
+                                                 ifelse(human_monthly_merged_data$age_y >= 16,3,NA)))
+table(human_monthly_merged_data$age_cat_new,human_monthly_merged_data$age_y)
+# tabulate how many participants in new categories
+participant_data = human_monthly_merged_data %>%
+  group_by(unq_memID,age_cat_new) %>%
+  summarize(n=n()) %>%
+  group_by(age_cat_new) %>%
+  summarize(totaln = n())
+
 # sleeping in a space with a net regularly
 # calculate how many people sleep under net regularly
 participant_data = human_monthly_merged_data %>%
@@ -265,5 +283,24 @@ summary(human_sick_data)
 
 # look at a summary of the qpcr data
 summary(human_qpcr_data)
+
+
+#### ------ create summaries of qpcr and rdt data stratified by sex -------- #####
+
+# subset the data set into males and females
+females = prelim_data[which(prelim_data$gender_hum_monthly_data == "female" | prelim_data$gender_hum_sick_data == "female"),]
+males = prelim_data[which(prelim_data$gender_hum_monthly_data == "male" | prelim_data$gender_hum_sick_data == "male"),]
+
+# summarize qpcr data
+summary(females$pf_pcr_infection_status)
+summary(males$pf_pcr_infection_status)
+
+# summarize rdt data
+summary(females$rdt_rst)
+summary(males$rdt_rst)
+
+
+
+
 
 

@@ -449,54 +449,150 @@ human_merged_all_data_final = rename(human_merged_all_data_final, sample_name_db
                                      pf_pcr_infection_status = pf_pcr_infection_status.x, pfr364Q_std_combined = pfr364Q_std_combined.x)
 colnames(human_merged_all_data_final)
 
+# remove participant S11_4 because only in sick visit data set
+human_merged_all_data_final = human_merged_all_data_final[-which(human_merged_all_data_final$unq_memID == "S11_4"),]
+
+# create a new column that differentiates whether it was a monthly or sick visit
+visit_type = rep("monthly visit",nrow(human_merged_all_data_final))
+human_merged_all_data_final$visit_type = visit_type
+human_merged_all_data_final$visit_type[which(str_detect(human_merged_all_data_final$sample_name_final,"R"))] = "sick visit"
+# check the output
+table(human_merged_all_data_final$visit_type, useNA = "always")
+# looks good
+
+# add a column for the main exposure
+### NOTE: you will have to change # in "no infection" category for each outcome case definition
+# right now just changed # in "no infection" category based on primary outcome case defintion
+# need to check this again in the future
+main_exposure = rep(NA,nrow(human_merged_all_data_final))
+human_merged_all_data_final$main_exposure = main_exposure
+human_merged_all_data_final$main_exposure[which(human_merged_all_data_final$pf_pcr_infection_status == "negative" & !(is.na(human_merged_all_data_final$monthly_unq_memID)) |
+                                                  human_merged_all_data_final$rdt_rst == "negative" & human_merged_all_data_final$pf_pcr_infection_status == "positive" & !(is.na(human_merged_all_data_final$monthly_unq_memID)))] = "no infection"
+# the no infection category includes people who didn't have symp infection but had sick visit on same day as monthly visit
+human_merged_all_data_final$main_exposure[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$visit_type == "monthly visit")] = "asymptomatic infection"
+# check the output
+table(human_merged_all_data_final$main_exposure, useNA = "always")
+length(which(human_merged_all_data_final$pf_pcr_infection_status == "negative" & !(is.na(human_merged_all_data_final$monthly_unq_memID))))
+length(which(human_merged_all_data_final$rdt_rst == "negative" & human_merged_all_data_final$pf_pcr_infection_status == "positive" & !(is.na(human_merged_all_data_final$monthly_unq_memID)))) # 51 people had monthly visit on same day, how to handle these
+length(which(human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$visit_type == "sick visit")) # 153 obs
+length(which(human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$pf_pcr_infection_status == "positive" & !(is.na(human_merged_all_data_final$monthly_unq_memID)))) # 59 obs
+# look at what happened on the days where you had double visits (monthly and sick)
+double_visit_data = human_merged_all_data_final[which(!(is.na(human_merged_all_data_final$sick_unq_memID)) & !(is.na(human_merged_all_data_final$monthly_unq_memID))),]
+table(double_visit_data$pf_pcr_infection_status,double_visit_data$rdt_rst, useNA = "always")
+# looks like main exposure coded correctly
+# look at the main exposure stratified by sex
+table(human_merged_all_data_final$main_exposure,human_merged_all_data_final$gender_hum_monthly_data, useNA = "always")
+
 # add a column for case definition 1
-case_definition_1 = rep(NA,nrow(human_merged_all_data_final))
-human_merged_all_data_final$case_definition_1 = case_definition_1
-human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "negative")] = "no infection"
-human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive")] = "symptomatic infection"
-human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "negative")] = "asymptomatic infection"
-human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & is.na(human_merged_all_data_final$rdt_rst))] = "asymptomatic infection"
+outcome_case_definition_1 = rep(NA,nrow(human_merged_all_data_final))
+human_merged_all_data_final$outcome_case_definition_1 = outcome_case_definition_1
+human_merged_all_data_final$outcome_case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$visit_type == "sick visit")] = "symptomatic infection"
 # check the case definition coding
 table(human_merged_all_data_final$pf_pcr_infection_status,human_merged_all_data_final$rdt_rst, useNA = "always")
-table(human_merged_all_data_final$pf_pcr_infection_status, useNA = "always")
-table(human_merged_all_data_final$case_definition_1,useNA = "always")
+table(human_merged_all_data_final$outcome_case_definition_1, useNA = "always")
+# look at the primary outcome stratified by sex
+table(human_merged_all_data_final$outcome_case_definition_1,human_merged_all_data_final$gender_hum_sick_data, useNA = "always")
 
 # add a column for case definition 2
-case_definition_2_stringent = rep(NA,nrow(human_merged_all_data_final))
-human_merged_all_data_final$case_definition_2_stringent = case_definition_2_stringent
-human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "negative")] = "no infection"
-human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$fever == "yes")] = "symptomatic infection"
-human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "negative")] = "asymptomatic infection"
-human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & is.na(human_merged_all_data_final$rdt_rst))] = "asymptomatic infection"
-human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$fever == "no")] = "asymptomatic infection"
+outcome_case_definition_2 = rep(NA,nrow(human_merged_all_data_final))
+human_merged_all_data_final$outcome_case_definition_2 = outcome_case_definition_2
+human_merged_all_data_final$outcome_case_definition_2[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$visit_type == "sick visit" & human_merged_all_data_final$fever == "yes")] = "symptomatic infection"
 # check the case definition coding
-table(human_merged_all_data_final$case_definition_2_stringent,useNA = "always")
-table(human_merged_all_data_final$fever)
 length(which(human_merged_all_data_final$fever=="yes" & human_merged_all_data_final$pf_pcr_infection_status=="positive" & human_merged_all_data_final$rdt_rst=="positive"))
+table(human_merged_all_data_final$outcome_case_definition_2, useNA = "always")
+# look at the primary outcome stratified by sex
+table(human_merged_all_data_final$outcome_case_definition_2,human_merged_all_data_final$gender_hum_sick_data, useNA = "always")
 
-# add a column for case definition 2
-case_definition_2_permissive = rep(NA,nrow(human_merged_all_data_final))
-human_merged_all_data_final$case_definition_2_permissive = case_definition_2_permissive
-human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "negative")] = "no infection"
-human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive")] = "symptomatic infection"
-human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "negative")] = "symptomatic infection"
-human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & is.na(human_merged_all_data_final$rdt_rst))] = "asymptomatic infection"
+# add a column for case definition 3
+outcome_case_definition_3 = rep(NA,nrow(human_merged_all_data_final))
+human_merged_all_data_final$outcome_case_definition_3 = outcome_case_definition_3
+human_merged_all_data_final$outcome_case_definition_3[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$visit_type == "sick visit")] = "symptomatic infection"
 # check the case definition coding
-table(human_merged_all_data_final$case_definition_2_permissive,useNA = "always")
-
+table(human_merged_all_data_final$pf_pcr_infection_status,human_merged_all_data_final$rdt_rst, useNA = "always")
+table(human_merged_all_data_final$outcome_case_definition_3, useNA = "always")
+# look at the primary outcome stratified by sex
+table(human_merged_all_data_final$outcome_case_definition_3,human_merged_all_data_final$gender_hum_sick_data, useNA = "always")
 
 # calculate how many repeated infections occurred
 participant_data = human_merged_all_data_final %>%
-  filter(case_definition_1 == "symptomatic infection") %>%
+  filter(outcome_case_definition_1 == "symptomatic infection") %>%
   group_by(unq_memID) %>%
   summarize(n=n())
 length(which(participant_data$n>1)) # 33 repeated infections
 summary(participant_data$n)
+nrow(participant_data)
+# calculate repeated infections for case definition 2
+participant_data = human_merged_all_data_final %>%
+  filter(outcome_case_definition_2 == "symptomatic infection") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+length(which(participant_data$n>1)) # 21 repeated infections
+summary(participant_data$n)
+nrow(participant_data)
+# calculate repeated infections for case definition 3
+participant_data = human_merged_all_data_final %>%
+  filter(outcome_case_definition_3 == "symptomatic infection") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+length(which(participant_data$n>1)) # 68 repeated infections
+summary(participant_data$n)
+nrow(participant_data)
+
+# how many people never developed a malaria infection during the study (asymptomatic or symptomatic)
+# look at follow-up for everyone
+participant_data_all = human_merged_all_data_final %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+# now look at follow-up for those that didn't have an infection 
+participant_data_no_infection_case_def_1 = human_merged_all_data_final %>%
+  filter(main_exposure=="no infection" & is.na(outcome_case_definition_1)) %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+# check where the two counts are the same between the two participant data set
+length(which(participant_data_all$unq_memID == participant_data_no_infection_case_def_1$unq_memID & participant_data_all$n == participant_data_no_infection_case_def_1$n))
+# there were not cases of this
 
 
 # write out the data set
-write_csv(human_merged_all_data_final,"human_merged_all_data_final_4MAR2019.csv")
-write_rds(human_merged_all_data_final,"human_merged_all_data_final_4MAR2019.rds")
+write_csv(human_merged_all_data_final,"human_merged_all_data_final_6MAR2019.csv")
+write_rds(human_merged_all_data_final,"human_merged_all_data_final_6MAR2019.rds")
 
+
+### old ways to code case definition
+# # add a column for case definition 1
+# case_definition_1 = rep(NA,nrow(human_merged_all_data_final))
+# human_merged_all_data_final$case_definition_1 = case_definition_1
+# human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "negative")] = "no infection"
+# human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive")] = "symptomatic infection"
+# human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "negative")] = "asymptomatic infection"
+# human_merged_all_data_final$case_definition_1[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & is.na(human_merged_all_data_final$rdt_rst))] = "asymptomatic infection"
+# # check the case definition coding
+# table(human_merged_all_data_final$pf_pcr_infection_status,human_merged_all_data_final$rdt_rst, useNA = "always")
+# table(human_merged_all_data_final$pf_pcr_infection_status, useNA = "always")
+# table(human_merged_all_data_final$case_definition_1,useNA = "always")
+# 
+# # add a column for case definition 2
+# case_definition_2_stringent = rep(NA,nrow(human_merged_all_data_final))
+# human_merged_all_data_final$case_definition_2_stringent = case_definition_2_stringent
+# human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "negative")] = "no infection"
+# human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$fever == "yes")] = "symptomatic infection"
+# human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "negative")] = "asymptomatic infection"
+# human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & is.na(human_merged_all_data_final$rdt_rst))] = "asymptomatic infection"
+# human_merged_all_data_final$case_definition_2_stringent[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive" & human_merged_all_data_final$fever == "no")] = "asymptomatic infection"
+# # check the case definition coding
+# table(human_merged_all_data_final$case_definition_2_stringent,useNA = "always")
+# table(human_merged_all_data_final$fever)
+# length(which(human_merged_all_data_final$fever=="yes" & human_merged_all_data_final$pf_pcr_infection_status=="positive" & human_merged_all_data_final$rdt_rst=="positive"))
+# 
+# # add a column for case definition 2
+# case_definition_2_permissive = rep(NA,nrow(human_merged_all_data_final))
+# human_merged_all_data_final$case_definition_2_permissive = case_definition_2_permissive
+# human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "negative")] = "no infection"
+# human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "positive")] = "symptomatic infection"
+# human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & human_merged_all_data_final$rdt_rst == "negative")] = "symptomatic infection"
+# human_merged_all_data_final$case_definition_2_permissive[which(human_merged_all_data_final$pf_pcr_infection_status == "positive" & is.na(human_merged_all_data_final$rdt_rst))] = "asymptomatic infection"
+# # check the case definition coding
+# table(human_merged_all_data_final$case_definition_2_permissive,useNA = "always")
+# 
 
 
