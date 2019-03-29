@@ -549,8 +549,56 @@ participant_data_no_infection_case_def_1 = human_merged_all_data_final %>%
   group_by(unq_memID) %>%
   summarize(n=n())
 # check where the two counts are the same between the two participant data set
-length(which(participant_data_all$unq_memID == participant_data_no_infection_case_def_1$unq_memID & participant_data_all$n == participant_data_no_infection_case_def_1$n))
-# there were not cases of this
+count = 0
+id_list = rep(NA,nrow(participant_data_all))
+for (i in 1:nrow(participant_data_all)){
+  for (j in 1:nrow(participant_data_no_infection_case_def_1)){
+    if (participant_data_all$unq_memID[i] == participant_data_no_infection_case_def_1$unq_memID[j] & participant_data_all$n[i] == participant_data_no_infection_case_def_1$n[j]){
+      count = count+1
+      id_list[i] = participant_data_all$unq_memID[i]
+    }
+  }
+}
+count
+id_list
+# 9 people never developed an asymptomatic or symptomatic infection
+# check those people
+# K02_6 - all negative PCRs
+only_K02_6 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "K02_6"),]
+table(only_K02_6$pf_pcr_infection_status, useNA = "always")
+table(only_K02_6$rdt_rst, useNA = "always")
+# K07_11 - all negative PCRs
+only_K07_11 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "K07_11"),]
+table(only_K07_11$pf_pcr_infection_status, useNA = "always")
+table(only_K07_11$rdt_rst, useNA = "always")
+# K09_3 - all negative PCRs
+only_K09_3 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "K09_3"),]
+table(only_K09_3$pf_pcr_infection_status, useNA = "always")
+table(only_K09_3$rdt_rst, useNA = "always")
+# K09_5 - all negative PCRs
+only_K09_5 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "K09_5"),]
+table(only_K09_5$pf_pcr_infection_status, useNA = "always")
+table(only_K09_5$rdt_rst, useNA = "always")
+# K09_6 - all negative PCRs
+only_K09_6 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "K09_6"),]
+table(only_K09_6$pf_pcr_infection_status, useNA = "always")
+table(only_K09_6$rdt_rst, useNA = "always")
+# M11_2 - all negative PCRs
+only_M11_2 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "M11_2"),]
+table(only_M11_2$pf_pcr_infection_status, useNA = "always")
+table(only_M11_2$rdt_rst, useNA = "always")
+# M13_10 - all negative PCRs
+only_M13_10 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "M13_10"),]
+table(only_M13_10$pf_pcr_infection_status, useNA = "always")
+table(only_M13_10$rdt_rst, useNA = "always")
+# S08_10 - all negative PCRs
+only_S08_10 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "S08_10"),]
+table(only_S08_10$pf_pcr_infection_status, useNA = "always")
+table(only_S08_10$rdt_rst, useNA = "always")
+# S11_3 - all negative PCRs
+only_S11_3 = human_merged_all_data_final[which(human_merged_all_data_final$unq_memID == "S11_3"),]
+table(only_S11_3$pf_pcr_infection_status, useNA = "always")
+table(only_S11_3$rdt_rst, useNA = "always")
 
 
 # write out the data set

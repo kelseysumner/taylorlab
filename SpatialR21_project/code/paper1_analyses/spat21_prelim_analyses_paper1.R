@@ -299,8 +299,60 @@ summary(males$pf_pcr_infection_status)
 summary(females$rdt_rst)
 summary(males$rdt_rst)
 
+# subset the data set into age categories
+# 1-5 years is 1, 6-15 years is 2, 16+ years is 3
+prelim_data$age_cat_new = ifelse(prelim_data$age_y >= 1 & prelim_data$age_y <= 5 | !(is.na(prelim_data$age_m)),1,
+                                               ifelse(prelim_data$age_y >= 6 & prelim_data$age_y <= 15,2,
+                                                      ifelse(prelim_data$age_y >= 16,3,NA)))
+table(prelim_data$age_cat_new)
+
+# reorder preliminary data
+prelim_data_test = prelim_data[order(prelim_data$unq_memID),]
+head(prelim_data_test$unq_memID)
+prelim_data = prelim_data_test
+
+# look at the observations in preliminary data
+# if same memID then make sure age_cat new is same for the one where missing (because age not collected at symptomatic visits)
+new_df = prelim_data %>%
+  filter(visit_type == "monthly visit") %>%
+  select(unq_memID,age_cat_new) %>%
+  distinct
+# join in the new age categories
+prelim_data_test = left_join(prelim_data,new_df,by="unq_memID")
+colnames(prelim_data_test)
+prelim_data = prelim_data_test
+# join the age cat new columns
+table(prelim_data$age_cat_new.x, useNA = "always")
+table(prelim_data$age_cat_new.y, useNA = "always")
+prelim_data$age_cat_new.x[prelim_data$visit_type == "sick visit"] = prelim_data$age_cat_new.y[prelim_data$visit_type == "sick visit"]
+table(prelim_data$age_cat_new.x, useNA = "always")
+table(prelim_data$age_cat_new.y, useNA = "always")
+length(unique(prelim_data$unq_memID))
+
+# summarize qpcr data
+qpcr_age_summary = prelim_data %>%
+  group_by(age_cat_new.x,pf_pcr_infection_status) %>%
+  summarize(n=n())
+
+# summarize rdt data
+rdt_age_summary = prelim_data %>%
+  group_by(age_cat_new.x,rdt_rst) %>%
+  summarize(n=n())
+
+# look at distribution of main exposure across age categories
+table(prelim_data$main_exposure,prelim_data$age_cat_new.x, useNA = "always")
+length(which(is.na(prelim_data$main_exposure) & prelim_data$age_cat_new.x == 1 & prelim_data$visit_type == "monthly visit"))
+length(which(is.na(prelim_data$main_exposure) & prelim_data$age_cat_new.x == 2 & prelim_data$visit_type == "monthly visit"))
+length(which(is.na(prelim_data$main_exposure) & prelim_data$age_cat_new.x == 3 & prelim_data$visit_type == "monthly visit"))
+
+# look at the distribution of outcomes across age categories
+table(prelim_data$outcome_case_definition_1,prelim_data$age_cat_new.x, useNA = "always")
+table(prelim_data$outcome_case_definition_2,prelim_data$age_cat_new.x, useNA = "always")
+table(prelim_data$outcome_case_definition_3,prelim_data$age_cat_new.x, useNA = "always")
 
 
-
-
+# look up which particpants moved out of the study area
+participant_data_moving = human_monthly_merged_data %>%
+  group_by(HH_ID,month_year_combo_monthly_data) %>%
+  summarize(n=n())
 
