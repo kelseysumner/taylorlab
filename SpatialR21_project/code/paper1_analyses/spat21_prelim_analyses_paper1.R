@@ -350,9 +350,45 @@ table(prelim_data$outcome_case_definition_1,prelim_data$age_cat_new.x, useNA = "
 table(prelim_data$outcome_case_definition_2,prelim_data$age_cat_new.x, useNA = "always")
 table(prelim_data$outcome_case_definition_3,prelim_data$age_cat_new.x, useNA = "always")
 
+# create a month variable for sick visit
+sick_month = month(prelim_data$today_hum_sick_data)
+tail(sick_month)
+tail(prelim_data$today_hum_sick_data)
+sick_year = year(prelim_data$today_hum_sick_data)
+tail(sick_year)
+tail(prelim_data$today_hum_sick_data)
+# month year combo
+sick_month_year_combo = paste0(as.character(sick_month),"-",as.character(sick_year))
+tail(sick_month_year_combo)
+# add to data set
+prelim_data$sick_month_year_combo = sick_month_year_combo
 
-# look up which particpants moved out of the study area
-participant_data_moving = human_monthly_merged_data %>%
-  group_by(HH_ID,month_year_combo_monthly_data) %>%
-  summarize(n=n())
+# combine monthly and sick follow-up visit month and year combo
+prelim_data$all_visit_month_year_combo = ifelse(!(is.na(prelim_data$month_year_combo_monthly_data)),prelim_data$month_year_combo_monthly_data,prelim_data$sick_month_year_combo)
+table(prelim_data$all_visit_month_year_combo,prelim_data$month_year_combo_monthly_data)
+table(prelim_data$all_visit_month_year_combo,prelim_data$sick_month_year_combo)
+
+# look up which particpants didn't report their malaria to us
+# how many sick visits
+month_data_sick = prelim_data %>%
+  filter(outcome_case_definition_1 == "symptomatic infection") %>%
+  group_by(unq_memID,all_visit_month_year_combo) %>%
+  summarize(num_sick_visits = n())
+# how many times had malaria-like illness
+month_data_noreport = prelim_data %>%
+  filter(mal_illness == "yes") %>%
+  group_by(unq_memID,all_visit_month_year_combo) %>%
+  summarize(num_sick_visits = n())
+# how many times had positive test for malaria in past month
+month_data_postest = prelim_data %>%
+  filter(test_result == "positive") %>%
+  group_by(unq_memID,all_visit_month_year_combo) %>%
+  summarize(num_sick_visits = n())
+table(prelim_data$mal_illness, useNA="always")
+
+
+
+
+
+
 
