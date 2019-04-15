@@ -18,7 +18,7 @@ library(stringr)
 #### ------- read in the data sets -------- ####
 
 # read in the merged human monthly and table data set
-human_merged_all_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/hum_monthly_merged_with_table_and_sick_with_exclusion_data_27FEB2019.RDS")
+human_merged_all_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/hum_monthly_merged_with_table_and_sick_with_exclusion_data_12APR2019.RDS")
 
 # read in the preliminary qpcr data
 human_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/spat21_qpcr_data_clean_human_dbs_16JAN2019.RDS")
@@ -46,7 +46,7 @@ human_qpcr_data$`Sample Name`[human_qpcr_data$`Sample Name` == "K07-030817-08"] 
 human_qpcr_data$`Sample Name`[human_qpcr_data$`Sample Name` == "K07-030817-09"] = "K07-030817-9" 
 
 # first check for duplicates in the sample name column for the human_merged_all_data data set
-length(unique(human_merged_all_data$`Sample Name`)) # 3141 unique 
+length(unique(human_merged_all_data$`Sample Name`)) # 3140 unique 
 length(which(is.na(human_merged_all_data$`Sample Name`) == T)) # 0 missing
 count_table = table(human_merged_all_data$`Sample Name`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # 0 duplicates

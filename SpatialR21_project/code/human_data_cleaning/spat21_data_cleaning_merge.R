@@ -578,7 +578,10 @@ length(which(is.na(monthly_or_sick_unq_memID))) # no missing, which is good
 human_merged_all_data$`Sample Name` = monthly_or_sick_unq_memID
 comparison_df = data.frame(human_merged_all_data$`Sample Name`,human_merged_all_data$monthly_unq_memID, human_merged_all_data$sick_unq_memID)
 
+# remove participant S11_4 because only in sick visit data set
+human_merged_all_data = human_merged_all_data[-which(human_merged_all_data$unq_memID == "S11_4"),]
+
 # write out the merged human monthly, table, and sick data
-# write_csv(human_merged_all_data, "hum_monthly_merged_with_table_and_sick_with_exclusion_data_27FEB2019.csv")
-# write_rds(human_merged_all_data, "hum_monthly_merged_with_table_and_sick_with_exclusion_data_27FEB2019.RDS")
+write_csv(human_merged_all_data, "hum_monthly_merged_with_table_and_sick_with_exclusion_data_12APR2019.csv")
+write_rds(human_merged_all_data, "hum_monthly_merged_with_table_and_sick_with_exclusion_data_12APR2019.RDS")
 
