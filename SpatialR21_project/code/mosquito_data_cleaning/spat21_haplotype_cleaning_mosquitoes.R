@@ -15,6 +15,7 @@ library(data.table)
 library(tableone)
 library(MHCtools)
 library(dada2)
+library(ggplot2)
 
 
 #### ------- read in the AMA haplotype output -------------- ####
@@ -122,6 +123,40 @@ for (k in 1:ncol(foo)){
   total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
 }
 haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# calculate how many haplotypes remain when remove <50 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=50)) # 505
+# calculate how many haplotypes remain when remove <100 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=100)) # 485
+# calculate how many haplotypes remain when remove <150 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=150)) # 447
+# calculate how many haplotypes remain when remove <200 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=200)) # 414
+# calculate how many haplotypes remain when remove <250 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=250)) # 378
+# calculate how many haplotypes remain when remove <300 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=300)) # 357
+# calculate how many haplotypes remain when remove <350 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=350)) # 331
+# calculate how many haplotypes remain when remove <400 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=400)) # 312
+# calculate how many haplotypes remain when remove <450 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=450)) # 291
+# calculate how many haplotypes remain when remove <500 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=500)) # 271
+# calculate how many haplotypes remain when remove <550 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=550)) # 252
+# calculate how many haplotypes remain when remove <600 reads
+length(which(haplotype_num_summary$total_reads_across_samples>=600)) # 244
+
+# create a histogram of the read depths across haplotypes
+hap_plot = ggplot(data=haplotype_num_summary,aes(x=haplotype_ids,y=total_reads_across_samples)) +
+  geom_histogram(stat="identity") +
+  geom_vline(yintercept = 50,xintercept=505,color="pink",lwd=1.5) +
+  geom_vline(yintercept = 500,xintercept = 271, color = "orange",lwd=1.5) +
+  theme_bw()
+hap_plot
+
 # censor haplotypes found with <500 reads 
 haplotype_num_summary = haplotype_num_summary[-which(haplotype_num_summary$total_reads_across_samples < 500),]
 # output the haplotype summary
@@ -192,11 +227,17 @@ miseq_inventory = rename(miseq_inventory, "MiSeq.ID" = "MiSeq ID", "sample_id" =
 # merge in the mosquito miseq inventory with the ama haplotype data
 ama_merge_data = left_join(miseq_inventory,ama_haps,by="MiSeq.ID")
 
+# remove the controls (BF289 and BF294)
+ama_merge_data = ama_merge_data[-which(ama_merge_data$MiSeq.ID == "BF289" | ama_merge_data$MiSeq.ID == "BF294"),]
+
 # export the ama_merge_data
 write_csv(ama_merge_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output/AMA/AMA_spat21_mosquito_haplotypes_censored_final.csv")
 
 # merge in the mosquito miseq inventory with the csp haplotype data
 csp_merge_data = left_join(miseq_inventory,csp_haps,by="MiSeq.ID")
+
+# remove the controls (BF289 and BF294)
+csp_merge_data = csp_merge_data[-which(csp_merge_data$MiSeq.ID == "BF289" | csp_merge_data$MiSeq.ID == "BF294"),]
 
 # export the csp_merge_data
 write_csv(csp_merge_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output/CSP/CSP_spat21_mosquito_haplotypes_censored_final.csv")

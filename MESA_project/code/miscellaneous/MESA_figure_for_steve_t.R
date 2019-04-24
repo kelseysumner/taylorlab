@@ -14,6 +14,7 @@ library(ggplot2)
 library(haven)
 library(splines)
 library(visreg)
+library(broom)
 
 
 
@@ -177,7 +178,25 @@ plot_new_2 = ggplot(data=restricted_stata_data) +
 plot_new_2 
 ggsave(plot_new_2, filename="/Users/kelseysumner/Desktop/logistic_regression_plot.png", device="png",
        height=4, width=5, units="in", dpi=500)
-
+# create a logistic regression model of this curve
+log_model = glm(crdtresult~logpfdens,family=binomial("logit"),data=restricted_stata_data)
+summary(log_model)
+# model: logit(y) = -1.94259 + 1.17503(x)
+# solve for x: (log10(0.95/(1-0.95))+1.94259)/1.17503 = 4.159067
+10^(4.159067)
+confint(log_model)
+# export the model results
+log_model_df = augment(log_model)
+tidy(log_model)
+# look for where upper CI is just barely still 0.95
+lower95 = stata_data[which(stata_data$pub<0.95),]
+max(lower95$pub)
+newval = stata_data[which(stata_data$labid_new == "479"),]
+newval$pub
+newval$plb
+newval$phat
+newval$logpfdens
+10^(3.867902)
 
 
 ## create a plot with age as the explanatory variable and number needed to screen as outcome variable
