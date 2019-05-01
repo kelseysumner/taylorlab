@@ -232,7 +232,7 @@ div.tocify {
 </div>
 
 
-<p>Last Updated 01/16/2019</p>
+<p>Last Updated 05/01/2019</p>
 <p><strong>Approach:</strong> Using longitudinal samples from Webuye, Kenya, evaluate the life course of asymptomatic Plasmodium falciparum malaria infections.</p>
 <p><strong>Data aggregation:</strong> Three primary data set types: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data. There are multiple data sets for each type.</p>
 <div id="data-set-cleaning-and-compilation" class="section level1">
@@ -302,8 +302,17 @@ div.tocify {
 </ol></li>
 <li>Merged the human data sets that could be merged:
 <ul>
-<li>Code for merging human data sets: <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R</code></li>
-</ul></li>
+<li>Code for merging human social demographic data sets (enrollment table, monthly follow-up, sick follow-up): <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R</code></li>
+<li>Code for merging merged human social demographic data set (enrollment table, monthly follow-up, sick follow-up) with cleaned qpcr data set (with 34 samples to have repeated qpcr removed): <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_human_followup_and_qpcr_NEW_METHOD.R</code></li>
+<li>Code for merging merged human social demographic and qpcr data set (with samples to have repeated qpcr removed) to the qpcr data set containing just the 34 samples that were repeated for qpcr: <code>taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_repeated_qpcr_samples.R</code></li>
+<li>Location of cleaned merged data sets: <code>Dissertation Materials &gt; SpatialR21 Grant &gt; Final Dissertation Materials &gt; Final Data Sets &gt; Final Cohort data June 2017 to July 2018 &gt; Human data &gt; spat21_clean_human_files &gt; merged_files</code></li>
+<li>Notes:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><em>Reran qpcr for 34 human samples that had duplicate IDs in the lab inventory. Merged these into the data set later on, which is why have two merges with qpcr data.</em></li>
+<li><em>The DBS qpcr IDs were sometimes printed days up to 6 days prior to the day they were actually collected, so the DBS qpcr IDs sometimes contain dates that are up to 6 days prior to the social demographic (monthly follow-up) date. Used the social demographic (monthly or sick follow-up) date for the actual date of the disease onset in the analysis.</em></li>
+<li><em>59 samples did not have dates that fell within the 6 day period described in note 2 but were likely typos and were recoded in the data set. After this recoding, was able to merge all but 71 human qpcr samples.</em></li>
+</ol></li>
 </ul>
 </div>
 <div id="mosquito-data-set-cleaning-and-compilation" class="section level2">

@@ -64,7 +64,15 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
         - *If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.* 
         - *If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.*  
 * Merged the human data sets that could be merged:
-    + Code for merging human data sets: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R`
+    + Code for merging human social demographic data sets (enrollment table, monthly follow-up, sick follow-up): `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R`
+    + Code for merging merged human social demographic data set (enrollment table, monthly follow-up, sick follow-up) with cleaned qpcr data set (with 34 samples to have repeated qpcr removed): `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_human_followup_and_qpcr_NEW_METHOD.R`
+    + Code for merging merged human social demographic and qpcr data set (with samples to have repeated qpcr removed) to the qpcr data set containing just the 34 samples that were repeated for qpcr: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_repeated_qpcr_samples.R`
+    + Location of cleaned merged data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > spat21_clean_human_files > merged_files`
+       + Notes:
+    1. *Reran qpcr for 34 human samples that had duplicate IDs in the lab inventory. Merged these into the data set later on, which is why have two merges with qpcr data.*
+    2. *The DBS qpcr IDs were sometimes printed days up to 6 days prior to the day they were actually collected, so the DBS qpcr IDs sometimes contain dates that are up to 6 days prior to the social demographic (monthly follow-up) date. Used the social demographic (monthly or sick follow-up) date for the actual date of the disease onset in the analysis.*
+    3. *59 samples did not have dates that fell within the 6 day period described in note 2 but were likely typos and were recoded in the data set. After this recoding, was able to merge all but 71 human qpcr samples.*
+    
 
   
 ## Mosquito data set cleaning and compilation

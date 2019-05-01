@@ -27,6 +27,8 @@ foo = read_rds("Desktop/haplotype_output/AMA_spat21_mosquito_haplotypes.rds")
 # figure out how many rows and columns
 nrow(foo)
 ncol(foo)
+dim(foo)
+table(nchar(getSequences(foo)))
 
 ### --- look at the raw haplotype output 
 
@@ -77,6 +79,8 @@ foo = read_rds("Desktop/haplotype_output/spat21_mosquitoes_CSP_haplotypes.rds")
 # figure out how many rows and columns
 nrow(foo)
 ncol(foo)
+dim(foo)
+table(nchar(getSequences(foo)))
 
 ### --- look at the raw haplotype output 
 

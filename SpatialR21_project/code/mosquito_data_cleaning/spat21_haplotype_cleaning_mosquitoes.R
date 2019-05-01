@@ -91,12 +91,20 @@ write_csv(foo,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertatio
 
 # calculate number of SNPs in haplotypes from MESA CSP haplotypes
 library(Biostrings)
-dna = readDNAStringSet("Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Haplotype analysis ALL data/haplotype_output/CSP/CSP_uniqueSeqs.fasta")
+dna = readDNAStringSet("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output/AMA/AMA_uniqueSeqs.fasta")
 snp_output = stringDist(dna, method="hamming")
 snp_output = as.matrix(snp_output)
 max(snp_output)
 summary(snp_output)
 
+
+# calculate number of SNPs in haplotypes from this run
+library(Biostrings)
+dna = readDNAStringSet("Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Haplotype analysis ALL data/haplotype_output/CSP/CSP_uniqueSeqs.fasta")
+snp_output = stringDist(dna, method="hamming")
+snp_output = as.matrix(snp_output)
+max(snp_output)
+summary(snp_output)
 
 
 
