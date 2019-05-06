@@ -267,7 +267,7 @@ haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotype
 foo = foo[,c(haplotype_num_summary$haplotype_ids)]
 
 # write out the haplotypes results as a fasta
-# uniquesToFasta(getUniques(foo), fout="Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output/AMA/AMA_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+uniquesToFasta(getUniques(foo), fout="Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output_new/CSP/CSP_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
