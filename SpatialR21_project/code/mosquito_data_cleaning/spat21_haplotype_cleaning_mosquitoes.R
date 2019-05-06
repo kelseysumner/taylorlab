@@ -21,11 +21,12 @@ library(ggplot2)
 #### ------- read in the AMA haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output/AMA/AMA_spat21_mosquito_haplotypes.rds")
+foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output_old/AMA/AMA_spat21_mosquito_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
 ncol(foo)
+table(nchar(getSequences(foo)))
 
 ### --- look at the raw haplotype output 
 
