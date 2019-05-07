@@ -18,6 +18,7 @@ library(MHCtools)
 library(dada2)
 library(ggplot2)
 library(stringr)
+library(Biostrings)
 
 
 #### ------- read in the AMA haplotype output -------------- ####
@@ -42,7 +43,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$haplotype_reads == 0) # 2 samples removed
+needtoremove = which(haplotype_summary$haplotype_reads == 0) # 1 sample removed
 haplotype_summary = haplotype_summary[-needtoremove,]
 
 # write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
@@ -66,14 +67,11 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 2 samples removed
+needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 1 sample removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
-# look at the controls
-
-
-# remove the controls (BF289 and BF294)
-foo = foo[-which(rownames(foo) == "BF289" | rownames(foo) == "BF294"),]
+# remove the controls (BF289 and BF294 and BF303, BF304, and BF305 if still in)
+foo = foo[-which(rownames(foo) == "BF289" | rownames(foo) == "BF294" | rownames(foo) == "BF303" | rownames(foo) == "BF304" | rownames(foo) == "BF305"),]
 
 # summarize the samples for each haplotype
 haplotype.names = rep(1:ncol(foo))
@@ -220,19 +218,37 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$haplotype_reads == 0) # 2 samples removed
+needtoremove = which(haplotype_summary$haplotype_reads == 0) # 4 samples removed
 haplotype_summary = haplotype_summary[-needtoremove,]
 
-# write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
+# write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <10% of the sample reads
 for (i in 1:nrow(foo)){
   for (h in 1:ncol(foo)){
-    if ((foo[i,h]/sum(foo[i,])) < 0.03 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+    if ((foo[i,h]/sum(foo[i,])) < 0.06 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
       foo[i,h] = 0
     } else {
       foo[i,h] = foo[i,h]
     }
   }
 }
+
+# for each haplotype that is a different length than the majority of haplotypes, throw it out
+table(nchar(getSequences(foo))) # most haplotypes 288 bp, but 36 are not 288 bp long
+nchar(getSequences(foo))
+haps_to_remove = rep(NA,ncol(foo))
+for (i in 1:ncol(foo)) {
+  if (nchar(getSequences(foo))[i] != 288) {
+    haps_to_remove[i] = i
+  }
+}
+# check the output
+haps_to_remove
+length(which(!(is.na(haps_to_remove))))
+# looks like coded correctly
+# now remove those columns from the data set
+haps_to_remove = na.omit(haps_to_remove)
+foo = foo[,-haps_to_remove]
+ncol(foo) # only 320 columns left which is correct
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -247,11 +263,74 @@ haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotyp
 needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 2 samples removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
+# remove any samples that have no haplotypes anymore
+foo = foo[(rownames(foo) %in% haplotype_summary_censored$sample_names),]
+ncol(foo)
+nrow(foo)
+
+# tally up the number of SNPs between all haplotype pairings
+uniquesToFasta(getUniques(foo), fout="Desktop/ama_snps_between_haps_within_samples.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+dna = readDNAStringSet("Desktop/ama_snps_between_haps_within_samples.fasta")
+snp_output = stringDist(dna, method="hamming")
+snp_output = as.matrix(snp_output)
+max(snp_output)
+summary(snp_output)
+
+# rename the columns to be a unique haplotype column number but create test data set for this
+foo_test = foo
+newcolnames = c(1:ncol(foo_test))
+pastedcolnames = rep(NA,length(newcolnames))
+for (i in 1:length(newcolnames)){
+  pastedcolnames[i] = paste0("Seq",newcolnames[i])
+}
+colnames(foo_test) <- pastedcolnames
+
+# figure out number of SNPS between haplotypes within each sample
+all_cols = colnames(foo_test)
+for (i in 1:nrow(foo_test)){
+  hap_list = c()
+  for (j in 1:ncol(foo_test)){
+    if (foo_test[i,j] > 0) {
+      hap_list = append(hap_list,all_cols[j])
+    }
+  }
+  hap_list = unique(hap_list)
+  for (k in 1:(length(hap_list))){
+    if (length(hap_list) > 1){
+      for (l in 1:(length(hap_list)-1)){
+        if (!(is.null(hap_list)) & snp_output[hap_list[k],hap_list[l+1]] == 1 & foo_test[i,hap_list[k]]*8 < foo_test[i,hap_list[l+1]]) { 
+          print(paste(rownames(foo_test)[i],hap_list[k]))
+          foo_test[i,hap_list[k]] = 0
+        } 
+        if (!(is.null(hap_list)) & snp_output[hap_list[k],hap_list[l+1]] == 1 & foo_test[i,hap_list[l+1]]*8 < foo_test[i,hap_list[k]]) {
+          print(paste(rownames(foo_test)[i],hap_list[l+1]))
+          foo_test[i,hap_list[l+1]] = 0
+        }
+      }
+    }
+  }
+}
+
+
+# look at an updated haplotype summary
+sample.names = row.names(foo_test)
+haplotype_num = rep(NA,nrow(foo_test))
+haplotype_reads = rep(NA,nrow(foo_test))
+for (i in 1:nrow(foo_test)){
+  haplotype_num[i] = length(which(foo_test[i,] > 0))
+  haplotype_reads[i] = sum(foo_test[i,])
+}
+haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
+# remove samples that ended up with no reads at the end
+needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
+# looks like the 10% read cut off could be too harsh, changed it to the 6% cutoff
+
 # look at the controls
+control_check = haplotype_summary_censored_final[which(haplotype_summary_censored_final$sample_names %in% c("BF289","BF294","BF303","BF304","BF305")),]
 
 
-# remove the controls (BF289 and BF294)
-foo = foo[-which(rownames(foo) == "BF289" | rownames(foo) == "BF294"),]
+# remove the controls (BF289 and BF294 and BF303, BF304, BF305)
+foo = foo[-which(rownames(foo) == "BF289" | rownames(foo) == "BF294" | rownames(foo) == "BF303" | rownames(foo) == "BF304" | rownames(foo) == "BF305"),]
 
 # summarize the samples for each haplotype
 haplotype.names = rep(1:ncol(foo))
