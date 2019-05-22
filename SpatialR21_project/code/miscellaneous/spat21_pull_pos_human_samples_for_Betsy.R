@@ -192,7 +192,38 @@ human_qpcr_data = rbind(human_qpcr_data,redo_qpcr_data)
 # change sample name
 human_qpcr_data = rename(human_qpcr_data, "sample_name_dbs" = "Sample Name")
 
+# check for duplicates in the inventory
+length(unique(human_inventory_data$sample_id)) # 2931 unique 
+length(which(is.na(human_inventory_data$sample_id) == T)) # 0 missing
+count_table = table(human_inventory_data$sample_id, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 18 duplicates
+length(dups_table)
+dups_table = data.frame(dups_table)
 
+# remove the rows where the inventory is a duplicate and plate is 2
+small_data = human_inventory_data[which(human_inventory_data$sample_id %in% dups_table$Var1 & human_inventory_data$sample_id != "3D7 CULTURE"),]
+
+# only keep plate 1
+human_inventory_data = human_inventory_data[-which(human_inventory_data$sample_id %in% dups_table$Var1 & human_inventory_data$sample_id != "3D7 CULTURE" & human_inventory_data$dbs_plate_number == "Spat 2B-punches"),]
+
+# check for duplicates in the inventory
+length(unique(human_inventory_data$sample_id)) # 2925 unique 
+length(which(is.na(human_inventory_data$sample_id) == T)) # 0 missing
+count_table = table(human_inventory_data$sample_id, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 1 duplicates
+length(dups_table)
+dups_table = data.frame(dups_table)
+dups_table
+# remove the exgra K01-110717-9-R entry
+human_inventory_data = human_inventory_data[-which(human_inventory_data$sample_id == "K01-110717-9-R" & is.na(human_inventory_data$dbs_plate_number)),]
+# check for duplicates in the inventory
+length(unique(human_inventory_data$sample_id)) # 2925 unique 
+length(which(is.na(human_inventory_data$sample_id) == T)) # 0 missing
+count_table = table(human_inventory_data$sample_id, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table = data.frame(dups_table)
+dups_table
 
 #### --------------------- pull samples for Betsy that perfectly merged ------------------------- ####
 
@@ -222,22 +253,56 @@ all_sample_data$shipment_date <- NULL
 all_sample_data$sample_received <- NULL
 all_sample_data$comment <- NULL
 
-# write out as a csv file
-write_csv(all_sample_data,"Spat21_human_dbs_positive_samples_for_sequencing_ALL_SAMPLES.csv")
+# write some code to clean the files yourself
+# now loop through each row and move over those two columns
+# check colnames
+colnames(all_sample_data)
+# remove columns 7,8,9
+all_sample_data = all_sample_data[,-c(7,8,9)]
+colnames(all_sample_data)
+# change column order
+all_sample_data = all_sample_data[,c(1,2,3,4,5,6,9,8,7)]
+colnames(all_sample_data)
+# look at input
+length(which(is.na(all_sample_data$dbs_plate_number))) # 1006 missing
+length(which(is.na(all_sample_data$plate_number_addition))) # 171 missing
 
+# start for loop to combine qpcr results
+for (i in 1:nrow(all_sample_data)){
+  if (is.na(all_sample_data[i,4])){
+    for (k in 1:3){   # this is for all data that is present in .y files but not in .x
+      startpoint = 3 + k
+      all_sample_data[i,startpoint] = all_sample_data[i,startpoint+3]
+      all_sample_data[i,startpoint+3] <- NA
+    }
+  } else if (is.na(all_sample_data[i,7])){
+    for (k in 1:3){ # this is for all data that is present in .x files but not in .y -> just make it NULL
+      startpoint = 3 + k
+      all_sample_data[i,startpoint+3] <- NA
+    }
+  } else {
+    for (k in 1:3){ # both data sets are missing -> just make it NULL at .y location
+      startpoint = 3 + k
+      all_sample_data[i,startpoint+3] <- NA
+    }
+  } 
+}
+# check the output
+length(which(is.na(all_sample_data$dbs_plate_number))) # 2 missing
+length(which(is.na(all_sample_data$plate_number_addition))) # 1178 missing
+# looks like it worked correctly
 
-# now read back in the data set that you manually cleaned and clean up the plate numbers
-final_data = read_csv("/Users/kelseysumner/Desktop/Spat21_human_dbs_positive_samples_for_sequencing_perfect_matches_clean.csv")
+# change the data frame name for cleaning
+final_data = all_sample_data
 
 # clean up the column names
-final_data$X7 <- NULL
-final_data$X8 <- NULL
-final_data$X9 <- NULL
-final_data$X10 <- NULL
-final_data$X11 <- NULL
-final_data$X12 <- NULL
+colnames(final_data)
+final_data$plate_number_addition <- NULL
+final_data$column_addition <- NULL
+final_data$row_addition <- NULL
 
 # change the dbs_plate_number entries
+table(final_data$dbs_plate_number)
 final_data$dbs_plate_number[which(final_data$dbs_plate_number == "Spat 2B-punches")] = 2
 final_data$dbs_plate_number[which(final_data$dbs_plate_number == "Spat 4B-punches")] = 4
 final_data$dbs_plate_number[which(final_data$dbs_plate_number == "Spat 3B-punches")] = 3
@@ -246,7 +311,79 @@ final_data$dbs_plate_number[which(final_data$dbs_plate_number == "Spat 6B-punche
 table(final_data$dbs_plate_number)
 
 # export as a csv file
-write_csv(final_data,"spat21_human_dbs_positive_perfect_matches_final.csv")
+write_csv(final_data,"spat21_human_dbs_positive_final_22MAY2019.csv")
+
+# check why 2 pilot study positive samples no longer in data set
+plate_1 = human_inventory_data[which(human_inventory_data$dbs_plate_number == 1),]
+intersect(human_merged_all_data$sample_name_dbs,plate_1$sample_name_dbs)
+length(intersect(human_merged_all_data$sample_name_dbs,plate_1$sample_name_dbs)) # 21, so 2 positives weren't in data set
+plate_1_final_merge = final_data[which(final_data$dbs_plate_number == 1),]
+plate_1_human_merge = human_merged_all_data[which(human_merged_all_data$sample_name_dbs %in% plate_1$sample_name_dbs),]
+table(plate_1_human_merge$pf_pcr_infection_status, useNA = "always")
+# looks like 2 positives didn't merge into the human merge data set
+
+
+
+#### ------- clear working directory and read in what already merged -------- ####
+
+# full merged data set (all samples)
+all_samples = read_csv("Desktop/spat21_human_dbs_positive_final_22MAY2019_clean.csv")
+
+# read in data set you sent Betsy
+original_samples = read_csv("Desktop/spat21_human_dbs_positive_perfect_matches_final.csv")
+
+# check the intersect
+length(intersect(all_samples$sample_name_dbs,original_samples$`Sample Name`)) # 849 samples intersect
+# 2 samples do not
+# what are the 2 samples in the original samples pulled that are not in the all_samples data set
+setdiff(original_samples$`Sample Name`,all_samples$sample_name_dbs)
+# didn't have in final data set with all samples: K01-120617-4, M06-130617-4
+
+# read in the human dbs inventory
+human_inventory_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/lab_inventories/clean files/dbs_lab_inventory_final_with_re-extraction_29APR2019.csv")
+
+# read in the clean merged qpcr/social data set
+human_merged_all_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/spat21_human_merged_all_data_21MAY2019.RDS")
+
+# look at the samples that didn't merge
+human_merged_test = human_merged_all_data[which(human_merged_all_data$sample_name_dbs == "K01-120617-4"),]
+table(human_merged_test$pf_pcr_infection_status, useNA = "always")
+# everything is good, it was because sometimes the monthly and sick visits occurred on same day and DBS were collected at both visits
+
+# now create data set of remaining samples to pull out for sequencing
+length(setdiff(all_samples$sample_name_dbs,original_samples$`Sample Name`)) # 329 left 
+rest_to_pull = setdiff(all_samples$sample_name_dbs,original_samples$`Sample Name`)
+rest_to_pull_data = all_samples[which(all_samples$sample_name_dbs %in% rest_to_pull),]
+
+# double check that samples pulled correctly
+intersect(rest_to_pull_data$sample_name_dbs,original_samples$`Sample Name`)
+# no intersect so looks good
+# check numbers: 329+851-2=1178, correct!
+
+# write out the data set
+write_csv(rest_to_pull_data,"spat21_human_positive_dbs_rest_of_samples.csv")
+
+# now also read in the mosquito inventory and pcr results
+# read in the data set
+qpcr_clean_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/old/spat21_mosquito_qpcr_data_22DEC2018.RDS")
+# pull out the samples that are positive for pf_pcr_infection_status_sample_level
+table(qpcr_clean_data$pf_pcr_infection_status_sample_level, useNA = "always")
+colnames(qpcr_clean_data)
+qpcr_clean_data = rename(qpcr_clean_data,"sample_name" = "Sample Name")
+pf_positives = qpcr_clean_data[which(qpcr_clean_data$pf_pcr_infection_status_sample_level == "positive"),]
+pf_positives = pf_positives[,c(1,6,7,25)]
+
+# create a list of the samples in the pilot study
+pilot_study = read_csv("Desktop/pilot_study_mosquitoes.csv")
+colnames(pilot_study)
+
+# now merge in the pcr results with the mosquito pilot study
+pilot_study = left_join(pilot_study,pf_positives,by="sample_name")
+
+# remove rows that are not positive
+pilot_study = pilot_study[which(pilot_study$pf_pcr_infection_status_sample_level == "positive"),]
+
+
 
 
 
