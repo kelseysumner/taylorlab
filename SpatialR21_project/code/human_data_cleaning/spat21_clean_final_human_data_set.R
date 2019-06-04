@@ -176,7 +176,12 @@ participant_data = human_merged_data %>%
 # looks good, clean
 
 # make a universal today variable
-
+colnames(human_merged_data)
+length(which(is.na(human_merged_data$today_hum_monthly_data)))
+length(which(is.na(human_merged_data$today_hum_sick_data)))
+# for the days that have monthly and sick visit on same day, make monthly data the date
+human_merged_data$universal_today = ifelse(!(is.na(human_merged_data$today_hum_monthly_data)),human_merged_data$today_hum_monthly_data,human_merged_data$today_hum_sick_data)
+length(which(is.na(human_merged_data$universal_today)))
 
 # slept_home
 table(human_merged_data$slept_home, useNA = "always")
@@ -309,8 +314,6 @@ str(human_merged_data$mrdt_n_hum_monthly_data)
 # mrdt_p_hum_monthly_data
 table(human_merged_data$mrdt_p_hum_monthly_data, useNA = "always")
 str(human_merged_data$mrdt_p_hum_monthly_data)
-
-
 
 
 
