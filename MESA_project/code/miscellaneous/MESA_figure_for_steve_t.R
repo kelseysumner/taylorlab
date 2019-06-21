@@ -61,7 +61,7 @@ plot_step2
 
 ## step 3: plot by category (A) sensitivity and CIs from step 1. make continuous if possible.
 # make the titles
-my_x_title <- expression(paste("Log of parasite density"))
+my_x_title <- expression(paste("log10[2]",italic("P. falciparum"),"parasite density (p/uL)"))
 my_y_title <- expression(paste("Number of parasite positive samples"))
 # make the plot
 plot_step3 = ggplot(data=mesa_data) +
@@ -125,6 +125,10 @@ plot_step3
 
 
 #### -------- new figures code ---------------- ####
+
+# list the titles
+my_x_title <- expression(paste("log10[2]",italic("P. falciparum"),"parasite density (p/uL)"))
+my_y_title <- expression(paste("Number of parasite positive samples"))
 
 ## density plots
 # make a density plots for the historgrams
@@ -474,6 +478,142 @@ ggsave(case_control_age_plot_NNS, filename="/Users/kelseysumner/Desktop/case_con
 
 
 
+#### -------- additional age figure code ---------------- ####
+
+
+# list the titles
+my_x_title <- expression(paste("Log"[10],italic(" P. falciparum")," parasite density (p/uL)"))
+my_y_title_1 <- expression(paste("Number of", italic(" P. falciparum"), " parasite positive samples"))
+my_y_title_2 <- expression(paste("Probability of cRDT positivity"))
+
+# first restrict the data set to just those with anpop=1 and includehh=1
+restricted_stata_data = stata_data[which(stata_data$anpop==1 & stata_data$includehh==1),]
+
+test = restricted_stata_data[which(!(is.na(restricted_stata_data$denscat88))),]
+## density plots
+# make a density plots for the historgrams
+plot_new_1 = ggplot() +
+  geom_density(data=test,aes(x=denscat88,y=npcrpos), stat = "identity", fill = "#9ecae1", colour = "#9ecae1", alpha=0.7) +
+  geom_density(data=test,aes(x=denscat88,y=nrdtpos), stat = "identity", fill= "#045a8d", colour = "#045a8d", alpha=0.7) +
+  theme_bw() +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  scale_y_discrete(limits = c(0,20,40,60,80,100,120)) +
+  labs(x=my_x_title,y=my_y_title_1) 
+plot_new_1
+ggsave(plot_new_1, filename="/Users/kelseysumner/Desktop/density_plot_all_participants.png", device="png",
+       height=6, width=7, units="in", dpi=500)
 
 
 
+## logistic regression plot stratified by age
+# look at agecat
+table(restricted_stata_data$agecat, useNA = "always")
+# make a factor
+restricted_stata_data$agecat=factor(restricted_stata_data$agecat,levels=c(0,1,2),labels=c("Less than 5 years","Inbetween 5 to 15 years","Greater than 15 years"))
+# bind data frames
+tempdataset = restricted_stata_data %>%
+  mutate(agecat = as.factor("All ages"))
+tempdataset2 = rbind(restricted_stata_data, tempdataset)
+plot_new_2_age = tempdataset2 %>%
+  ggplot(aes(x = logpfdens, y = crdtresult)) +
+  geom_point(color = "black", alpha = 0.2) +
+  geom_smooth(aes(color = agecat, linetype = agecat), method = "glm", method.args = list(family = "binomial"), se = TRUE,lwd=1) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(0.00,0.20,0.40,0.60,0.80,1.00)) +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  labs(x=my_x_title,y=my_y_title_2,colour="Age categories",linetype="Age categories") +
+  scale_color_manual(values=c("Less than 5 years"="#6baed6","Inbetween 5 to 15 years"="#2171b5","Greater than 15 years"="#08306b","All ages"="black")) +
+  scale_linetype_manual(values=c("Less than 5 years"="twodash","Inbetween 5 to 15 years"="dotted","Greater than 15 years"="longdash","All ages"="solid")) +
+  theme(legend.position = c(0.95, 0.10),legend.justification = c("right", "bottom"),legend.background = element_rect(fill = "light grey", colour = "black"),legend.key.size = grid::unit(2.5,"lines"),legend.text=element_text(size=8),legend.title = element_text(size = 10))
+plot_new_2_age 
+ggsave(plot_new_2_age, filename="/Users/kelseysumner/Desktop/logistic_regression_plot_stratified_by_age.png", device="png",
+       height=6, width=7, units="in", dpi=500)
+# old plot code
+plot_new_2_age = ggplot() +
+  geom_point(data=restricted_stata_data,aes(x=logpfdens,y=crdtresult),color = "black",alpha=0.2) +
+  geom_smooth(data=restricted_stata_data,aes(x=logpfdens,y=crdtresult,color = "All ages",linetype="All ages"),method = "glm", method.args = list(family = "binomial"), se = TRUE,lwd=2) +
+  geom_smooth(data=restricted_stata_data,aes(x=logpfdens,y=crdtresult,color=agecat,linetype=agecat),method = "glm", method.args = list(family = "binomial"), se = TRUE,lwd=1.5) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(0.00,0.20,0.40,0.60,0.80,1.00)) +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  labs(x=my_x_title,y=my_y_title_2,colour="Age categories",linetype="Age categories") +
+  scale_color_manual(values=c("Less than 5 years"="#6baed6","Inbetween 5 to 15 years"="#2171b5","Greater than 15 years"="#08306b","All ages"="black")) +
+  scale_linetype_manual(values=c("Less than 5 years"="twodash","Inbetween 5 to 15 years"="dotted","Greater than 15 years"="longdash","All ages"="solid")) +
+  theme(legend.position = c(0.95, 0.10),legend.justification = c("right", "bottom"),legend.background = element_rect(fill = "grey", colour = "black"),legend.key.size = grid::unit(2.5,"lines"),legend.text=element_text(size=8),legend.title = element_text(size = 10))
+plot_new_2_age 
+
+
+# now make a plot restricted to just the asymptomatic household members
+table(restricted_stata_data$persontype,useNA = "always")
+restricted_stata_data_2 = restricted_stata_data[which(restricted_stata_data$persontype==3 | restricted_stata_data$persontype==5),]
+table(restricted_stata_data_2$agecat, useNA = "always")
+
+# bind columns together
+tempdataset_asymp = restricted_stata_data_2 %>%
+  mutate(agecat = as.factor("All ages"))
+tempdataset2_asymp = rbind(restricted_stata_data_2, tempdataset_asymp)
+plot_new_2_age_asymp = tempdataset2_asymp %>%
+  ggplot(aes(x = logpfdens, y = crdtresult)) +
+  geom_point(color = "black", alpha = 0.2) +
+  geom_smooth(aes(color = agecat, linetype = agecat), method = "glm", method.args = list(family = "binomial"), se = TRUE,lwd=1) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(0.00,0.20,0.40,0.60,0.80,1.00)) +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  labs(x=my_x_title,y=my_y_title_2,colour="Age categories",linetype="Age categories") +
+  scale_color_manual(values=c("Less than 5 years"="#66c2a4","Inbetween 5 to 15 years"="#238b45","Greater than 15 years"="#00441b","All ages"="black")) +
+  scale_linetype_manual(values=c("Less than 5 years"="twodash","Inbetween 5 to 15 years"="dotted","Greater than 15 years"="longdash","All ages"="solid")) +
+  theme(legend.position = c(0.98, 0.10),legend.justification = c("right", "bottom"),legend.background = element_rect(fill = "light grey", colour = "black"),legend.key.size = grid::unit(2.5,"lines"),legend.text=element_text(size=8),legend.title = element_text(size = 10))
+ggsave(plot_new_2_age_asymp, filename="/Users/kelseysumner/Desktop/logistic_regression_plot_stratified_by_age_asymptomatic_hh_members.png", device="png",
+       height=6, width=7, units="in", dpi=500)
+# old plot code
+plot_new_2_age_asymp = ggplot() +
+  geom_point(data=restricted_stata_data_2,aes(x=logpfdens,y=crdtresult),color = "black",alpha=0.2) +
+  geom_smooth(data=restricted_stata_data_2,aes(x=logpfdens,y=crdtresult,color = "All ages",linetype="All ages"),method = "glm", method.args = list(family = "binomial"), se = TRUE,lwd=2) +
+  geom_smooth(data=restricted_stata_data_2,aes(x=logpfdens,y=crdtresult,color=agecat,linetype=agecat),method = "glm", method.args = list(family = "binomial"), se = TRUE,lwd=1.5) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(0.00,0.20,0.40,0.60,0.80,1.00)) +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  labs(x=my_x_title,y=my_y_title_2,colour="Age categories",linetype="Age categories") +
+  scale_color_manual(values=c("Less than 5 years"="#66c2a4","Inbetween 5 to 15 years"="#238b45","Greater than 15 years"="#00441b","All ages"="black")) +
+  scale_linetype_manual(values=c("Less than 5 years"="twodash","Inbetween 5 to 15 years"="dotted","Greater than 15 years"="longdash","All ages"="solid")) +
+  theme(legend.position = c(0.95, 0.10),legend.justification = c("right", "bottom"),legend.background = element_rect(fill = "grey", colour = "black"),legend.key.size = grid::unit(2,"lines"),legend.text=element_text(size=8),legend.title = element_text(size = 10))
+plot_new_2_age_asymp 
+
+test_asymp = restricted_stata_data_2[which(!(is.na(restricted_stata_data_2$denscat88))),]
+# make a density plot of just the asymptomatic people
+plot_new_4 = ggplot() +
+  geom_density(data=restricted_stata_data_2,aes(x=denscat88,y=npcrpos), stat = "identity", fill = "#66c2a4", colour = "#66c2a4", alpha=0.7) +
+  geom_density(data=restricted_stata_data_2,aes(x=denscat88,y=nrdtpos), stat = "identity", fill= "#00441b", colour = "#00441b", alpha=0.7) +
+  theme_bw() +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  scale_y_discrete(limits = c(0,20,40,60,80,100,120)) +
+  labs(x=my_x_title,y=my_y_title_1) 
+plot_new_4
+ggsave(plot_new_4, filename="/Users/kelseysumner/Desktop/density_plot_asymptomatic_participants.png", device="png",
+       height=6, width=7, units="in", dpi=500)
+
+
+# test run
+restricted_stata_data_2$pfr364q_std_combined = as.numeric(restricted_stata_data_2$pfr364q_std_combined)
+small_data_asymp = restricted_stata_data_2[which(!(is.na(restricted_stata_data_2$pfr364q_std_combined))),]
+plot_new_4 = ggplot() +
+  geom_density(data=small_data_asymp,aes(x=pfr364q_std_combined,y=pcrresult), stat = "identity", fill = "#66c2a4", colour = "#66c2a4", alpha=0.7) +
+  geom_density(data=small_data_asymp,aes(x=pfr364q_std_combined,y=crdtresult), stat = "identity", fill= "#00441b", colour = "#00441b", alpha=0.7) +
+  theme_bw() +
+  scale_x_discrete(limits = c(-2,-1,0,1,2,3,4,5,6,7)) +
+  scale_y_discrete(limits = c(0,20,40,60,80,100,120)) +
+  labs(x=my_x_title,y=my_y_title_1) 
+plot_new_4
+
+# log10 p. falciparum parasite density (p/uL)
+# probability of cRDT positivity
+# also make a density plot of just the asymptomatic population
+# change the x axis for all the plots
+# make plots have dotted lines (first 4)
+
+# check the values that were not asymptomatic
+lost_obs = setdiff(test$labid_new,test_asymp$labid_new)
+lost_obs_df = test[which(test$labid_new %in% lost_obs),]
+summary(as.numeric(lost_obs_df$pfr364q_std_combined))
+table(lost_obs_df$crdtresult, useNA = "always")
+table(lost_obs_df$pcrresult, useNA = "always")
