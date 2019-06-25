@@ -218,17 +218,59 @@ table(final_merged_data_no_censoring$age_all_baseline, useNA = "always")
 table(final_merged_data_no_censoring$age_y, useNA = "always")
 
 # make visit_type three levels
+# final_merged_data
+final_merged_data$visit_type = ifelse(is.na(final_merged_data$monthly_unq_memID) & !(is.na(final_merged_data$sick_unq_memID)),"sick visit",ifelse(
+  !(is.na(final_merged_data$monthly_unq_memID)) & is.na(final_merged_data$sick_unq_memID),"monthly visit","monthly and sick visit"))
+table(final_merged_data$visit_type, useNA = "always")
+final_merged_data$visit_type = as.factor(final_merged_data$visit_type)
+# final_merged_data_no_censoring
+final_merged_data_no_censoring$visit_type = ifelse(is.na(final_merged_data_no_censoring$monthly_unq_memID) & !(is.na(final_merged_data_no_censoring$sick_unq_memID)),"sick visit",ifelse(
+  !(is.na(final_merged_data_no_censoring$monthly_unq_memID)) & is.na(final_merged_data_no_censoring$sick_unq_memID),"monthly visit","monthly and sick visit"))
+table(final_merged_data_no_censoring$visit_type, useNA = "always")
+final_merged_data_no_censoring$visit_type = as.factor(final_merged_data_no_censoring$visit_type)
+
+# relabel certain baseline variables about rdts as baseline
+# final_merged_data
+final_merged_data$age_m_chr <- NULL
+final_merged_data = rename(final_merged_data,"know_rdt_baseline"="know_rdt",
+                           "mal_test_baseline" = "mal_test",
+                           "rdt_result_n_baseline"="rdt_result_n",
+                           "rdt_result_p_baseline"="rdt_result_p",
+                           "malaria_likely_baseline"="malaria_likely_hum_table_household_data",
+                           "malaria_al_baseline"="malaria_al_hum_table_household_data",
+                           "age_y_baseline"="age_y",
+                           "age_type_baseline"="age_type",
+                           "age_m_baseline"="age_m",
+                           "today_baseline_survey"="today_hum_table_household_data",
+                           "mrdt_hum_monthly_data"="mrdt",
+                           "mal_rdt_hum_monthly_data"="mal_rdt")
+colnames(final_merged_data)
+# final_merged_data_no_censoring
+final_merged_data_no_censoring$age_m_chr <- NULL
+final_merged_data_no_censoring = rename(final_merged_data_no_censoring,"know_rdt_baseline"="know_rdt",
+                           "mal_test_baseline" = "mal_test",
+                           "rdt_result_n_baseline"="rdt_result_n",
+                           "rdt_result_p_baseline"="rdt_result_p",
+                           "malaria_likely_baseline"="malaria_likely_hum_table_household_data",
+                           "malaria_al_baseline"="malaria_al_hum_table_household_data",
+                           "age_y_baseline"="age_y",
+                           "age_type_baseline"="age_type",
+                           "age_m_baseline"="age_m",
+                           "today_baseline_survey"="today_hum_table_household_data",
+                           "mrdt_hum_monthly_data"="mrdt",
+                           "mal_rdt_hum_monthly_data"="mal_rdt")
+colnames(final_merged_data_no_censoring)
 
 
 
+#### ------- write out the new data sets --------- ####
 
+# final_merged_data
+write_csv(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_25JUN2019.csv")
+write_rds(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_25JUN2019.rds")
 
-
-
-
-
-
-
-
+# final_merged_data_no_censoring
+write_csv(final_merged_data_no_censoring,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_25JUN2019.csv")
+write_rds(final_merged_data_no_censoring,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_25JUN2019.rds")
 
 
