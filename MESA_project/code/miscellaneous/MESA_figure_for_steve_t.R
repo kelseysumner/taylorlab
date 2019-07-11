@@ -542,7 +542,6 @@ plot_new_2_age = ggplot() +
   theme(legend.position = c(0.95, 0.10),legend.justification = c("right", "bottom"),legend.background = element_rect(fill = "grey", colour = "black"),legend.key.size = grid::unit(2.5,"lines"),legend.text=element_text(size=8),legend.title = element_text(size = 10))
 plot_new_2_age 
 
-
 # now make a plot restricted to just the asymptomatic household members
 table(restricted_stata_data$persontype,useNA = "always")
 restricted_stata_data_2 = restricted_stata_data[which(restricted_stata_data$persontype==3 | restricted_stata_data$persontype==5),]
@@ -591,6 +590,43 @@ plot_new_4 = ggplot() +
 plot_new_4
 ggsave(plot_new_4, filename="/Users/kelseysumner/Desktop/density_plot_asymptomatic_participants.png", device="png",
        height=6, width=7, units="in", dpi=500)
+# create a logistic regression model of this curve
+log_model = glm(crdtresult~logpfdens,family=binomial("logit"),data=restricted_stata_data_2)
+summary(log_model)
+# model: logit(y) = -1.97810 + 0.96521(x) 
+# solve for x: (log10(0.95/(1-0.95))+1.97810)/0.96521 = 3.374244
+10^(3.374244) # 2367.249
+confint(log_model)
+# export the model results
+log_model_df = augment(log_model)
+tidy(log_model)
+only_model_samples = restricted_stata_data_2[which(!(is.na(restricted_stata_data_2$logpfdens)) & !(is.na(restricted_stata_data_2$crdtresult))),]
+only_model_samples$fitted_values = log_model$fitted.values
+only_model_samples_new = data.frame(logpfdens = only_model_samples$logpfdens)
+preds <- predict(log_model, newdata = only_model_samples_new, type = "link", se.fit = TRUE)
+critval <- 1.96 ## approx 95% CI
+upr <- preds$fit + (critval * preds$se.fit)
+lwr <- preds$fit - (critval * preds$se.fit)
+fit <- preds$fit
+fit2 <- log_model$family$linkinv(fit)
+upr2 <- log_model$family$linkinv(upr)
+lwr2 <- log_model$family$linkinv(lwr)
+only_model_samples_new$lwr <- lwr2 
+only_model_samples_new$upr <- upr2 
+# test the output by plotting
+ggplot(data=restricted_stata_data_2, mapping=aes(x=logpfdens,y=crdtresult)) + geom_point() +         
+  stat_smooth(method="glm", method.args=list(family=binomial)) + 
+  geom_line(data=only_model_samples_new, mapping=aes(x=logpfdens, y=upr), col="red") + 
+  geom_line(data=only_model_samples_new, mapping=aes(x=logpfdens, y=lwr), col="red")
+# looks good
+# now add fitted values to the data set and pull out where upper 95% CI bound is below 0.95
+only_model_samples_new$fittedvals = only_model_samples$fitted_values
+# look for where upper CI is just barely still 0.95
+lower95 = only_model_samples_new[which(only_model_samples_new$upr<0.95),]
+max(lower95$upr)
+newval = only_model_samples_new[which(only_model_samples_new$upr<0.95 & only_model_samples_new$upr>0.945269),]
+10^(4.56573)
+
 
 
 # test run
