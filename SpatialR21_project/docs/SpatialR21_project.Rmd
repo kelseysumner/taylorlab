@@ -66,12 +66,22 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
 * Merged the human data sets that could be merged:
     + Code for merging human social demographic data sets (enrollment table, monthly follow-up, sick follow-up): `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_data_cleaning_merge.R`
     + Code for merging merged human social demographic data set (enrollment table, monthly follow-up, sick follow-up) with cleaned qpcr data set (with 34 samples to have repeated qpcr removed): `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_human_followup_and_qpcr_NEW_METHOD.R`
-    + Code for merging merged human social demographic and qpcr data set (with samples to have repeated qpcr removed) to the qpcr data set containing just the 34 samples that were repeated for qpcr: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_repeated_qpcr_samples.R`
-    + Location of cleaned merged data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > spat21_clean_human_files > merged_files`
+    + Code for merging merged human social demographic and qpcr data set (with samples to have repeated qpcr removed) to the qpcr data set containing just the 34 samples that were repeated for qpcr: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_repeated_qpcr_samples.R` and :`taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_merge_qpcr_social_data_FINAL_with_redo.R`
+    + Code for cleaning final human merged data set for dissertation use. We first did: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_clean_final_human_data_set.R` Then we did: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_final_clean_merged_data.R`
+    + Location of cleaned merged data sets: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > spat21_clean_human_files > merged_files > final merged data`
        + Notes:
     1. *Reran qpcr for 34 human samples that had duplicate IDs in the lab inventory. Merged these into the data set later on, which is why have two merges with qpcr data.*
     2. *The DBS qpcr IDs were sometimes printed days up to 6 days prior to the day they were actually collected, so the DBS qpcr IDs sometimes contain dates that are up to 6 days prior to the social demographic (monthly follow-up) date. Used the social demographic (monthly or sick follow-up) date for the actual date of the disease onset in the analysis.*
-    3. *59 samples did not have dates that fell within the 6 day period described in note 2 but were likely typos and were recoded in the data set. After this recoding, was able to merge all but 71 human qpcr samples.*
+    3. *59 samples did not have dates that fell within the 6 day period described in note 2 but were likely typos and were recoded in the data set. After this recoding, was able to merge all but 58 human qpcr DBS samples.*
+    4. *Were missing some human DBS samples (some social demographic data did not having a matching DBS), so there was a total of 96 observations removed because of: 1) DBS didn't merge into the data set or 2) DBS was missing for social demographic observation, giving a total of 2823 observations with merged in and matching DBS.*
+* Enforced follow-up censoring criteria on final merged data set one more time. 
+    + Applied censoring criteria of having to have DBS merge in, have at least 2 monthly follow-up visits, and be >1 year old to be in final data set. 
+    + Code for applying this censoring criteria to final merged data set: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_make_final_censored_data_set.R`
+    + Location of final data set for dissertation use: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Final Data Sets > Final Cohort data June 2017 to July 2018 > Human data > spat21_clean_human_files > merged_files > final merged data > spat21_human_final_censored_data_for_dissertation_15JUL2019.rds`
+    + Notes:
+    1. *Removed some 4 participants that were <1 year old for entire follow-up period after data merging and 3 participants that had <2 months total follow-up after data merging.*
+    2. *Some participants had observations removed so they didn't enter the study until they were at least 1 year old.*
+    3. *Ended up with a total of 236 participants and 2799 observations.*
     
 
   
@@ -94,15 +104,12 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     2. *There were 17 mosquitoes in the female Anopheles descriptive data set that didn't merge with the qPCR data set because they were contaminated in lab processing or not received in the lab.*
     3. *Mosquitoes were considered Pf + by qPCR if had any Pf CT value in either head or abdomen from 0 < CT < 40.*
     4. *Mosquitoes were considered Hb + by qPCR if had any Hb CT value in either head or abdomen from 0 < CT < 40.*
- 
-  
-# **Paper 1: Descriptive overview of longitudinal study**
-* Created summaries of the malaria prevalence in humans and mosquitoes across villages. Very descriptive overview of the study.
-    + Code for creating these summaries: `taylorlab/SpatialR21_project/code/paper1_analyses/spat21_prelim_analyses_paper1.R`
-    + Location of preliminary tables: `Desktop/Cohort paper 1 tables_KS.xlsx`
 
-  
-  
+
+# **Aim 1A: Time-to-event analysis for symptomatic malaria**
+* Looked at consecutive follow-up time to determine if we should impute follow-up time for aim 1A. Determined that we do not want to impute follow-up time for now. 
+    + Code for looking at consecutive follow-up: `taylorlab/SpatialR21_project/code/aim1a_analyses/spat21_conseuctive_followup.R`
+    + Location of consecutive follow-up table: `Dissertation Materials > SpatialR21 Grant > Final Dissertation Materials > Aim 1A > Consecutive Follow-up Tables`
   
   
   
