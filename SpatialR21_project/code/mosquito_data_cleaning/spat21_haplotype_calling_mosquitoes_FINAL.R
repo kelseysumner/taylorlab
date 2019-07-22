@@ -24,7 +24,7 @@ library(Biostrings)
 #### ------- read in the AMA haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output_new/AMA/AMA_spat21_mosquito_haplotypes.rds")
+foo = read_rds("Desktop/haplotype_testing/mosquito haplotype output/AMA/AMA_spat21_mosquito_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -43,13 +43,12 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$haplotype_reads == 0) # 1 sample removed
-haplotype_summary = haplotype_summary[-needtoremove,]
+needtoremove = which(haplotype_summary$haplotype_reads == 0) # 0 samples to remove
 
-# write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <6% of the sample reads
+# write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
 for (i in 1:nrow(foo)){
   for (h in 1:ncol(foo)){
-    if ((foo[i,h]/sum(foo[i,])) < 0.06 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+    if ((foo[i,h]/sum(foo[i,])) < 0.03 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
       foo[i,h] = 0
     } else {
       foo[i,h] = foo[i,h]
@@ -73,7 +72,7 @@ length(which(!(is.na(haps_to_remove))))
 # now remove those columns from the data set
 haps_to_remove = na.omit(haps_to_remove)
 foo = foo[,-haps_to_remove]
-ncol(foo) # only 533 columns left which is correct
+ncol(foo) # only 935 columns left which is correct
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -85,7 +84,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 2 samples removed
+needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 1 sample removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
 # remove any samples that have no haplotypes anymore
@@ -179,6 +178,8 @@ for (k in 1:ncol(foo)){
   total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
 }
 haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+# remove haplotypes with 0 reads after censoring
+haplotype_num_summary = haplotype_num_summary[which(haplotype_num_summary$total_reads_across_samples>0),]
 
 # enforce censoring to rds data set
 foo = foo[,c(haplotype_num_summary$haplotype_ids)]
@@ -209,7 +210,7 @@ miseq_inventory = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Fina
 
 # cut down the miseq_inventory to just the columns of interest
 miseq_inventory = miseq_inventory[,c(1,2,9,10)]
-miseq_inventory = rename(miseq_inventory, "MiSeq.ID" = "MiSeq ID", "sample_id" = "Sample ID")
+miseq_inventory = dplyr::rename(miseq_inventory, "MiSeq.ID" = "MiSeq ID", "sample_id" = "Sample ID")
 
 # merge in the mosquito miseq inventory with the ama haplotype data
 ama_merge_data = left_join(miseq_inventory,foo,by="MiSeq.ID")
@@ -229,11 +230,11 @@ for (i in 1:nrow(ama_merge_data)){
 }
 ama_merge_data$mosquito_part_type = mosquito_part_type
 table(ama_merge_data$mosquito_part_type, useNA = "always")
-check_data = ama_merge_data[,c(1,2,478)]
+check_data = ama_merge_data[,c(1,2,436)]
 
 # merge in the sample summaries with the ama data
-haplotype_summary_censored = rename(haplotype_summary_censored,"MiSeq.ID"="sample_names")
-ama_merge_data = left_join(ama_merge_data,haplotype_summary_censored,by="MiSeq.ID")
+haplotype_summary_censored = dplyr::rename(haplotype_summary_censored,"MiSeq.ID"="sample_names")
+ama_merge_data = dplyr::left_join(ama_merge_data,haplotype_summary_censored,by="MiSeq.ID")
 
 # create separate data sets for the mosquito heads and abdomens for ama
 ama_merge_data_heads = ama_merge_data[which(ama_merge_data$mosquito_part_type == "Head"),]
@@ -250,7 +251,7 @@ ama_abdomen_moi_df <- ama_merge_data_abdomens %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 ama_abdomen_moi_df$haplotype_number = as.numeric(ama_abdomen_moi_df$haplotype_number)
-sum(ama_abdomen_moi_df$n) # 172+9 = 181
+sum(ama_abdomen_moi_df$n) # 173+8 = 181
 
 # create a summarized data frame of the number of heads with each MOI
 ama_head_moi_df <- ama_merge_data_heads %>% 
@@ -267,8 +268,6 @@ ama_abdomen_moi_plot = ggplot() +
   geom_bar(data=ama_abdomen_moi_df,aes(x=haplotype_number,y=n), alpha=0.8,stat="identity",fill="#F1BB7B") +
   labs(x="Multiplicity of infection", y="Number of mosquito parts", title= ama_title, pch=18) +
   theme_bw() +
-  scale_x_continuous(breaks=c(0,10,20), limits=c(0,20)) +
-  scale_y_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 ama_abdomen_moi_plot
 
@@ -278,8 +277,6 @@ ama_head_moi_plot = ggplot() +
   geom_bar(data=ama_head_moi_df,aes(x=haplotype_number,y=n), alpha=0.8,stat="identity",fill="#D67236") +
   labs(x="Multiplicity of infection", y="Number of mosquito parts", title= ama_title, pch=18) +
   theme_bw() +
-  scale_x_continuous(breaks=c(0,10,20), limits=c(0,20)) +
-  scale_y_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 ama_head_moi_plot
 
@@ -296,7 +293,7 @@ height=10.5, width=11.2, units="in", dpi=400)
 #### ------- read in the CSP haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output_new/CSP/spat21_mosquitoes_CSP_haplotypes.rds")
+foo = read_rds("Desktop/haplotype_testing/mosquito haplotype output/CSP/CSP_spat21_mosquito_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -315,13 +312,13 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$haplotype_reads == 0) # 4 samples removed
+needtoremove = which(haplotype_summary$haplotype_reads == 0) # 1 sample removed
 haplotype_summary = haplotype_summary[-needtoremove,]
 
-# write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <10% of the sample reads
+# write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
 for (i in 1:nrow(foo)){
   for (h in 1:ncol(foo)){
-    if ((foo[i,h]/sum(foo[i,])) < 0.06 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+    if ((foo[i,h]/sum(foo[i,])) < 0.03 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
       foo[i,h] = 0
     } else {
       foo[i,h] = foo[i,h]
@@ -345,7 +342,7 @@ length(which(!(is.na(haps_to_remove))))
 # now remove those columns from the data set
 haps_to_remove = na.omit(haps_to_remove)
 foo = foo[,-haps_to_remove]
-ncol(foo) # only 320 columns left which is correct
+ncol(foo) # only 477 columns left which is correct
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -357,7 +354,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 2 samples removed
+needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 3 samples removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
 # remove any samples that have no haplotypes anymore
@@ -366,8 +363,8 @@ ncol(foo)
 nrow(foo)
 
 # tally up the number of SNPs between all haplotype pairings
-uniquesToFasta(getUniques(foo), fout="Desktop/ama_snps_between_haps_within_samples.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
-dna = readDNAStringSet("Desktop/ama_snps_between_haps_within_samples.fasta")
+uniquesToFasta(getUniques(foo), fout="Desktop/csp_snps_between_haps_within_samples.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+dna = readDNAStringSet("Desktop/csp_snps_between_haps_within_samples.fasta")
 snp_output = stringDist(dna, method="hamming")
 snp_output = as.matrix(snp_output)
 max(snp_output)
@@ -420,7 +417,6 @@ for (i in 1:nrow(foo_test)){
 haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
 needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
-# looks like the 10% read cut off could be too harsh, changed it to the 6% cutoff
 
 # look at the controls
 control_check = haplotype_summary_censored_final[which(haplotype_summary_censored_final$sample_names %in% c("BF289","BF294","BF303","BF304","BF305")),]
@@ -442,7 +438,6 @@ for (i in 1:nrow(foo)){
 haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
 needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
-# looks like the 10% read cut off could be too harsh, changed it to the 6% cutoff
 
 # summarize the samples for each haplotype
 haplotype.names = rep(1:ncol(foo))
@@ -453,6 +448,8 @@ for (k in 1:ncol(foo)){
   total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
 }
 haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+# remove haplotypes with 0 reads after censoring
+haplotype_num_summary = haplotype_num_summary[which(haplotype_num_summary$total_reads_across_samples>0),]
 
 # enforce censoring to rds data set
 foo = foo[,c(haplotype_num_summary$haplotype_ids)]
@@ -483,10 +480,10 @@ miseq_inventory = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Fina
 
 # cut down the miseq_inventory to just the columns of interest
 miseq_inventory = miseq_inventory[,c(1,2,9,10)]
-miseq_inventory = rename(miseq_inventory, "MiSeq.ID" = "MiSeq ID", "sample_id" = "Sample ID")
+miseq_inventory = dplyr::rename(miseq_inventory, "MiSeq.ID" = "MiSeq ID", "sample_id" = "Sample ID")
 
 # merge in the mosquito miseq inventory with the ama haplotype data
-csp_merge_data = left_join(miseq_inventory,foo,by="MiSeq.ID")
+csp_merge_data = dplyr::left_join(miseq_inventory,foo,by="MiSeq.ID")
 
 # remove the controls (BF289 and BF294 and BF303, BF304, BF305)
 csp_merge_data = csp_merge_data[-which(csp_merge_data$MiSeq.ID == "BF289" | csp_merge_data$MiSeq.ID == "BF294" | csp_merge_data$MiSeq.ID == "BF303" | csp_merge_data$MiSeq.ID == "BF304" | csp_merge_data$MiSeq.ID == "BF305"),]
@@ -503,11 +500,11 @@ for (i in 1:nrow(csp_merge_data)){
 }
 csp_merge_data$mosquito_part_type = mosquito_part_type
 table(csp_merge_data$mosquito_part_type, useNA = "always")
-check_data = csp_merge_data[,c(1,2,361)]
+check_data = csp_merge_data[,c(1,2,299)]
 
 # merge in the sample summaries with the csp data
-haplotype_summary_censored = rename(haplotype_summary_censored,"MiSeq.ID"="sample_names")
-csp_merge_data = left_join(csp_merge_data,haplotype_summary_censored,by="MiSeq.ID")
+haplotype_summary_censored = dplyr::rename(haplotype_summary_censored,"MiSeq.ID"="sample_names")
+csp_merge_data = dplyr::left_join(csp_merge_data,haplotype_summary_censored,by="MiSeq.ID")
 
 # create separate data sets for the mosquito heads and abdomens for csp
 csp_merge_data_heads = csp_merge_data[which(csp_merge_data$mosquito_part_type == "Head"),]
@@ -524,7 +521,7 @@ csp_abdomen_moi_df <- csp_merge_data_abdomens %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 csp_abdomen_moi_df$haplotype_number = as.numeric(csp_abdomen_moi_df$haplotype_number)
-sum(csp_abdomen_moi_df$n) # 172+9 = 181
+sum(csp_abdomen_moi_df$n) # 191+8 = 199
 
 # create a summarized data frame of the number of heads with each MOI
 csp_head_moi_df <- csp_merge_data_heads %>% 
@@ -533,7 +530,7 @@ csp_head_moi_df <- csp_merge_data_heads %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 csp_head_moi_df$haplotype_number = as.numeric(csp_head_moi_df$haplotype_number)
-sum(csp_head_moi_df$n) # 114+5 = 119
+sum(csp_head_moi_df$n) # 128+6
 
 # make csp abdomen figure
 csp_title <- expression(paste(italic("pfcsp1"), ": Mosquito abdomens"))
@@ -541,8 +538,6 @@ csp_abdomen_moi_plot = ggplot() +
   geom_bar(data=csp_abdomen_moi_df,aes(x=haplotype_number,y=n), alpha=0.8,stat="identity",fill="#FD6467") +
   labs(x="Multiplicity of infection", y="Number of mosquito parts", title= csp_title, pch=18) +
   theme_bw() +
-  scale_x_continuous(breaks=c(0,10,20), limits=c(0,20)) +
-  scale_y_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 csp_abdomen_moi_plot
 
@@ -552,8 +547,6 @@ csp_head_moi_plot = ggplot() +
   geom_bar(data=csp_head_moi_df,aes(x=haplotype_number,y=n), alpha=0.8,stat="identity",fill="#5B1A18") +
   labs(x="Multiplicity of infection", y="Number of mosquito parts", title= csp_title, pch=18) +
   theme_bw() +
-  scale_x_continuous(breaks=c(0,10,20), limits=c(0,20)) +
-  scale_y_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 csp_head_moi_plot
 

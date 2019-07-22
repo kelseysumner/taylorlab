@@ -81,7 +81,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     + Notes:
     1. *Removed some 4 participants that were <1 year old for entire follow-up period after data merging and 3 participants that had <2 months total follow-up after data merging.*
     2. *Some participants had observations removed so they didn't enter the study until they were at least 1 year old.*
-    3. *Ended up with a total of 236 participants and 2799 observations.*
+    3. *Ended up with a total of 239 participants and 2814 observations.*
     
 
   
