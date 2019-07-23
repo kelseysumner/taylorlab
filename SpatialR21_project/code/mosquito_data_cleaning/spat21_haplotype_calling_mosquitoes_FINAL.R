@@ -152,7 +152,11 @@ needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 
 control_check = haplotype_summary_censored_final[which(haplotype_summary_censored_final$sample_names %in% c("BF289","BF294","BF303","BF304","BF305")),]
 
 # make foo, foo_test
+orig_foo = foo
 foo = foo_test
+
+# make sure foo retains its column names
+colnames(foo) = colnames(orig_foo)
 
 # remove the controls (BF289 and BF294 and BF303, BF304, BF305)
 foo = foo[-which(rownames(foo) == "BF289" | rownames(foo) == "BF294" | rownames(foo) == "BF303" | rownames(foo) == "BF304" | rownames(foo) == "BF305"),]
@@ -185,7 +189,7 @@ haplotype_num_summary = haplotype_num_summary[which(haplotype_num_summary$total_
 foo = foo[,c(haplotype_num_summary$haplotype_ids)]
 
 # write out the haplotypes results as a fasta
-# uniquesToFasta(getUniques(foo), fout="Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output_new/CSP/CSP_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+uniquesToFasta(getUniques(foo), fout="Desktop/AMA_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -422,7 +426,11 @@ needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 
 control_check = haplotype_summary_censored_final[which(haplotype_summary_censored_final$sample_names %in% c("BF289","BF294","BF303","BF304","BF305")),]
 
 # make foo, foo_test
+orig_foo = foo
 foo = foo_test
+
+# make sure foo retains its column names
+colnames(foo) = colnames(orig_foo)
 
 # remove the controls (BF289 and BF294 and BF303, BF304, BF305)
 foo = foo[-which(rownames(foo) == "BF289" | rownames(foo) == "BF294" | rownames(foo) == "BF303" | rownames(foo) == "BF304" | rownames(foo) == "BF305"),]
@@ -455,7 +463,7 @@ haplotype_num_summary = haplotype_num_summary[which(haplotype_num_summary$total_
 foo = foo[,c(haplotype_num_summary$haplotype_ids)]
 
 # write out the haplotypes results as a fasta
-# uniquesToFasta(getUniques(foo), fout="Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/sequence_results/haplotype_results/haplotype_output_new/CSP/CSP_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+uniquesToFasta(getUniques(foo), fout="Desktop/CSP_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
