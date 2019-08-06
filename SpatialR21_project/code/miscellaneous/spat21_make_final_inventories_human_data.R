@@ -648,6 +648,9 @@ final_data = rbind(final_data,plate_22_add_df)
 table(final_data$dbs_plate_number, useNA = "always")
 table(final_data$experiment_name, useNA = "always")
 
+# check that everything that was sequenced was pf positive
+test = final_data[which(final_data$pf_pcr_infection_status=="positive"& final_data$sent_for_sequencing=="yes"),]
+
 # write out the data set
 write_csv(final_data,"mozzie_phase_1_final_human_inventory_6AUG2019_searchable.csv")
 write_rds(final_data,"mozzie_phase_1_final__human_inventory_6AUG2019_searchable.rds")

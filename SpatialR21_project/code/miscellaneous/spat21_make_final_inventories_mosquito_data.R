@@ -115,7 +115,7 @@ colnames(abdomen_inventory)
 
 # now merge together each head and abdomen inventory to anoph data
 # first the abdomen info
-final_data = left_join(abdomen_inventory,anoph_data,by="sample_id_abdomen")
+final_data = full_join(abdomen_inventory,anoph_data,by="sample_id_abdomen")
 length(intersect(abdomen_inventory$sample_id_abdomen,anoph_data$sample_id_abdomen))
 length(setdiff(anoph_data$sample_id_abdomen,abdomen_inventory$sample_id_abdomen))
 setdiff(anoph_data$sample_id_abdomen,abdomen_inventory$sample_id_abdomen)
@@ -135,9 +135,9 @@ setdiff(head_inventory$sample_id_head,final_data$sample_id_head)
 # now reorganize the columns
 colnames(final_data)
 new_order = c("HH_ID","collection_date","village","sample_id_mosquito","pf_infection_status_mosquito_level","hb_status_mosquito_level","sample_id_head","gdna_extraction_date_h","gdna_plate_number_h","gdna_column_number_h","gdna_row_number_h",
-              "HbtubCT1_h","HbtubCT2_h","pfr364Q1_h","pfr364Q2_h","pfr364Q1_h","pfr364Q2_h","pfr364Q_combined_h","pf_pcr_infection_status_sample_level_h","hb_status_sample_level_h",
+              "HbtubCT1_h","HbtubCT2_h","pfr364CT1_h","pfr364CT2_h","pfr364Q1_h","pfr364Q2_h","pfr364Q_combined_h","pf_pcr_infection_status_sample_level_h","hb_status_sample_level_h",
               "sample_id_abdomen","gdna_extraction_date_a","gdna_plate_number_a","gdna_column_number_a","gdna_row_number_a",
-              "HbtubCT1_a","HbtubCT2_a","pfr364Q1_a","pfr364Q2_a","pfr364Q1_a","pfr364Q2_a","pfr364Q_combined_a","pf_pcr_infection_status_sample_level_a","hb_status_sample_level_a")
+              "HbtubCT1_a","HbtubCT2_a","pfr364CT1_a","pfr364CT2_a","pfr364Q1_a","pfr364Q2_a","pfr364Q_combined_a","pf_pcr_infection_status_sample_level_a","hb_status_sample_level_a")
 final_data = final_data[new_order]
 colnames(final_data)
 
@@ -163,7 +163,202 @@ sequencing_inventory = sequencing_inventory[-which(sequencing_inventory$`Sample 
 sequencing_inventory = sequencing_inventory[-which(sequencing_inventory$`Sample ID`=="3D7/7g8/Dd2"),]
 sequencing_inventory = sequencing_inventory[-which(is.na(sequencing_inventory$`Sample ID`)),]
 
+# add a column saying sent for sequencing
+sequencing_inventory$sent_for_sequencing = rep("yes",nrow(sequencing_inventory))
+
+# split up the sequencing inventory data to head and abdomens
+head_seq_inventory = sequencing_inventory[which(str_detect(sequencing_inventory$`Sample ID`,"H")),]
+abdomen_seq_inventory = sequencing_inventory[which(str_detect(sequencing_inventory$`Sample ID`,"A")),]
+
+# change sample ID headers
+head_seq_inventory = rename(head_seq_inventory,"sample_id_head"="Sample ID","sent_for_sequencing_h"="sent_for_sequencing")
+abdomen_seq_inventory = rename(abdomen_seq_inventory,"sample_id_abdomen"="Sample ID", "sent_for_sequencing_a"="sent_for_sequencing")
+
 # now merge in the sequencing inventory with the rest of the mosquito data
+colnames(final_data)
+final_data = left_join(final_data,head_seq_inventory,by="sample_id_head")
+final_data = left_join(final_data,abdomen_seq_inventory,by="sample_id_abdomen")
+
+# now reorganize the columns one last time
+colnames(final_data)
+new_order = c("HH_ID","collection_date","village","sample_id_mosquito","pf_infection_status_mosquito_level","hb_status_mosquito_level","sample_id_head","gdna_extraction_date_h","gdna_plate_number_h","gdna_column_number_h","gdna_row_number_h",
+              "HbtubCT1_h","HbtubCT2_h","pfr364CT1_h","pfr364CT2_h","pfr364Q1_h","pfr364Q2_h","pfr364Q_combined_h","pf_pcr_infection_status_sample_level_h","hb_status_sample_level_h","sent_for_sequencing_h",
+              "sample_id_abdomen","gdna_extraction_date_a","gdna_plate_number_a","gdna_column_number_a","gdna_row_number_a",
+              "HbtubCT1_a","HbtubCT2_a","pfr364CT1_a","pfr364CT2_a","pfr364Q1_a","pfr364Q2_a","pfr364Q_combined_a","pf_pcr_infection_status_sample_level_a","hb_status_sample_level_a","sent_for_sequencing_a")
+final_data = final_data[new_order]
+colnames(final_data)
+
+# check to make sure that when the pf status is positive, sent for sequencing is yes
+# check for the abdomens
+length(which(final_data$pf_pcr_infection_status_sample_level_a=="positive"))
+length(which(final_data$sent_for_sequencing_a=="yes"))
+length(which(final_data$pf_pcr_infection_status_sample_level_a=="positive" & final_data$sent_for_sequencing_a=="yes"))
+test = final_data[which(final_data$pf_pcr_infection_status_sample_level_a=="positive"& is.na(final_data$sent_for_sequencing_a)),]
+test_2 = final_data[which(is.na(final_data$pf_pcr_infection_status_sample_level_a) & final_data$sent_for_sequencing_a=="yes"),]
+# check for the heads
+length(which(final_data$pf_pcr_infection_status_sample_level_h=="positive"))
+length(which(final_data$sent_for_sequencing_h=="yes"))
+length(which(final_data$pf_pcr_infection_status_sample_level_h=="positive" & final_data$sent_for_sequencing_h=="yes"))
+test = final_data[which(final_data$pf_pcr_infection_status_sample_level_h=="positive"& is.na(final_data$sent_for_sequencing_h)),]
+test_2 = final_data[which(is.na(final_data$pf_pcr_infection_status_sample_level_h) & final_data$sent_for_sequencing_h=="yes"),]
+# looks like some samples were sequenced but were not in the sequencing inventory
+
+# set sample id at the mosquito level for all observations
+# sample_id_mosquito
+length(which(is.na(final_data$sample_id_mosquito)))
+length(which(is.na(final_data$sample_id_mosquito) & !(is.na(final_data$sample_id_abdomen))))
+length(which(is.na(final_data$sample_id_mosquito) & !(is.na(final_data$sample_id_head))))
+for (i in 1:nrow(final_data)){
+  if (!(is.na(final_data$sample_id_mosquito[i]))){
+    final_data$sample_id_mosquito[i] = final_data$sample_id_mosquito[i]
+  } else if (is.na(final_data$sample_id_mosquito[i]) & !(is.na(final_data$sample_id_abdomen[i]))){
+    test = str_split(final_data$sample_id_abdomen[i],"")[[1]]
+    final_data$sample_id_mosquito[i] = paste0(test[1],test[2],test[3],test[4],test[6],test[7],test[8],test[9],test[10])
+  } else if (is.na(final_data$sample_id_mosquito[i]) & !(is.na(final_data$sample_id_head[i]))){
+    test2 = str_split(final_data$sample_id_head[i],"")[[1]]
+    final_data$sample_id_mosquito[i] = paste0(test2[1],test2[2],test2[3],test2[4],test2[6],test2[7],test2[8],test2[9],test2[10])
+  } else {
+    final_data$sample_id_mosquito[i] = final_data$sample_id_mosquito[i]
+  }
+}
+length(which(is.na(final_data$sample_id_mosquito)))
+table(nchar(final_data$sample_id_mosquito))
+# check for duplicates 
+length(unique(final_data$sample_id_mosquito)) # 1497 unique 
+length(which(is.na(final_data$sample_id_mosquito) == T)) # 0 missing
+count_table = table(final_data$sample_id_mosquito, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 49 duplicates
+length(dups_table)
+dups_table
+# for the sample_id_mosquitoes that had 3 entries, change manually
+# K01 00029
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00029" & final_data$sample_id_head=="K01 H00029")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00029" & final_data$sample_id_head=="K01 H00029")] = "2017-07-17"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00029" & final_data$sample_id_head=="K01 H00029")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00029" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# K01 00030
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00030" & final_data$sample_id_head=="K01 H00030")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00030" & final_data$sample_id_head=="K01 H00030")] = "2017-07-17"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00030" & final_data$sample_id_head=="K01 H00030")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00030" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# K01 00031
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00031" & final_data$sample_id_head=="K01 H00031")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00031" & final_data$sample_id_head=="K01 H00031")] = "2017-07-17"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00031" & final_data$sample_id_head=="K01 H00031")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00031" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# K01 00032
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00032" & final_data$sample_id_head=="K01 H00032")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00032" & final_data$sample_id_head=="K01 H00032")] = "2017-07-24"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00032" & final_data$sample_id_head=="K01 H00032")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00032" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# K01 00047
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00047" & final_data$sample_id_head=="K01 H00047")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00047" & final_data$sample_id_head=="K01 H00047")] = "2017-08-21"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00047" & final_data$sample_id_head=="K01 H00047")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00047" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# K01 00048
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00048" & final_data$sample_id_head=="K01 H00048")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00048" & final_data$sample_id_head=="K01 H00048")] = "2017-08-21"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00048" & final_data$sample_id_head=="K01 H00048")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00048" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# K01 00049
+final_data$HH_ID[which(final_data$sample_id_mosquito=="K01 00049" & final_data$sample_id_head=="K01 H00049")] = "K01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="K01 00049" & final_data$sample_id_head=="K01 H00049")] = "2017-08-28"
+final_data$village[which(final_data$sample_id_mosquito=="K01 00049" & final_data$sample_id_head=="K01 H00049")] = "Kinesamo"
+final_data = final_data[-which(final_data$sample_id_mosquito=="K01 00049" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M01 00001
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M01 00001" & final_data$sample_id_head=="M01 H00001")] = "M01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M01 00001" & final_data$sample_id_head=="M01 H00001")] = "2017-06-20"
+final_data$village[which(final_data$sample_id_mosquito=="M01 00001" & final_data$sample_id_head=="M01 H00001")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M01 00001" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M01 00002
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M01 00002" & final_data$sample_id_head=="M01 H00002")] = "M01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M01 00002" & final_data$sample_id_head=="M01 H00002")] = "2017-06-20"
+final_data$village[which(final_data$sample_id_mosquito=="M01 00002" & final_data$sample_id_head=="M01 H00002")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M01 00002" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M01 00003
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M01 00003" & final_data$sample_id_head=="M01 H00003")] = "M01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M01 00003" & final_data$sample_id_head=="M01 H00003")] = "2017-06-20"
+final_data$village[which(final_data$sample_id_mosquito=="M01 00003" & final_data$sample_id_head=="M01 H00003")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M01 00003" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M01 00004
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M01 00004" & final_data$sample_id_head=="M01 H00004")] = "M01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M01 00004" & final_data$sample_id_head=="M01 H00004")] = "2017-06-28"
+final_data$village[which(final_data$sample_id_mosquito=="M01 00004" & final_data$sample_id_head=="M01 H00004")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M01 00004" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M01 00005
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M01 00005" & final_data$sample_id_head=="M01 H00005")] = "M01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M01 00005" & final_data$sample_id_head=="M01 H00005")] = "2017-06-28"
+final_data$village[which(final_data$sample_id_mosquito=="M01 00005" & final_data$sample_id_head=="M01 H00005")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M01 00005" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M01 00006
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M01 00006" & final_data$sample_id_head=="M01 H00006")] = "M01"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M01 00006" & final_data$sample_id_head=="M01 H00006")] = "2017-06-28"
+final_data$village[which(final_data$sample_id_mosquito=="M01 00006" & final_data$sample_id_head=="M01 H00006")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M01 00006" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# M09 00042
+final_data$HH_ID[which(final_data$sample_id_mosquito=="M09 00042" & final_data$sample_id_head=="M09 H00042")] = "M09"
+final_data$collection_date[which(final_data$sample_id_mosquito=="M09 00042" & final_data$sample_id_head=="M09 H00042")] = "2017-07-18"
+final_data$village[which(final_data$sample_id_mosquito=="M09 00042" & final_data$sample_id_head=="M09 H00042")] = "Maruti"
+final_data = final_data[-which(final_data$sample_id_mosquito=="M09 00042" & is.na(final_data$sample_id_abdomen) & is.na(final_data$sample_id_head)),]
+# check for duplicates 
+length(unique(final_data$sample_id_mosquito)) # 1497 unique 
+length(which(is.na(final_data$sample_id_mosquito) == T)) # 0 missing
+count_table = table(final_data$sample_id_mosquito, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 49 duplicates
+length(dups_table)
+dups_table
+
+# check the input
+length(which(is.na(final_data$sample_id_abdomen))) # 58
+length(which(is.na(final_data$sample_id_head))) # 57
+# sort the sample_id_mosquito variable
+final_data = final_data[order(final_data$sample_id_mosquito),]
+# make sure that all the mosquito head and abdomen samples are on the same row
+# write a for loop that will check for if the mosquito id is on multiple lines moves the information all to the same line
+# start for loop
+for (i in 1:nrow(final_data)){
+  if ((final_data$sample_id_mosquito[i] == final_data$sample_id_mosquito[i+1]) & !(is.na(final_data$sample_id_mosquito[i])) & !(is.na(final_data$sample_id_mosquito[i+1])) & i != nrow(final_data)){
+    for (k in 1:ncol(final_data)){
+      if (is.na(final_data[i,k]) & !(is.na(final_data[i+1,k]))){
+        final_data[i,k] = final_data[i+1,k]
+      }
+      if (is.na(final_data[i+1,k]) & !(is.na(final_data[i,k]))){
+        final_data[i+1,k] = final_data[i,k]
+      }
+    }
+  } else {
+    final_data[i,] = final_data[i,]
+  }
+}
+# check the output
+colnames(final_data)
+length(which(is.na(final_data$sample_id_mosquito))) # none missing
+length(which(is.na(final_data$sample_id_abdomen))) # 9 missing
+length(which(is.na(final_data$sample_id_head))) # 8 missing
+# looks like it is working correctly
+# delete the rows that are now duplicates
+for (i in 1:nrow(final_data)){
+  if ((final_data$sample_id_mosquito[i] == final_data$sample_id_mosquito[i+1]) & !(is.na(final_data$sample_id_mosquito[i])) & !(is.na(final_data$sample_id_mosquito[i+1])) & i != nrow(final_data)){
+    final_data = final_data[-i,]
+  }
+}
+# check the output
+length(which(is.na(final_data$sample_id_abdomen))) # 9 (58-49) = 9
+length(which(is.na(final_data$sample_id_head))) # 8 (57-49) = 8
+# also tested a few ids in dups_table_df to see if occurred in duplicate still
+# all looks good
+length(unique(final_data$sample_id_mosquito)) # 1497 unique 
+length(which(is.na(final_data$sample_id_mosquito) == T)) # 0 missing
+count_table = table(final_data$sample_id_mosquito, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
+
+# now clean up the remaining columns
+colnames(final_data)
+# HH_ID
+table(final_data$HH_ID, useNA = "always")
 
 
 
