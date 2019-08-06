@@ -1,5 +1,6 @@
 # ----------------------------------------- #
 #           Make Final Inventories          #
+#                  Human Data               #
 #            Mozzie Phase 1 Data            #
 #              July 30, 2019                #
 #                K. Sumner                  #
@@ -14,29 +15,20 @@ library(tidyverse)
 #### -------- load in the data sets ---------- ####
 
 # read in the original inventories
-# read in the mosquito inventory
-mosquito_inventory_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/lab_inventories/clean files/mosquito_lab_inventory_final_11JAN2019.csv")
 # read in the human dbs inventory
 human_inventory_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/lab_inventories/clean files/dbs_lab_inventory_final_with_re-extraction_29APR2019.csv")
 
 # read in the final merged data sets
-# read in the mosquito data set
-anoph_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 # read in the human data set
 human_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_16JUL2019.rds")
 
 
-#### -------- merge in the information with the inventory ----------- ####
+#### -------- HUMAN DATA: merge in the information with the inventory ----------- ####
 
 # select variables of interest for human data
 colnames(human_data)
 human_data = human_data %>%
   select(sample_id_date,sample_name_dbs,pf_pcr_infection_status,pfr364Q_std_combined,village_name,HH_ID)
-
-# select variables of interest for anoph data
-colnames(anoph_data)
-anoph_data = anoph_data %>%
-  select(-c(repeat_instance,total_num_mosq_in_hh,abdominal_status,species_type,collection_week,collection_month_year_combo))
 
 # recode some of the human inventory entries
 human_inventory_data = rename(human_inventory_data,"sample_name_dbs"="sample_id")
@@ -266,7 +258,7 @@ table(final_data$dbs_row_number, useNA = "always")
 # now read in the recent dbs information to add CT values and experiment names
 
 
-#### ----------- set up qpcr data ---------------------- ####
+#### ----------- HUMAN DATA: set up qpcr data ---------------------- ####
 
 # read in the preliminary qpcr data
 human_qpcr_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/spat21_qpcr_data_clean_human_dbs_16JAN2019.RDS")
@@ -415,7 +407,7 @@ human_qpcr_data = rename(human_qpcr_data, "sample_name_dbs" = "Sample Name")
 # write_rds(human_qpcr_data,"spat21_final_qpcr_data_5AUG2019.rds")
 
 
-#### ------------------ now merge the qpcr data into the inventory ----------------- ####
+#### ------------------ HUMAN DATA: now merge the qpcr data into the inventory ----------------- ####
 
 # look at both data set
 colnames(final_data)
@@ -480,7 +472,7 @@ length(which(is.na(final_data$pfr364Q_std_combined)))
 
 
 
-#### -------------- now read in the samples that were pf positive and merged into the data set so were used for sequencing ---------- ####
+#### -------------- HUMAN DATA: now read in the samples that were pf positive and merged into the data set so were used for sequencing ---------- ####
 
 # read in the samples pulled for sequencing
 sequencing_data = read_csv("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Human DBS Samples to Sequence/spat21_human_dbs_positive_final_22MAY2019_clean.csv")
@@ -618,12 +610,49 @@ table(final_data$pf_pcr_infection_status,useNA = "always")
 length(which(is.na(final_data$pfr364Q_std_combined)))
 table(final_data$sent_for_sequencing, useNA = 'always')
 
+# fix a few inventory entries that look like typos
+# K01-110717-9-R
+final_data$dbs_row_number[which(final_data$sample_name_dbs == "K01-110717-9-R")] = "A"
+final_data$dbs_plate_number[which(final_data$sample_name_dbs=="K01-110717-9-R")] = "Spat-1B"
+# M03-260618-2-2 and M03-260618-2-R
+final_data$dbs_row_number[which(final_data$sample_name_dbs=="M03-260618-2-R")] = "C"
+final_data$dbs_plate_number[which(final_data$sample_name_dbs=="M03-260618-2-R")] = "Spat-29B"
+final_data$dbs_column_number[which(final_data$sample_name_dbs=="M03-260618-2-R")] = "1"
+final_data = final_data[-which(final_data$sample_name_dbs=="M03-260618-2-2"),]
+
+# check one last time for duplicate ids
+length(unique(final_data$sample_name_dbs)) # 2921 unique 
+length(which(is.na(final_data$sample_name_dbs) == T)) # 0 missing
+count_table = table(final_data$sample_name_dbs, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 1 duplicates
+length(dups_table)
+dups_table # looks good, no duplicates other than "plate_id_mislabeled"
+
+# do one last check that there's the right number of each plate
+table(final_data$dbs_plate_number, useNA = "always")
+table(final_data$experiment_name, useNA = "always")
+
+# looks like there's 1 missing from spat-22B with the recode
+# add in samples for plate 22
+plate_22_add_df = data.frame(sample_name_dbs = rep("plate_id_mislabeled",1), sample_id_date = rep("Not applicable",1), village_name = rep("Not applicable",1),
+                             HH_ID=rep("Not applicable",1), shipment_date=rep("Not recorded",1), gdna_extraction_date = rep("Not recorded",1),
+                             dbs_plate_number=rep("Spat-22B",1),dbs_column_number=c(9),dbs_row_number=c("G"),
+                             experiment_name = rep("qPCR not done",1), HbtubCT1 = rep("qPCR not done",1), HbtubCT2 = rep("qPCR not done",1), pfr364CT1 = rep("qPCR not done",1), pfr364CT2 = rep("qPCR not done",1),
+                             pfr364Q1_std = rep("qPCR not done",1), pfr364Q2_std = rep("qPCR not done",1), pf_pcr_infection_status = rep("qPCR not done",1),
+                             pfr364Q_std_combined = rep("qPCR not done",1), sent_for_sequencing = rep("no",1))
+
+# bind in those new plates
+final_data = rbind(final_data,plate_22_add_df)
+
+# do one last check that there's the right number of each plate
+table(final_data$dbs_plate_number, useNA = "always")
+table(final_data$experiment_name, useNA = "always")
 
 # write out the data set
-write_csv(final_data,"mozzie_phase_1_final_inventory_5AUG2019.csv")
-write_rds(final_data,"mozzie_phase_1_final_inventory_5AUG2019.rds")
+write_csv(final_data,"mozzie_phase_1_final_human_inventory_6AUG2019_searchable.csv")
+write_rds(final_data,"mozzie_phase_1_final__human_inventory_6AUG2019_searchable.rds")
 
-
+# created an Excel sheet version for the lab to use that's pared down some from the searchable version
 
 
 
