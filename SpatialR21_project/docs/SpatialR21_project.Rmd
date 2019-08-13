@@ -73,7 +73,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     1. *Reran qpcr for 34 human samples that had duplicate IDs in the lab inventory. Merged these into the data set later on, which is why have two merges with qpcr data.*
     2. *The DBS qpcr IDs were sometimes printed days up to 6 days prior to the day they were actually collected, so the DBS qpcr IDs sometimes contain dates that are up to 6 days prior to the social demographic (monthly follow-up) date. Used the social demographic (monthly or sick follow-up) date for the actual date of the disease onset in the analysis.*
     3. *59 samples did not have dates that fell within the 6 day period described in note 2 but were likely typos and were recoded in the data set. After this recoding, was able to merge all but 58 human qpcr DBS samples.*
-    4. *Were missing some human DBS samples (some social demographic data did not having a matching DBS), so there was a total of 96 observations removed because of: 1) DBS didn't merge into the data set or 2) DBS was missing for social demographic observation, giving a total of 2823 observations with merged in and matching DBS.*
+    4. *Were missing some human DBS samples (some social demographic data did not having a matching DBS), so there was a total of 97 observations removed because of: 1) DBS didn't merge into the data set or 2) DBS was missing for social demographic observation, giving a total of 2822 observations with merged in and matching DBS.*
 * Enforced follow-up censoring criteria on final merged data set one more time. 
     + Applied censoring criteria of having to have DBS merge in, have at least 2 monthly follow-up visits, and be >1 year old to be in final data set. 
     + Code for applying this censoring criteria to final merged data set: `taylorlab/SpatialR21_project/code/human_data_cleaning/spat21_make_final_censored_data_set.R`
@@ -81,7 +81,7 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     + Notes:
     1. *Removed some 4 participants that were <1 year old for entire follow-up period after data merging and 3 participants that had <2 months total follow-up after data merging.*
     2. *Some participants had observations removed so they didn't enter the study until they were at least 1 year old.*
-    3. *Ended up with a total of 239 participants and 2814 observations.*
+    3. *Ended up with a total of 239 participants and 2813 observations.*
     
 
   
@@ -105,6 +105,21 @@ Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
     3. *Mosquitoes were considered Pf + by qPCR if had any Pf CT value in either head or abdomen from 0 < CT < 40.*
     4. *Mosquitoes were considered Hb + by qPCR if had any Hb CT value in either head or abdomen from 0 < CT < 40.*
 
+
+## Haplotype Calling for Human and Mosquito Samples
+* Cleaned raw fastq files from the Duke sequencing core using Joe's cleaning pipeline (splitReads.pl script and DADA2.R script on Duke HARDAC cluster)
+  1. *Sequenced in 300bp paired-end fragments on Illumina MiSeq for 2 polymorphic P. falciparum genes: 1) apical membrane antigen 1 (pfama1) and 2) circumsporozoite protein (pfcsp)*
+  2. *Used BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets.*
+  3. *Used CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads.*
+  4. *Used Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score < 15 or was less than 80 nucleotides long.*
+  5. *Used DADA2 to perform haplotype calling of pfcsp and pfama1 targets using additional quality filtering based on DADA2's machine learning error-estimation algorithm and allowing single-nucleotide resolution.* 
+* After cleaning the reads and calling haplotypes, we censored falsely detected haplotypes. Censoring criteria was applied in this order:
+  1. *Haplotypes that occur in < 250 of the sample's reads are removed.*
+  2. *Haplotypes that occur in < 3% of the sample's reads are removed.*
+  3. *Haplotypes that are a different length than the majority of haplotypes (300 nt for pfama1, 288 nt for pfcsp) are removed.*
+  4. *For haplotypes that have 1 SNP difference, occur in the same sample, and have a >8 times read depth difference between them within that samples, removed the hapltoype with the lower read depth from that sample.*
+
+  
 
 # **Aim 1A: Time-to-event analysis for symptomatic malaria**
 * Looked at consecutive follow-up time to determine if we should impute follow-up time for aim 1A. Determined that we do not want to impute follow-up time for now. 

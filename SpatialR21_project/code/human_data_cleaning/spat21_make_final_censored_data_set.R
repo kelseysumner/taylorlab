@@ -19,7 +19,7 @@ library(tidyr)
 #### -------- read in the data sets --------- ####
 
 # read in the spat21 human merged data set with dbs censoring
-final_merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_25JUN2019.rds")
+final_merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_12AUG2019.rds")
 length(unique(final_merged_data$unq_memID))
 # note: 1 participant removed after dbs censoring
 
@@ -30,6 +30,22 @@ length(unique(old_data$unq_memID))
 
 
 #### ------- make a table of consecutive follow-up ---------- ####
+
+# check for duplicate sample ids in the social demographic data sample ids
+length(unique(final_merged_data$sample_name_final)) # 2822 unique unique 
+length(which(is.na(final_merged_data$sample_name_final) == T)) # 0 missing
+count_table = table(final_merged_data$sample_name_final, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
+
+# check for duplicate sample ids in the dbs sample ids
+length(unique(final_merged_data$sample_name_dbs)) # 2822 unique unique 
+length(which(is.na(final_merged_data$sample_name_dbs) == T)) # 0 missing
+count_table = table(final_merged_data$sample_name_dbs, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplciates
+length(dups_table)
+dups_table
 
 # table total monthly follow-up per participant
 total_follow_up_df = final_merged_data %>%
@@ -112,6 +128,6 @@ write_csv(consecutive_follow_up_ordered_df,"aim1a_consecutive_follow_up_order_df
 
 
 # write out the data frame with the final censoring criteria applied
-write_csv(final_merged_data,"spat21_human_final_censored_data_for_dissertation_16JUL2019.csv")
-write_rds(final_merged_data,"spat21_human_final_censored_data_for_dissertation_16JUL2019.rds")
+write_csv(final_merged_data,"spat21_human_final_censored_data_for_dissertation_12AUG2019.csv")
+write_rds(final_merged_data,"spat21_human_final_censored_data_for_dissertation_12AUG2019.rds")
 

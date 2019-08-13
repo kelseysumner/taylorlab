@@ -232,7 +232,7 @@ div.tocify {
 </div>
 
 
-<p>Last Updated 07/16/2019</p>
+<p>Last Updated 08/12/2019</p>
 <p><strong>Approach:</strong> Using longitudinal samples from Webuye, Kenya, evaluate the life course of asymptomatic Plasmodium falciparum malaria infections.</p>
 <p><strong>Data aggregation:</strong> Three primary data set types: Targeted amplicon sequencing data, quantitative PCR results, and social demographic data. There are multiple data sets for each type.</p>
 <div id="data-set-cleaning-and-compilation" class="section level1">
@@ -313,7 +313,7 @@ div.tocify {
 <li><em>Reran qpcr for 34 human samples that had duplicate IDs in the lab inventory. Merged these into the data set later on, which is why have two merges with qpcr data.</em></li>
 <li><em>The DBS qpcr IDs were sometimes printed days up to 6 days prior to the day they were actually collected, so the DBS qpcr IDs sometimes contain dates that are up to 6 days prior to the social demographic (monthly follow-up) date. Used the social demographic (monthly or sick follow-up) date for the actual date of the disease onset in the analysis.</em></li>
 <li><em>59 samples did not have dates that fell within the 6 day period described in note 2 but were likely typos and were recoded in the data set. After this recoding, was able to merge all but 58 human qpcr DBS samples.</em></li>
-<li><em>Were missing some human DBS samples (some social demographic data did not having a matching DBS), so there was a total of 96 observations removed because of: 1) DBS didn’t merge into the data set or 2) DBS was missing for social demographic observation, giving a total of 2823 observations with merged in and matching DBS.</em></li>
+<li><em>Were missing some human DBS samples (some social demographic data did not having a matching DBS), so there was a total of 97 observations removed because of: 1) DBS didn’t merge into the data set or 2) DBS was missing for social demographic observation, giving a total of 2822 observations with merged in and matching DBS.</em></li>
 </ol></li>
 <li>Enforced follow-up censoring criteria on final merged data set one more time.
 <ul>
@@ -325,7 +325,7 @@ div.tocify {
 <ol style="list-style-type: decimal">
 <li><em>Removed some 4 participants that were &lt;1 year old for entire follow-up period after data merging and 3 participants that had &lt;2 months total follow-up after data merging.</em></li>
 <li><em>Some participants had observations removed so they didn’t enter the study until they were at least 1 year old.</em></li>
-<li><em>Ended up with a total of 239 participants and 2814 observations.</em></li>
+<li><em>Ended up with a total of 239 participants and 2813 observations.</em></li>
 </ol></li>
 </ul>
 </div>
@@ -363,6 +363,28 @@ div.tocify {
 <li><em>Mosquitoes were considered Hb + by qPCR if had any Hb CT value in either head or abdomen from 0 &lt; CT &lt; 40.</em></li>
 </ol></li>
 </ul>
+</div>
+<div id="haplotype-calling-for-human-and-mosquito-samples" class="section level2">
+<h2>Haplotype Calling for Human and Mosquito Samples</h2>
+<ul>
+<li>Cleaned raw fastq files from the Duke sequencing core using Joe’s cleaning pipeline (splitReads.pl script and DADA2.R script on Duke HARDAC cluster)</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><em>Sequenced in 300bp paired-end fragments on Illumina MiSeq for 2 polymorphic P. falciparum genes: 1) apical membrane antigen 1 (pfama1) and 2) circumsporozoite protein (pfcsp)</em></li>
+<li><em>Used BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets.</em></li>
+<li><em>Used CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads.</em></li>
+<li><em>Used Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score &lt; 15 or was less than 80 nucleotides long.</em></li>
+<li><em>Used DADA2 to perform haplotype calling of pfcsp and pfama1 targets using additional quality filtering based on DADA2’s machine learning error-estimation algorithm and allowing single-nucleotide resolution.</em></li>
+</ol>
+<ul>
+<li>After cleaning the reads and calling haplotypes, we censored falsely detected haplotypes. Censoring criteria was applied in this order:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><em>Haplotypes that occur in &lt; 250 of the sample’s reads are removed.</em></li>
+<li><em>Haplotypes that occur in &lt; 3% of the sample’s reads are removed.</em></li>
+<li><em>Haplotypes that are a different length than the majority of haplotypes (300 nt for pfama1, 288 nt for pfcsp) are removed.</em></li>
+<li><em>For haplotypes that have 1 SNP difference, occur in the same sample, and have a &gt;8 times read depth difference between them within that samples, removed the hapltoype with the lower read depth from that sample.</em></li>
+</ol>
 </div>
 </div>
 <div id="aim-1a-time-to-event-analysis-for-symptomatic-malaria" class="section level1">

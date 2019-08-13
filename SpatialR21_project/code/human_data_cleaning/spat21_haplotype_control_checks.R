@@ -1,5 +1,5 @@
 # ----------------------------------------- #
-#       Spat21 Haplotype Output Cleaning    #
+#  Spat21 Haplotype Output Control Checks   #
 #             Human Data Run 1              #
 #              July 16, 2019                #
 #                K. Sumner                  #
@@ -23,7 +23,7 @@ library(Biostrings)
 #### ------- read in the AMA haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/haplotype_testing/haplotype_output/AMA_spat21_human_run1_haplotypes.rds")
+foo = read_rds("Desktop/haplotype_testing/run1_haplotype_output/AMA_spat21_human_run1_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -80,12 +80,23 @@ original_foo = original_foo[,c(haplotype_num_summary$haplotype_ids)]
 ### ---- enforce some haplotype censoring
 
 # read in the haplotype data set
-foo = read_rds("Desktop/haplotype_testing/haplotype_output/AMA_spat21_human_run1_haplotypes.rds")
+foo = read_rds("Desktop/haplotype_testing/run1_haplotype_output/AMA_spat21_human_run1_haplotypes.rds")
 
 # subset to just the controls for now
 # the controls are: BF441-BF446
 foo = foo[which(rownames(foo) == "BF441" | rownames(foo) == "BF442" | rownames(foo) == "BF443" |
                   rownames(foo) == "BF444" | rownames(foo) == "BF445" | rownames(foo) == "BF446"),]
+
+# write some code that removes haplotypes that occur in <250 of the sample reads
+for (i in 1:nrow(foo)){
+  for (h in 1:ncol(foo)){
+    if (foo[i,h] < 250 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+      foo[i,h] = 0
+    } else {
+      foo[i,h] = foo[i,h]
+    }
+  }
+}
 
 # write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
 for (i in 1:nrow(foo)){
@@ -222,7 +233,7 @@ colnames(foo)
 #### ------- read in the CSP haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/haplotype_testing/haplotype_output/CSP_spat21_human_run1_haplotypes.rds")
+foo = read_rds("Desktop/haplotype_testing/run1_haplotype_output/CSP_spat21_human_run1_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -279,12 +290,24 @@ original_foo = original_foo[,c(haplotype_num_summary$haplotype_ids)]
 ### ---- enforce some haplotype censoring
 
 # read in the haplotype data set
-foo = read_rds("Desktop/haplotype_testing/haplotype_output/CSP_spat21_human_run1_haplotypes.rds")
+foo = read_rds("Desktop/haplotype_testing/run1_haplotype_output/CSP_spat21_human_run1_haplotypes.rds")
 
 # subset to just the controls for now
 # the controls are: BF441-BF446
 foo = foo[which(rownames(foo) == "BF441" | rownames(foo) == "BF442" | rownames(foo) == "BF443" |
                   rownames(foo) == "BF444" | rownames(foo) == "BF445" | rownames(foo) == "BF446"),]
+
+
+# write some code that removes haplotypes that occur in <250 of the sample reads
+for (i in 1:nrow(foo)){
+  for (h in 1:ncol(foo)){
+    if (foo[i,h] < 250 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+      foo[i,h] = 0
+    } else {
+      foo[i,h] = foo[i,h]
+    }
+  }
+}
 
 # write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
 for (i in 1:nrow(foo)){

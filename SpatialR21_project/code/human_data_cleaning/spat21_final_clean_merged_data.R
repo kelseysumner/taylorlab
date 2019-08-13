@@ -263,6 +263,11 @@ colnames(final_merged_data_no_censoring)
 
 
 
+
+
+
+
+
 #### ------- write out the new data sets --------- ####
 
 # final_merged_data
@@ -272,5 +277,113 @@ write_rds(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Fin
 # final_merged_data_no_censoring
 write_csv(final_merged_data_no_censoring,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_25JUN2019.csv")
 write_rds(final_merged_data_no_censoring,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_25JUN2019.rds")
+
+
+
+
+
+#### ------- read back in these data sets and check that there aren't any dbs duplicates ------ ####
+
+# read in the data set with dbs censoring applied
+final_merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_25JUN2019.rds")
+
+# check for duplicate sample ids in the social demographic data sample ids
+length(unique(final_merged_data$sample_name_final)) # 2823 unique unique 
+length(which(is.na(final_merged_data$sample_name_final) == T)) # 0 missing
+count_table = table(final_merged_data$sample_name_final, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
+
+# check for duplicate sample ids in the dbs sample ids
+length(unique(final_merged_data$sample_name_dbs)) # 2822 unique unique 
+length(which(is.na(final_merged_data$sample_name_dbs) == T)) # 0 missing
+count_table = table(final_merged_data$sample_name_dbs, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 1 duplicate: K05-021117-4-R
+length(dups_table)
+dups_table
+
+# look at the 1 duplicate: K05-021117-4-R
+check_dup_all_data = final_merged_data[which(final_merged_data$sample_name_dbs == "K05-021117-4-R"),]
+check_dup_all_data$today_hum_monthly_data
+check_dup_all_data$today_hum_sick_data
+end = check_dup_all_data[,c(100:131)]
+# looks like sample just merged in twice, only had 1 dbs in qpcr data for it and the lab inventory
+# looks like the issue is because there was a monthly and symptomatic dbs collected on the same day. updated the data set to keep having the monthly and symptomatic visit on same day because that appears to be when they were actually collected. 
+final_merged_data = final_merged_data[-which(final_merged_data$sample_name_dbs=="K05-021117-4-R" & is.na(final_merged_data$today_hum_monthly_data)),]
+
+# check for duplicate sample ids in the dbs sample ids one more time
+length(unique(final_merged_data$sample_name_dbs)) # 2822 unique unique 
+length(which(is.na(final_merged_data$sample_name_dbs) == T)) # 0 missing
+count_table = table(final_merged_data$sample_name_dbs, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates now
+length(dups_table)
+dups_table
+
+
+
+###
+
+# read in the data set with no dbs censoring applied
+final_merged_data_nc = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_25JUN2019.rds")
+
+# check for duplicate sample ids in the social demographic data sample ids
+length(unique(final_merged_data_nc$sample_name_final)) # 2919 unique unique 
+length(which(is.na(final_merged_data_nc$sample_name_final) == T)) # 96 missing
+count_table = table(final_merged_data_nc$sample_name_final, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
+
+# check for duplicate sample ids in the dbs sample ids
+length(unique(final_merged_data_nc$sample_name_dbs)) # 2823 unique unique 
+length(which(is.na(final_merged_data_nc$sample_name_dbs) == T)) # 0 missing
+count_table = table(final_merged_data_nc$sample_name_dbs, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 1 duplicate: K05-021117-4-R
+length(dups_table)
+dups_table
+
+# look at the 1 duplicate: K05-021117-4-R
+check_dup_all_data = final_merged_data_nc[which(final_merged_data_nc$sample_name_dbs == "K05-021117-4-R"),]
+check_dup_all_data$today_hum_monthly_data
+check_dup_all_data$today_hum_sick_data
+end = check_dup_all_data[,c(100:131)]
+# looks like sample just merged in twice, only had 1 dbs in qpcr data for it and the lab inventory
+# looks like the issue is because there was a monthly and symptomatic dbs collected on the same day. updated the data set to keep having the monthly and symptomatic visit on same day because that appears to be when they were actually collected. 
+final_merged_data_nc$pf_pcr_infection_status[which(final_merged_data_nc$sample_name_dbs=="K05-021117-4-R" & is.na(final_merged_data_nc$today_hum_monthly_data))]=NA
+final_merged_data_nc$pfr364Q_std_combined[which(final_merged_data_nc$sample_name_dbs=="K05-021117-4-R" & is.na(final_merged_data_nc$today_hum_monthly_data))]=NA
+final_merged_data_nc$sample_name_dbs[which(final_merged_data_nc$sample_name_dbs=="K05-021117-4-R" & is.na(final_merged_data_nc$today_hum_monthly_data))]=NA
+# check the recode
+check_dup_all_data = final_merged_data_nc[which(final_merged_data_nc$sample_name_final == "K05-021117-4-R"),]
+check_dup_all_data$today_hum_monthly_data
+check_dup_all_data$today_hum_sick_data
+end = check_dup_all_data[,c(100:131)]
+
+# check for duplicate sample ids in the dbs sample ids one more time
+length(unique(final_merged_data_nc$sample_name_dbs)) # 2823 unique unique 
+length(which(is.na(final_merged_data_nc$sample_name_dbs) == T)) # 97 missing
+count_table = table(final_merged_data_nc$sample_name_dbs, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates now
+length(dups_table)
+dups_table
+
+
+
+
+# write out the final data sets
+
+# final_merged_data
+write_csv(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_12AUG2019.csv")
+write_rds(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_12AUG2019.rds")
+
+# final_merged_data_no_censoring
+write_csv(final_merged_data_nc,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_12AUG2019.csv")
+write_rds(final_merged_data_nc,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_12AUG2019.rds")
+
+
+
+
+
+
 
 

@@ -355,13 +355,439 @@ dups_table = count_table[which(count_table > 1)] # 0 duplicates
 length(dups_table)
 dups_table
 
+# code the K01 H00030, K01 A00030, K01 H00047, and K01 A00047 as positive
+final_data$pf_pcr_infection_status_sample_level_a[which(final_data$sample_id_abdomen=="K01 A00030")] = "positive"
+final_data$pf_pcr_infection_status_sample_level_a[which(final_data$sample_id_abdomen=="K01 A00047")] = "positive"
+final_data$pf_pcr_infection_status_sample_level_h[which(final_data$sample_id_abdomen=="K01 H00030")] = "positive"
+final_data$pf_pcr_infection_status_sample_level_h[which(final_data$sample_id_abdomen=="K01 H00047")] = "positive"
+
+# check for duplicates one last time in the sample IDs for the heads and abdomens
+# sample_id_head
+length(unique(final_data$sample_id_head)) # 1490 unique 
+length(which(is.na(final_data$sample_id_head) == T)) # 8 missing
+count_table = table(final_data$sample_id_head, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
+# sample_id_abdomen
+length(unique(final_data$sample_id_abdomen)) # 1489 unique 
+length(which(is.na(final_data$sample_id_abdomen) == T)) # 9 missing
+count_table = table(final_data$sample_id_abdomen, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
+
 # now clean up the remaining columns
 colnames(final_data)
 # HH_ID
 table(final_data$HH_ID, useNA = "always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$HH_ID[i])){
+    final_data$HH_ID[i] = str_split(final_data$sample_id_mosquito[i]," ")[[1]][1]
+  } else {
+    final_data$HH_ID[i] = final_data$HH_ID[i]
+  }
+}
+table(final_data$HH_ID, useNA = "always")
+# collection_date
+length(which(is.na(final_data$collection_date))) # 3 collection dates missing which you'd expect because didn't merge into meta data
+final_data$collection_date = as.character(final_data$collection_date)
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$collection_date[i])){
+    final_data$collection_date[i] = "Not recorded"
+  } else {
+    final_data$collection_date[i] = final_data$collection_date[i]
+  }
+}
+length(which(is.na(final_data$collection_date)))
+length(which(final_data$collection_date=="Not recorded"))
+# village
+length(which(is.na(final_data$village)))
+table(final_data$village, useNA = "always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$village[i])){
+    if (str_detect(final_data$sample_id_mosquito[i],"K")){
+      final_data$village[i] = "Kinesamo"
+    }
+    if (str_detect(final_data$sample_id_mosquito[i],"M")){
+      final_data$village[i] = "Maruti"
+    }
+    if (str_detect(final_data$sample_id_mosquito[i],"S")){
+      final_data$village[i] = "Sitabicha"
+    }
+  } else {
+    final_data$village[i] = final_data$village[i]
+  }
+}
+table(final_data$village, useNA = "always")
+# sample_id_mosquito
+length(which(is.na(final_data$sample_id_mosquito)))
+# pf_infection_status_mosquito_level
+table(final_data$pf_infection_status_mosquito_level, useNA = "always")
+table(final_data$pf_pcr_infection_status_sample_level_a, useNA = "always")
+table(final_data$pf_pcr_infection_status_sample_level_h, useNA = "always")
+length(which(is.na(final_data$pf_infection_status_mosquito_level) & is.na(final_data$pf_pcr_infection_status_sample_level_a) & is.na(final_data$pf_pcr_infection_status_sample_level_h)))
+final_data$pf_infection_status_mosquito_level = as.character(final_data$pf_infection_status_mosquito_level)
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pf_infection_status_mosquito_level[i])){
+    if (final_data$pf_pcr_infection_status_sample_level_a[i] == "positive" & !(is.na(final_data$pf_pcr_infection_status_sample_level_a[i]))){
+      final_data$pf_infection_status_mosquito_level[i] = "positive"
+    } else if (final_data$pf_pcr_infection_status_sample_level_h[i] == 'positive' & !(is.na(final_data$pf_pcr_infection_status_sample_level_h[i]))){
+      final_data$pf_infection_status_mosquito_level[i] = "positive"
+    } else if (is.na(final_data$pf_pcr_infection_status_sample_level_a[i]) & is.na(final_data$pf_pcr_infection_status_sample_level_h[i])) {
+      final_data$pf_infection_status_mosquito_level[i] = "qPCR not done"
+    } else {
+      final_data$pf_infection_status_mosquito_level[i] = "negative"
+    }
+  } else {
+    final_data$pf_infection_status_mosquito_level[i] = final_data$pf_infection_status_mosquito_level[i]
+  }
+}
+table(final_data$pf_infection_status_mosquito_level, useNA = "always")
+# hb_status_mosquito_level
+table(final_data$hb_status_mosquito_level, useNA = "always")
+table(final_data$hb_status_sample_level_a, useNA = "always")
+table(final_data$hb_status_sample_level_h, useNA = "always")
+length(which(is.na(final_data$hb_status_mosquito_level) & is.na(final_data$hb_status_sample_level_a) & is.na(final_data$hb_status_sample_level_h)))
+final_data$hb_status_mosquito_level = as.character(final_data$hb_status_mosquito_level)
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$hb_status_mosquito_level[i])){
+    if (final_data$hb_status_sample_level_a[i] == "positive" & !(is.na(final_data$hb_status_sample_level_a[i]))){
+      final_data$hb_status_mosquito_level[i] = "positive"
+    } else if (final_data$hb_status_sample_level_h[i] == 'positive' & !(is.na(final_data$hb_status_sample_level_h[i]))){
+      final_data$hb_status_mosquito_level[i] = "positive"
+    } else if (is.na(final_data$hb_status_sample_level_a[i]) & is.na(final_data$hb_status_sample_level_h[i])) {
+      final_data$hb_status_mosquito_level[i] = "qPCR not done"
+    } else {
+      final_data$hb_status_mosquito_level[i] = "negative"
+    }
+  } else {
+    final_data$hb_status_mosquito_level[i] = final_data$hb_status_mosquito_level[i]
+  }
+}
+table(final_data$hb_status_mosquito_level, useNA = "always")
+# sample_id_head
+length(which(is.na(final_data$sample_id_head)))
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$sample_id_head[i])){
+    final_data$sample_id_head[i] = "Not processed"
+  } else {
+    final_data$sample_id_head[i] = final_data$sample_id_head[i]
+  }
+}
+length(which(is.na(final_data$sample_id_head)))
+length(which(final_data$sample_id_head=="Not processed"))
+# gdna_extraction_date_h
+length(which(is.na(final_data$gdna_extraction_date_h)))
+final_data$gdna_extraction_date_h = as.character(final_data$gdna_extraction_date_h)
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_extraction_date_h[i])){
+    final_data$gdna_extraction_date_h[i] = "Not recorded"
+  } else {
+    final_data$gdna_extraction_date_h[i] = final_data$gdna_extraction_date_h[i]
+  }
+}
+length(which(is.na(final_data$gdna_extraction_date_h)))
+length(which(final_data$gdna_extraction_date_h=="Not recorded"))
+# gdna_plate_number_h
+length(which(is.na(final_data$gdna_plate_number_h)))
+final_data$gdna_plate_number_h = as.character(final_data$gdna_plate_number_h)
+table(final_data$gdna_plate_number_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_plate_number_h[i])){
+    final_data$gdna_plate_number_h[i] = "Not recorded"
+  } else {
+    final_data$gdna_plate_number_h[i] = final_data$gdna_plate_number_h[i]
+  }
+}
+table(final_data$gdna_plate_number_h, useNA="always")
+# gdna_column_number_h
+table(final_data$gdna_column_number_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_column_number_h[i])){
+    final_data$gdna_column_number_h[i] = "Not recorded"
+  } else {
+    final_data$gdna_column_number_h[i] = final_data$gdna_column_number_h[i]
+  }
+}
+table(final_data$gdna_column_number_h, useNA="always")
+# gdna_row_number_h
+table(final_data$gdna_row_number_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_row_number_h[i])){
+    final_data$gdna_row_number_h[i] = "Not recorded"
+  } else {
+    final_data$gdna_row_number_h[i] = final_data$gdna_row_number_h[i]
+  }
+}
+table(final_data$gdna_row_number_h, useNA="always")
+# HbtubCT1_h
+table(final_data$HbtubCT1_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$HbtubCT1_h[i])){
+    final_data$HbtubCT1_h[i] = "Undefined"
+  } else {
+    final_data$HbtubCT1_h[i] = final_data$HbtubCT1_h[i]
+  }
+}
+table(final_data$HbtubCT1_h, useNA="always")
+# HbtubCT2_h
+table(final_data$HbtubCT2_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$HbtubCT2_h[i])){
+    final_data$HbtubCT2_h[i] = "Undefined"
+  } else {
+    final_data$HbtubCT2_h[i] = final_data$HbtubCT2_h[i]
+  }
+}
+table(final_data$HbtubCT2_h, useNA="always")
+# pfr364CT1_h
+table(final_data$pfr364CT1_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364CT1_h[i])){
+    final_data$pfr364CT1_h[i] = "Undefined"
+  } else {
+    final_data$pfr364CT1_h[i] = final_data$pfr364CT1_h[i]
+  }
+}
+table(final_data$pfr364CT1_h, useNA="always")
+# pfr364CT2_h
+table(final_data$pfr364CT2_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364CT2_h[i])){
+    final_data$pfr364CT2_h[i] = "Undefined"
+  } else {
+    final_data$pfr364CT2_h[i] = final_data$pfr364CT2_h[i]
+  }
+}
+table(final_data$pfr364CT2_h, useNA="always")
+# pfr364Q1_h
+table(final_data$pfr364Q1_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364Q1_h[i])){
+    final_data$pfr364Q1_h[i] = "Undefined"
+  } else {
+    final_data$pfr364Q1_h[i] = final_data$pfr364Q1_h[i]
+  }
+}
+table(final_data$pfr364Q1_h, useNA="always")
+# pfr364Q2_h
+table(final_data$pfr364Q2_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364Q2_h[i])){
+    final_data$pfr364Q2_h[i] = "Undefined"
+  } else {
+    final_data$pfr364Q2_h[i] = final_data$pfr364Q2_h[i]
+  }
+}
+table(final_data$pfr364Q2_h, useNA="always")
+# pfr364Q_combined_h
+table(final_data$pfr364Q_combined_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364Q_combined_h[i])){
+    final_data$pfr364Q_combined_h[i] = "Undefined"
+  } else {
+    final_data$pfr364Q_combined_h[i] = final_data$pfr364Q_combined_h[i]
+  }
+}
+table(final_data$pfr364Q_combined_h, useNA="always")
+# pf_pcr_infection_status_sample_level_h
+final_data$pf_pcr_infection_status_sample_level_h = as.character(final_data$pf_pcr_infection_status_sample_level_h)
+table(final_data$pf_pcr_infection_status_sample_level_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pf_pcr_infection_status_sample_level_h[i])){
+    final_data$pf_pcr_infection_status_sample_level_h[i] = "qPCR not done"
+  } else {
+    final_data$pf_pcr_infection_status_sample_level_h[i] = final_data$pf_pcr_infection_status_sample_level_h[i]
+  }
+}
+table(final_data$pf_pcr_infection_status_sample_level_h, useNA="always")
+# hb_status_sample_level_h
+final_data$hb_status_sample_level_h = as.character(final_data$hb_status_sample_level_h)
+table(final_data$hb_status_sample_level_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$hb_status_sample_level_h[i])){
+    final_data$hb_status_sample_level_h[i] = "qPCR not done"
+  } else {
+    final_data$hb_status_sample_level_h[i] = final_data$hb_status_sample_level_h[i]
+  }
+}
+table(final_data$hb_status_sample_level_h, useNA="always")
+# sent_for_sequencing_h
+final_data$sent_for_sequencing_h = as.character(final_data$sent_for_sequencing_h)
+table(final_data$sent_for_sequencing_h, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$sent_for_sequencing_h[i])){
+    final_data$sent_for_sequencing_h[i] = "no"
+  } else {
+    final_data$sent_for_sequencing_h[i] = final_data$sent_for_sequencing_h[i]
+  }
+}
+table(final_data$sent_for_sequencing_h, useNA="always")
+# sample_id_abdomen
+length(which(is.na(final_data$sample_id_abdomen)))
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$sample_id_abdomen[i])){
+    final_data$sample_id_abdomen[i] = "Not processed"
+  } else {
+    final_data$sample_id_abdomen[i] = final_data$sample_id_abdomen[i]
+  }
+}
+length(which(is.na(final_data$sample_id_abdomen)))
+length(which(final_data$sample_id_abdomen=="Not processed"))
+# gdna_extraction_date_a
+length(which(is.na(final_data$gdna_extraction_date_a)))
+final_data$gdna_extraction_date_a = as.character(final_data$gdna_extraction_date_a)
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_extraction_date_a[i])){
+    final_data$gdna_extraction_date_a[i] = "Not recorded"
+  } else {
+    final_data$gdna_extraction_date_a[i] = final_data$gdna_extraction_date_a[i]
+  }
+}
+length(which(is.na(final_data$gdna_extraction_date_a)))
+length(which(final_data$gdna_extraction_date_a=="Not recorded"))
+# gdna_plate_number_a
+length(which(is.na(final_data$gdna_plate_number_a)))
+final_data$gdna_plate_number_a = as.character(final_data$gdna_plate_number_a)
+table(final_data$gdna_plate_number_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_plate_number_a[i])){
+    final_data$gdna_plate_number_a[i] = "Not recorded"
+  } else {
+    final_data$gdna_plate_number_a[i] = final_data$gdna_plate_number_a[i]
+  }
+}
+table(final_data$gdna_plate_number_a, useNA="always")
+# gdna_column_number_a
+table(final_data$gdna_column_number_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_column_number_a[i])){
+    final_data$gdna_column_number_a[i] = "Not recorded"
+  } else {
+    final_data$gdna_column_number_a[i] = final_data$gdna_column_number_a[i]
+  }
+}
+table(final_data$gdna_column_number_a, useNA="always")
+# gdna_row_number_a
+table(final_data$gdna_row_number_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$gdna_row_number_a[i])){
+    final_data$gdna_row_number_a[i] = "Not recorded"
+  } else {
+    final_data$gdna_row_number_a[i] = final_data$gdna_row_number_a[i]
+  }
+}
+table(final_data$gdna_row_number_a, useNA="always")
+# HbtubCT1_a
+table(final_data$HbtubCT1_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$HbtubCT1_a[i])){
+    final_data$HbtubCT1_a[i] = "Undefined"
+  } else {
+    final_data$HbtubCT1_a[i] = final_data$HbtubCT1_a[i]
+  }
+}
+table(final_data$HbtubCT1_a, useNA="always")
+# HbtubCT2_a
+table(final_data$HbtubCT2_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$HbtubCT2_a[i])){
+    final_data$HbtubCT2_a[i] = "Undefined"
+  } else {
+    final_data$HbtubCT2_a[i] = final_data$HbtubCT2_a[i]
+  }
+}
+table(final_data$HbtubCT2_a, useNA="always")
+# pfr364CT1_a
+table(final_data$pfr364CT1_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364CT1_a[i])){
+    final_data$pfr364CT1_a[i] = "Undefined"
+  } else {
+    final_data$pfr364CT1_a[i] = final_data$pfr364CT1_a[i]
+  }
+}
+table(final_data$pfr364CT1_a, useNA="always")
+# pfr364CT2_a
+table(final_data$pfr364CT2_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364CT2_a[i])){
+    final_data$pfr364CT2_a[i] = "Undefined"
+  } else {
+    final_data$pfr364CT2_a[i] = final_data$pfr364CT2_a[i]
+  }
+}
+table(final_data$pfr364CT2_a, useNA="always")
+# pfr364Q1_a
+table(final_data$pfr364Q1_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364Q1_a[i])){
+    final_data$pfr364Q1_a[i] = "Undefined"
+  } else {
+    final_data$pfr364Q1_a[i] = final_data$pfr364Q1_a[i]
+  }
+}
+table(final_data$pfr364Q1_a, useNA="always")
+# pfr364Q2_a
+table(final_data$pfr364Q2_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364Q2_a[i])){
+    final_data$pfr364Q2_a[i] = "Undefined"
+  } else {
+    final_data$pfr364Q2_a[i] = final_data$pfr364Q2_a[i]
+  }
+}
+table(final_data$pfr364Q2_a, useNA="always")
+# pfr364Q_combined_a
+table(final_data$pfr364Q_combined_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pfr364Q_combined_a[i])){
+    final_data$pfr364Q_combined_a[i] = "Undefined"
+  } else {
+    final_data$pfr364Q_combined_a[i] = final_data$pfr364Q_combined_a[i]
+  }
+}
+table(final_data$pfr364Q_combined_a, useNA="always")
+# pf_pcr_infection_status_sample_level_a
+final_data$pf_pcr_infection_status_sample_level_a = as.character(final_data$pf_pcr_infection_status_sample_level_a)
+table(final_data$pf_pcr_infection_status_sample_level_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$pf_pcr_infection_status_sample_level_a[i])){
+    final_data$pf_pcr_infection_status_sample_level_a[i] = "qPCR not done"
+  } else {
+    final_data$pf_pcr_infection_status_sample_level_a[i] = final_data$pf_pcr_infection_status_sample_level_a[i]
+  }
+}
+table(final_data$pf_pcr_infection_status_sample_level_a, useNA="always")
+# hb_status_sample_level_a
+final_data$hb_status_sample_level_a = as.character(final_data$hb_status_sample_level_a)
+table(final_data$hb_status_sample_level_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$hb_status_sample_level_a[i])){
+    final_data$hb_status_sample_level_a[i] = "qPCR not done"
+  } else {
+    final_data$hb_status_sample_level_a[i] = final_data$hb_status_sample_level_a[i]
+  }
+}
+table(final_data$hb_status_sample_level_a, useNA="always")
+# sent_for_sequencing_a
+final_data$sent_for_sequencing_a = as.character(final_data$sent_for_sequencing_a)
+table(final_data$sent_for_sequencing_a, useNA="always")
+for (i in 1:nrow(final_data)){
+  if (is.na(final_data$sent_for_sequencing_a[i])){
+    final_data$sent_for_sequencing_a[i] = "no"
+  } else {
+    final_data$sent_for_sequencing_a[i] = final_data$sent_for_sequencing_a[i]
+  }
+}
+table(final_data$sent_for_sequencing_a, useNA="always")
 
+# write out the data set
+write_csv(final_data,"mozzie_phase_1_final_mosquito_inventory_7AUG2019_searchable.csv")
+write_rds(final_data,"mozzie_phase_1_final_mosquito_inventory_7AUG2019_searchable.rds")
 
-
+# created an Excel sheet version for the lab to use that's pared down some from the searchable version
 
 
 

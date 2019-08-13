@@ -44,6 +44,19 @@ for (i in 1:nrow(foo)){
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
 needtoremove = which(haplotype_summary$haplotype_reads == 0) # 0 samples to remove
+ 
+
+# write some code that removes haplotypes that occur in <250 of the sample reads
+for (i in 1:nrow(foo)){
+  for (h in 1:ncol(foo)){
+    if (foo[i,h] < 250 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+      foo[i,h] = 0
+    } else {
+      foo[i,h] = foo[i,h]
+    }
+  }
+}
+
 
 # write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
 for (i in 1:nrow(foo)){
@@ -255,7 +268,7 @@ ama_abdomen_moi_df <- ama_merge_data_abdomens %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 ama_abdomen_moi_df$haplotype_number = as.numeric(ama_abdomen_moi_df$haplotype_number)
-sum(ama_abdomen_moi_df$n) # 173+8 = 181
+sum(ama_abdomen_moi_df$n) # 163+18 = 181
 
 # create a summarized data frame of the number of heads with each MOI
 ama_head_moi_df <- ama_merge_data_heads %>% 
@@ -264,7 +277,7 @@ ama_head_moi_df <- ama_merge_data_heads %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 ama_head_moi_df$haplotype_number = as.numeric(ama_head_moi_df$haplotype_number)
-sum(ama_head_moi_df$n) # 114+5 = 119
+sum(ama_head_moi_df$n) # 108+11 = 119
 
 # make ama abdomen figure
 ama_title <- expression(paste(italic("pfama1"), ": Mosquito abdomens"))
@@ -290,6 +303,87 @@ figure1_ama = gridExtra::grid.arrange(ama_abdomen_moi_plot, ama_head_moi_plot, n
 # export ama moi plots
 ggsave(figure1_ama, filename="/Users/kelseysumner/Desktop/figure1_ama.png", device="png",
 height=10.5, width=11.2, units="in", dpi=400)
+
+
+# loop through and create a variable for each village
+village = rep(NA,nrow(ama_merge_data))
+for (i in 1:nrow(ama_merge_data)){
+  if (str_detect(ama_merge_data$sample_id[i],"K")) {
+    village[i] = "Kinesamo"
+  }
+  if (str_detect(ama_merge_data$sample_id[i],"M")) {
+    village[i] = "Maruti"
+  }
+  if (str_detect(ama_merge_data$sample_id[i],"S")) {
+    village[i] = "Sitabicha"
+  }
+}
+ama_merge_data$village = village
+table(ama_merge_data$village, useNA = "always")
+
+# pull out the household IDs
+HH_ID = rep(NA,nrow(ama_merge_data))
+for (i in 1:nrow(ama_merge_data)){
+  HH_ID[i] = str_split(ama_merge_data$sample_id[i]," ")[[1]][1]
+}
+ama_merge_data$HH_ID = HH_ID
+table(ama_merge_data$HH_ID, useNA = "always")
+
+# look at the top 10 samples with the largest moi
+ordered_haplotype_summary = haplotype_summary_censored_final[order(haplotype_summary_censored_final$haplotype_number),] 
+ama_top10_data = ordered_haplotype_summary[c(262:271),]
+ama_merge_data_top10 = ama_merge_data[which(ama_merge_data$MiSeq.ID %in% ama_top10_data$sample_names),]
+
+# look at heads vs abdomens across the top 10 mois
+table(ama_merge_data_top10$mosquito_part_type, useNA="always")
+
+# look at village across the top 10 mois
+table(ama_merge_data_top10$village, useNA="always")
+
+# look at the most common households across top 10 mois
+table(ama_merge_data_top10$HH_ID, useNA="always")
+
+# summarize the samples for each haplotype
+ama_hap_data = ama_merge_data_top10[,c(5:352)]
+haplotype.names = rep(1:ncol(ama_hap_data))
+haplotypes_in_samples = rep(NA,ncol(ama_hap_data))
+total_reads_in_samples = rep(NA,ncol(ama_hap_data))
+for (k in 1:ncol(ama_hap_data)){
+  haplotypes_in_samples[k] = length(which(ama_hap_data[,k] > 0))
+  total_reads_in_samples[k] = sum(ama_hap_data[,k],na.rm=T)
+}
+top10_haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# remove haplotypes where total reads across samples was 0
+top10_haplotype_num_summary = top10_haplotype_num_summary[which(top10_haplotype_num_summary$total_reads_across_samples > 0),]
+
+# enforce censoring to rds data set
+ama_hap_data = ama_hap_data[,c(top10_haplotype_num_summary$haplotype_ids)]
+
+# add row that is sample IDs
+ama_hap_data$sample_id = ama_merge_data_top10$sample_id
+
+# look at the actual haplotypes in these top 10 samples
+# for each haplotype calculate what the percent abundance for top 10 MOI samples are
+for (i in 1:nrow(ama_hap_data)){
+  my_data = ama_hap_data[i,]
+  my_data = my_data[, !apply(my_data == 0, 2, all)]
+  sample_id = my_data$sample_id
+  my_data$sample_id <- NULL
+  percent_abundance = rep(NA,ncol(my_data))
+  for (k in 1:ncol(my_data)){
+    percent_abundance[k] = my_data[1,k]/sum(my_data[1,])
+  }
+  percent_abundance = percent_abundance %>% unlist()
+  plot_data = data.frame(haplotypes = colnames(my_data), percent_abundance)
+  my_plot = ggplot(plot_data,aes(x=reorder(haplotypes, -percent_abundance),y=percent_abundance)) +
+    geom_bar(stat="identity",fill="light blue") +
+    theme_bw() +
+    labs(x="Haplotypes", y="Within-Sample Percent Abundance",title=sample_id)
+  ggsave(my_plot, filename=paste0("/Users/kelseysumner/Desktop/",sample_id,".png"), device="png",
+         height=4, width=6, units="in", dpi=400)
+}
+
 
 
 
@@ -318,6 +412,17 @@ haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number"
 # remove samples that ended up with no reads at the end
 needtoremove = which(haplotype_summary$haplotype_reads == 0) # 1 sample removed
 haplotype_summary = haplotype_summary[-needtoremove,]
+
+# write some code that removes haplotypes that occur in <250 of the sample reads
+for (i in 1:nrow(foo)){
+  for (h in 1:ncol(foo)){
+    if (foo[i,h] < 250 & !(is.na(foo[i,h])) & sum(foo[i,]) != 0){
+      foo[i,h] = 0
+    } else {
+      foo[i,h] = foo[i,h]
+    }
+  }
+}
 
 # write some code that calculates what percentage each haplotype occurs in and removes haplotypes that occur in <3% of the sample reads
 for (i in 1:nrow(foo)){
@@ -529,7 +634,7 @@ csp_abdomen_moi_df <- csp_merge_data_abdomens %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 csp_abdomen_moi_df$haplotype_number = as.numeric(csp_abdomen_moi_df$haplotype_number)
-sum(csp_abdomen_moi_df$n) # 191+8 = 199
+sum(csp_abdomen_moi_df$n) # 184+15 = 199
 
 # create a summarized data frame of the number of heads with each MOI
 csp_head_moi_df <- csp_merge_data_heads %>% 
@@ -538,7 +643,7 @@ csp_head_moi_df <- csp_merge_data_heads %>%
   summarise(n=n())
 # make the number of haplotypes column numeric
 csp_head_moi_df$haplotype_number = as.numeric(csp_head_moi_df$haplotype_number)
-sum(csp_head_moi_df$n) # 128+6
+sum(csp_head_moi_df$n) # 124+10 = 134
 
 # make csp abdomen figure
 csp_title <- expression(paste(italic("pfcsp1"), ": Mosquito abdomens"))
@@ -567,10 +672,85 @@ ggsave(figure1_csp, filename="/Users/kelseysumner/Desktop/figure1_csp.png", devi
 
 
 
+# loop through and create a variable for each village
+village = rep(NA,nrow(csp_merge_data))
+for (i in 1:nrow(csp_merge_data)){
+  if (str_detect(csp_merge_data$sample_id[i],"K")) {
+    village[i] = "Kinesamo"
+  }
+  if (str_detect(csp_merge_data$sample_id[i],"M")) {
+    village[i] = "Maruti"
+  }
+  if (str_detect(csp_merge_data$sample_id[i],"S")) {
+    village[i] = "Sitabicha"
+  }
+}
+csp_merge_data$village = village
+table(csp_merge_data$village, useNA = "always")
+
+# pull out the household IDs
+HH_ID = rep(NA,nrow(csp_merge_data))
+for (i in 1:nrow(csp_merge_data)){
+  HH_ID[i] = str_split(csp_merge_data$sample_id[i]," ")[[1]][1]
+}
+csp_merge_data$HH_ID = HH_ID
+table(csp_merge_data$HH_ID, useNA = "always")
+
+# look at the top 10 samples with the largest moi
+ordered_haplotype_summary = haplotype_summary_censored_final[order(haplotype_summary_censored_final$haplotype_number),] 
+csp_top10_data = ordered_haplotype_summary[c(299:308),]
+csp_merge_data_top10 = csp_merge_data[which(csp_merge_data$MiSeq.ID %in% csp_top10_data$sample_names),]
+
+# look at heads vs abdomens across the top 10 mois
+table(csp_merge_data_top10$mosquito_part_type, useNA="always")
+
+# look at village across the top 10 mois
+table(csp_merge_data_top10$village, useNA="always")
+
+# look at the most common households across top 10 mois
+table(csp_merge_data_top10$HH_ID, useNA="always")
 
 
+# summarize the samples for each haplotype
+csp_hap_data = csp_merge_data_top10[,c(5:231)]
+haplotype.names = rep(1:ncol(csp_hap_data))
+haplotypes_in_samples = rep(NA,ncol(csp_hap_data))
+total_reads_in_samples = rep(NA,ncol(csp_hap_data))
+for (k in 1:ncol(csp_hap_data)){
+  haplotypes_in_samples[k] = length(which(csp_hap_data[,k] > 0))
+  total_reads_in_samples[k] = sum(csp_hap_data[,k],na.rm=T)
+}
+top10_haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
 
+# remove haplotypes where total reads across samples was 0
+top10_haplotype_num_summary = top10_haplotype_num_summary[which(top10_haplotype_num_summary$total_reads_across_samples > 0),]
 
+# enforce censoring to rds data set
+csp_hap_data = csp_hap_data[,c(top10_haplotype_num_summary$haplotype_ids)]
+
+# add row that is sample IDs
+csp_hap_data$sample_id = csp_merge_data_top10$sample_id
+
+# look at the actual haplotypes in these top 10 samples
+# for each haplotype calculate what the percent abundance for top 10 MOI samples are
+for (i in 1:nrow(csp_hap_data)){
+  my_data = csp_hap_data[i,]
+  my_data = my_data[, !apply(my_data == 0, 2, all)]
+  sample_id = my_data$sample_id
+  my_data$sample_id <- NULL
+  percent_abundance = rep(NA,ncol(my_data))
+  for (k in 1:ncol(my_data)){
+    percent_abundance[k] = my_data[1,k]/sum(my_data[1,])
+  }
+  percent_abundance = percent_abundance %>% unlist()
+  plot_data = data.frame(haplotypes = colnames(my_data), percent_abundance)
+  my_plot = ggplot(plot_data,aes(x=reorder(haplotypes, -percent_abundance),y=percent_abundance)) +
+    geom_bar(stat="identity",fill="orange") +
+    theme_bw() +
+    labs(x="Haplotypes", y="Within-Sample Percent Abundance",title=sample_id)
+  ggsave(my_plot, filename=paste0("/Users/kelseysumner/Desktop/",sample_id,".png"), device="png",
+         height=4, width=5, units="in", dpi=400)
+}
 
 
 
