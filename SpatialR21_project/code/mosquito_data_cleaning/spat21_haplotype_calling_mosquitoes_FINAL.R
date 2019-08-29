@@ -385,6 +385,40 @@ for (i in 1:nrow(ama_hap_data)){
 }
 
 
+# make a scatterplot of the number of haplotypes in head and abdomen for samples that had parasites in both the head and abdomen
+
+# read in the mosquito demographic data (merged anpopheles mosquito data set)
+anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
+
+# first merge in the ama abdomen haplotype info with the large mosquito data set (anoph_merged_data)
+# abdomens first
+ama_merge_data_abdomens = dplyr::rename(ama_merge_data_abdomens,"sample_id_abdomen"="sample_id","haplotype_number_abdomens"="haplotype_number")
+ama_merge_data_abdomens = ama_merge_data_abdomens[,c(2,354)]
+ama_all = left_join(anoph_merged_data,ama_merge_data_abdomens,by="sample_id_abdomen")
+# then heads
+ama_merge_data_heads = dplyr::rename(ama_merge_data_heads,"sample_id_head"="sample_id","haplotype_number_heads"="haplotype_number")
+ama_merge_data_heads = ama_merge_data_heads[,c(2,354)]
+ama_all = left_join(ama_all,ama_merge_data_heads,by="sample_id_head")
+
+# subset the data to just the mosquitoes that had both a head and abdomen have haplotypes after sequencing
+ama_all = ama_all[which(!(is.na(ama_all$haplotype_number_abdomens)) & !(is.na(ama_all$haplotype_number_heads))),]
+
+# set up the data frame for the scatterplot
+ama_all_new_final = ama_all %>%
+  dplyr::select(sample_id_mosquito,haplotype_number_abdomens,haplotype_number_heads)
+
+# make plot
+ama_title <- expression(paste(italic("pfama1"), " target"))
+ama_scatterplot = ggplot(data=ama_all_new_final) +
+  geom_point(aes(x=haplotype_number_abdomens,y=haplotype_number_heads)) +
+  geom_smooth(aes(x=haplotype_number_abdomens,y=haplotype_number_heads),method="loess") + 
+  labs(x="Number of haplotypes in abdomen", y="Number of haplotypes in head", title= ama_title) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5), text = element_text(size=25),legend.position="none") 
+ama_scatterplot
+ggsave(ama_scatterplot, filename="/Users/kelseysumner/Desktop/ama_scatterplot.png", device="png",
+       height=10.5, width=11.2, units="in", dpi=400)
+
 
 
 
@@ -753,5 +787,37 @@ for (i in 1:nrow(csp_hap_data)){
 }
 
 
+# make a scatterplot of the number of haplotypes in head and abdomen for samples that had parasites in both the head and abdomen
 
+# read in the mosquito demographic data (merged anpopheles mosquito data set)
+anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
+
+# first merge in the ama abdomen haplotype info with the large mosquito data set (anoph_merged_data)
+# abdomens first
+csp_merge_data_abdomens = dplyr::rename(csp_merge_data_abdomens,"sample_id_abdomen"="sample_id","haplotype_number_abdomens"="haplotype_number")
+csp_merge_data_abdomens = csp_merge_data_abdomens[,c(2,233)]
+csp_all = left_join(anoph_merged_data,csp_merge_data_abdomens,by="sample_id_abdomen")
+# then heads
+csp_merge_data_heads = dplyr::rename(csp_merge_data_heads,"sample_id_head"="sample_id","haplotype_number_heads"="haplotype_number")
+csp_merge_data_heads = csp_merge_data_heads[,c(2,233)]
+csp_all = left_join(csp_all,csp_merge_data_heads,by="sample_id_head")
+
+# subset the data to just the mosquitoes that had both a head and abdomen have haplotypes after sequencing
+csp_all = csp_all[which(!(is.na(csp_all$haplotype_number_abdomens)) & !(is.na(csp_all$haplotype_number_heads))),]
+
+# set up the data frame for the scatterplot
+csp_all_new_final = csp_all %>%
+  dplyr::select(sample_id_mosquito,haplotype_number_abdomens,haplotype_number_heads)
+
+# make plot
+csp_title <- expression(paste(italic("pfcsp1"), " target"))
+csp_scatterplot = ggplot(data=csp_all_new_final) +
+  geom_point(aes(x=haplotype_number_abdomens,y=haplotype_number_heads)) +
+  geom_smooth(aes(x=haplotype_number_abdomens,y=haplotype_number_heads),method="loess") + 
+  labs(x="Number of haplotypes in abdomen", y="Number of haplotypes in head", title= csp_title) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 30, face = "bold", hjust = 0.5), text = element_text(size=25),legend.position="none") 
+csp_scatterplot
+ggsave(csp_scatterplot, filename="/Users/kelseysumner/Desktop/csp_scatterplot.png", device="png",
+       height=10.5, width=11.2, units="in", dpi=400)
 

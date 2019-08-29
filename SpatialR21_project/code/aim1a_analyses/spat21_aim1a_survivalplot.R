@@ -276,8 +276,14 @@ survival_data_secondary_stringent = final_data %>%
 survival_data_secondary_permissive = final_data %>%
   select(sample_name_final,age_all_baseline,gender,village_name,unq_memID,visit_type,slept_under_net_regularly,sample_id_date,main_exposure_secondary_permissive_case_def,main_outcome_secondary_permissive_case_def)
 
-# for each case definition data set, decide on coding scheme for follow-up
+# look at the number of participants with more than one symptomatic infection
+participant_data = final_data %>%
+  filter(main_outcome_primary_case_def == "symptomatic infection") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n()) %>%
+  filter(n>1)
 
+# for each case definition data set, decide on coding scheme for follow-up
 
 
 
