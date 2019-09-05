@@ -17,6 +17,7 @@ library(dada2)
 library(ggplot2)
 library(stringr)
 library(Biostrings)
+library(schoolmath)
 
 
 #### ------- read in the CSP haplotype output -------------- ####
@@ -194,6 +195,101 @@ foo = foo[,c(haplotype_num_summary$haplotype_ids)]
 
 # write out the haplotypes results as a fasta
 uniquesToFasta(getUniques(foo), fout="Desktop/neafsey_CSP_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+# created a sequence variant table with the haplotype sequences
+
+
+
+#### -------- read back in the haplotype sequence fasta file and haplotype sequence variant table --------- ####
+
+# read in the haplotype sequence fasta file
+haplotype_sequences = read_tsv("Desktop/neafsey_haplotype_output/neafsey_CSP_uniqueSeqs.fasta")
+
+# read in the haplotype sequence variant table
+variant_table = read_tsv("Desktop/neafsey_haplotype_output/neafsey_variant_report")
+
+# filter variant table to see the variants that only occur in 1 haplotype
+filtered_variant_table = variant_table %>%
+  filter(`SNP %` == "0.48 %")
+
+# reorganize the haplotype sequence fasta file to be in a better format
+sequence_names = rep(NA,205)
+sequences = rep(NA,205)
+sequence_names[1] = ">Seq1"
+for (i in 1:nrow(haplotype_sequences)) {
+  if (is.even(i)) {
+    sequence_names[i+1] = haplotype_sequences$`>Seq1`[i]
+  }
+  if (is.odd(i)){
+    sequences[i] = haplotype_sequences$`>Seq1`[i]
+  }
+}
+new_haplotype_sequences = data.frame(sequence_names,sequences)
+new_haplotype_sequences = na.omit(new_haplotype_sequences)
+new_haplotype_sequences$sequences = as.character(new_haplotype_sequences$sequences)
+new_haplotype_sequences$sequence_names = as.character(new_haplotype_sequences$sequence_names)
+
+# now create a new sequence that is the reverse complement of the old one
+# code from: https://www.r-bloggers.com/r-function-to-reverse-and-complement-a-dna-sequence/
+rev.comp<-function(x,rev=TRUE)
+{
+  x<-toupper(x)
+  y<-rep("N",nchar(x))
+  xx<-unlist(strsplit(x,NULL))
+  for (bbb in 1:nchar(x))
+  {
+    if(xx[bbb]=="A") y[bbb]<-"T"    
+    if(xx[bbb]=="C") y[bbb]<-"G"    
+    if(xx[bbb]=="G") y[bbb]<-"C"    
+    if(xx[bbb]=="T") y[bbb]<-"A"
+  }
+  if(rev==FALSE) 
+  {
+    for(ccc in (1:nchar(x)))
+    {
+      if(ccc==1) yy<-y[ccc] else yy<-paste(yy,y[ccc],sep="")
+    }
+  }
+  if(rev==T)
+  {
+    zz<-rep(NA,nchar(x))
+    for(ccc in (1:nchar(x)))
+    {
+      zz[ccc]<-y[nchar(x)+1-ccc]
+      if(ccc==1) yy<-zz[ccc] else yy<-paste(yy,zz[ccc],sep="")
+    }
+  }
+  return(yy)  
+}
+# now reverse complement each string
+reverse_complement_sequence = rep(NA,nrow(new_haplotype_sequences))
+for (i in 1:nrow(new_haplotype_sequences)){
+  reverse_complement_sequence[i] = rev.comp(new_haplotype_sequences$sequences[i])
+}
+new_haplotype_sequences$reverse_complement_sequence = reverse_complement_sequence
+
+# now loop through each of the haplotype sequences and see if they have the variant for those variants that were only found in 1 haplotype
+haplotypes_to_remove_from_final = rep(NA,nrow(variant_table))
+for (i in 1:nrow(new_haplotype_sequences)){
+  hap_chars = stringr::str_split(new_haplotype_sequences$reverse_complement_sequence[i],"")
+  for (k in 1:nrow(variant_table)){
+    contig_position = filtered_variant_table$`Contig Pos`[k]
+    called_base = filtered_variant_table$`Called Base`[k]
+      if (hap_chars[[1]][as.numeric(contig_position)] == as.character(called_base) & !(is.na(hap_chars[[1]][as.numeric(contig_position)])) & !(is.na(as.character(called_base)))){
+        haplotypes_to_remove_from_final[i] = new_haplotype_sequences$sequence_names[i]
+    }
+  }
+}
+# remove the missing values
+haplotypes_to_remove_from_final = na.omit(haplotypes_to_remove_from_final)
+length(haplotypes_to_remove_from_final) # 25 
+nrow(filtered_variant_table) # 26
+
+### WHERE TO FINISH
+# pick back up checking that the filtering code is working correctly then apply it to filter those haplotype columns in foo
+# then recensor the foo data set and create a new haplotype fasta file
+
+
+
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -215,3 +311,4 @@ foo = foo[which(foo$MiSeq.ID %in% haplotype_summary$sample_names),]
 
 # output the censored rds file
 write_rds(foo,"Desktop/neafsey_haplotype_table_censored.rds")
+
