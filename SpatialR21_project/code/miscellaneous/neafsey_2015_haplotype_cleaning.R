@@ -228,7 +228,7 @@ new_haplotype_sequences = na.omit(new_haplotype_sequences)
 new_haplotype_sequences$sequences = as.character(new_haplotype_sequences$sequences)
 new_haplotype_sequences$sequence_names = as.character(new_haplotype_sequences$sequence_names)
 
-# now create a new sequence that is the reverse complement of the old one
+# now create a new sequence that is the reverse complement of the old one (only do for pfcsp - not pfama1!)
 # code from: https://www.r-bloggers.com/r-function-to-reverse-and-complement-a-dna-sequence/
 rev.comp<-function(x,rev=TRUE)
 {
@@ -283,13 +283,56 @@ for (i in 1:nrow(new_haplotype_sequences)){
 haplotypes_to_remove_from_final = na.omit(haplotypes_to_remove_from_final)
 length(haplotypes_to_remove_from_final) # 25 
 nrow(filtered_variant_table) # 26
+haplotypes_to_remove_from_final = c(haplotypes_to_remove_from_final)
+colnames(foo)
+# pull out the haplotype sequences associated with each haplotype name
+haplotype_sequences_to_remove = c(new_haplotype_sequences$sequences[which(new_haplotype_sequences$sequence_names %in% haplotypes_to_remove_from_final)])
 
-### WHERE TO FINISH
-# pick back up checking that the filtering code is working correctly then apply it to filter those haplotype columns in foo
-# then recensor the foo data set and create a new haplotype fasta file
+# enforce censoring to rds data set
+ncol(foo) # 205
+foo = foo[,-(which(colnames(foo) %in% haplotype_sequences_to_remove))]
+ncol(foo) # 180 (which is 205-25 and correct)
 
+# look at an updated haplotype summary
+sample.names = row.names(foo)
+haplotype_num = rep(NA,nrow(foo))
+haplotype_reads = rep(NA,nrow(foo))
+for (i in 1:nrow(foo)){
+  haplotype_num[i] = length(which(foo[i,] > 0))
+  haplotype_reads[i] = sum(foo[i,])
+}
+haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
+# remove samples that ended up with no reads at the end
+needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 36 samples removed
+haplotype_summary_censored_final = haplotype_summary_censored_final[-needtoremove,]
 
+# remove any samples that have no haplotypes anymore
+ncol(foo)
+nrow(foo)
+foo = foo[(rownames(foo) %in% haplotype_summary_censored_final$sample_names),]
+ncol(foo)
+nrow(foo)
 
+# summarize the samples for each haplotype
+haplotype.names = rep(1:ncol(foo))
+haplotypes_in_samples = rep(NA,ncol(foo))
+total_reads_in_samples = rep(NA,ncol(foo))
+for (k in 1:ncol(foo)){
+  haplotypes_in_samples[k] = length(which(foo[,k] > 0))
+  total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
+}
+haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+# remove haplotypes with 0 reads after censoring
+haplotype_num_summary = haplotype_num_summary[which(haplotype_num_summary$total_reads_across_samples>0),]
+
+# enforce censoring to rds data set
+foo = foo[,c(haplotype_num_summary$haplotype_ids)]
+ncol(foo)
+nrow(foo)
+
+# write out the haplotypes results as a fasta
+uniquesToFasta(getUniques(foo), fout="Desktop/neafsey_CSP_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+# created a sequence variant table with the haplotype sequences
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -306,9 +349,6 @@ foo = as.data.frame(foo)
 foo$`MiSeq.ID` = rownames(foo)
 colnames(foo)
 
-# censor the rds file
-foo = foo[which(foo$MiSeq.ID %in% haplotype_summary$sample_names),]
-
 # output the censored rds file
-write_rds(foo,"Desktop/neafsey_haplotype_table_censored.rds")
+write_rds(foo,"Desktop/neafsey_haplotype_table_censored_final_verison_9SEPT2019.rds")
 
