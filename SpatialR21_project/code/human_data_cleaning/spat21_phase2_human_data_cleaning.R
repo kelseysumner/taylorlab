@@ -23,7 +23,7 @@ annual_householdvar_p2_data = read_dta("OneDrive - University of North Carolina 
 
 
 
-#### ------ clean the monthly and sick data -------- ####
+#### ------ clean the monthly and sick data and annual_socdem_p2_data that we will use as baseline data -------- ####
 
 # ------ monthly p2 data
 
@@ -224,7 +224,7 @@ table(hum_monthly_data$test_type, useNA = "always")
 
 # test_type_oth
 table(hum_monthly_data$test_type_oth, useNA = "always")
-str(hum_monthly_data$test_type)
+str(hum_monthly_data$test_type_oth)
 # recode some of the entries
 hum_monthly_data$test_type_oth[hum_monthly_data$test_type_oth == ""] = NA
 hum_monthly_data$test_type_oth[hum_monthly_data$test_type_oth == "."] = NA
@@ -232,6 +232,16 @@ hum_monthly_data$test_type_oth[hum_monthly_data$test_type_oth == "RDT - Microsco
 hum_monthly_data$test_type_oth[hum_monthly_data$test_type_oth == "RDT and microscopy"] = "rdt and microscopy"
 # check the recode 
 table(hum_monthly_data$test_type_oth, useNA = "always")
+
+# test_type_oth1
+table(hum_monthly_data$test_type_oth1, useNA = "always")
+str(hum_monthly_data$test_type_oth1)
+hum_monthly_data$test_type_oth1 <- NULL
+
+# test_type_oth2
+table(hum_monthly_data$test_type_oth2, useNA = "always")
+str(hum_monthly_data$test_type_oth2)
+hum_monthly_data$test_type_oth2 <- NULL
 
 # exrdt_test
 table(hum_monthly_data$exrdt_test, useNA = "always")
@@ -1109,10 +1119,219 @@ for (i in 1:length(test_unqmemID)){
 table(test_unqmemID, useNA = "always")
 # looks fine
 
-# remove remaining age variables because don't need
-hum_sick_data$age_months <- NULL
-hum_sick_data$age_years <- NULL
-hum_sick_data$age_type <- NULL
+# age_y_hum_sick_data
+summary(as.factor(hum_sick_data$age_years))
+table(hum_sick_data$age_years, useNA = "always")
+# check the recode
+str(hum_sick_data$age_years)
+# recode the variable name to be unique
+names(hum_sick_data)[names(hum_sick_data) == "age_years"] <- "age_y_hum_sick_data"
+
+# age_m_hum_sick_data
+summary(as.factor(hum_sick_data$age_months))
+table(hum_sick_data$age_months, useNA = "always")
+str(hum_sick_data$age_months)
+# looks good, clean
+# recode the variable name to be unique
+names(hum_sick_data)[names(hum_sick_data) == "age_months"] <- "age_m_hum_sick_data"
+
+# age_type_hum_sick_data
+summary(as.factor(hum_sick_data$age_type))
+hum_sick_data$age_type = factor(hum_sick_data$age_type,levels = c(1,2), labels = c("below one year (<1 year)","one year and above (=> 1 year)"))
+table(hum_sick_data$age_type, useNA = "always")
+str(hum_sick_data$age_type)
+# looks good, clean
+# recode the variable name to be unique
+names(hum_sick_data)[names(hum_sick_data) == "age_type"] <- "age_type_hum_sick_data"
+
+
+
+
+# -------- annual_socdem_p2_data
+
+# look at the colnames
+colnames(annual_socdem_p2_data)
+
+# q13f_relationship
+table(annual_socdem_p2_data$q13f_relationship, useNA = "always")
+str(annual_socdem_p2_data$q13f_relationship)
+attr(annual_socdem_p2_data$q13f_relationship, "labels") 
+# don't need, remove
+annual_socdem_p2_data$q13f_relationship <- NULL
+
+# oth_relat
+table(annual_socdem_p2_data$oth_relat, useNA = "always")
+str(annual_socdem_p2_data$oth_relat)
+attr(annual_socdem_p2_data$oth_relat, "labels") 
+# don't need remove,
+annual_socdem_p2_data$oth_relat <- NULL
+
+# educ_level
+table(annual_socdem_p2_data$educ_level, useNA = "always")
+str(annual_socdem_p2_data$educ_level)
+attr(annual_socdem_p2_data$educ_level, "labels") 
+annual_socdem_p2_data$educ_level = factor(annual_socdem_p2_data$educ_level,levels = c(1,2,3,4,5,6,7,8,9,10), labels = c("None","Pre-primary","Some Primary","Finished Primary","Some Secondary","Finished Secondary","Some post-secondary","Finished postsecondary","Other","Not applicable"))
+table(annual_socdem_p2_data$educ_level, useNA = "always")
+
+# oth_educ_level
+table(annual_socdem_p2_data$oth_educ_level, useNA = "always")
+# recode blanks and . to missing
+annual_socdem_p2_data$oth_educ_level[annual_socdem_p2_data$oth_educ_level == ""] = NA
+annual_socdem_p2_data$oth_educ_level[annual_socdem_p2_data$oth_educ_level == "."] = NA
+annual_socdem_p2_data$oth_educ_level[annual_socdem_p2_data$oth_educ_level == "N/a"] = NA
+table(annual_socdem_p2_data$oth_educ_level, useNA = "always")
+
+# employment
+table(annual_socdem_p2_data$employment, useNA = "always")
+str(annual_socdem_p2_data$employment)
+attr(annual_socdem_p2_data$employment, "labels") 
+# make a factor
+annual_socdem_p2_data$employment = factor(annual_socdem_p2_data$employment,levels = c(1,2,3,4,5,6,7,8,9), labels = c("Employed","Unemployed","Self Employed","Skilled Manual Laborer","Unskilled Manual Laborer","Farmer","Not applicable","Retired","Other"))
+table(annual_socdem_p2_data$employment, useNA = "always")
+
+# oth_emp
+table(annual_socdem_p2_data$oth_emp, useNA = "always")
+str(annual_socdem_p2_data$oth_emp)
+attr(annual_socdem_p2_data$oth_emp, "labels") 
+# recode blanks and . to missing
+annual_socdem_p2_data$oth_emp[annual_socdem_p2_data$oth_emp == ""] = NA
+annual_socdem_p2_data$oth_emp[annual_socdem_p2_data$oth_emp == "."] = NA
+table(annual_socdem_p2_data$oth_emp, useNA = "always")
+
+# sleep
+table(annual_socdem_p2_data$sleep, useNA = "always")
+str(annual_socdem_p2_data$sleep)
+attr(annual_socdem_p2_data$sleep, "labels") 
+# make a factor
+annual_socdem_p2_data$sleep = factor(annual_socdem_p2_data$sleep,levels = c(1,2), labels = c("Yes","No"))
+table(annual_socdem_p2_data$sleep, useNA = "always")
+
+# know_rdt
+table(annual_socdem_p2_data$know_rdt, useNA = "always")
+str(annual_socdem_p2_data$know_rdt)
+attr(annual_socdem_p2_data$know_rdt, "labels") 
+# make a factor
+annual_socdem_p2_data$know_rdt = factor(annual_socdem_p2_data$know_rdt,levels = c(1,2), labels = c("Yes","No"))
+table(annual_socdem_p2_data$know_rdt, useNA = "always")
+
+# mal_test
+table(annual_socdem_p2_data$mal_test, useNA = "always")
+str(annual_socdem_p2_data$mal_test)
+attr(annual_socdem_p2_data$mal_test, "labels") 
+# make a factor
+annual_socdem_p2_data$mal_test = factor(annual_socdem_p2_data$mal_test,levels = c(1,2,3), labels = c("Yes","No","Don't know/don't remember"))
+table(annual_socdem_p2_data$mal_test, useNA = "always")
+
+# rdt_result_n
+table(annual_socdem_p2_data$rdt_result_n, useNA = "always")
+str(annual_socdem_p2_data$rdt_result_n)
+attr(annual_socdem_p2_data$rdt_result_n, "labels") 
+# make a factor
+annual_socdem_p2_data$rdt_result_n = factor(annual_socdem_p2_data$rdt_result_n,levels = c(1,2,3,4,5,6,7), labels = c("Very likely","Likely","50-50","Unlikely","Very Unlikely","Don't Know","No response"))
+table(annual_socdem_p2_data$rdt_result_n, useNA = "always")
+
+# rdt_result_p
+table(annual_socdem_p2_data$rdt_result_p, useNA = "always")
+str(annual_socdem_p2_data$rdt_result_p)
+attr(annual_socdem_p2_data$rdt_result_p, "labels") 
+# make a factor
+annual_socdem_p2_data$rdt_result_p = factor(annual_socdem_p2_data$rdt_result_p,levels = c(1,2,3,4,5,6,7), labels = c("Very likely","Likely","50-50","Unlikely","Very Unlikely","Don't Know","No response"))
+table(annual_socdem_p2_data$rdt_result_p, useNA = "always")
+
+# malaria_likely
+table(annual_socdem_p2_data$malaria_likely, useNA = "always")
+str(annual_socdem_p2_data$malaria_likely)
+attr(annual_socdem_p2_data$malaria_likely, "labels") 
+# looks good
+
+# malaria_al
+table(annual_socdem_p2_data$malaria_al, useNA = "always")
+str(annual_socdem_p2_data$malaria_al)
+attr(annual_socdem_p2_data$malaria_al, "labels") 
+# make a factor
+annual_socdem_p2_data$malaria_al = factor(annual_socdem_p2_data$malaria_al,levels = c(1,2,3,4,5,6,7), labels = c("Very likely","Likely","50-50","Unlikely","Very Unlikely","Don't Know","No response"))
+table(annual_socdem_p2_data$malaria_al, useNA = "always")
+
+# HH_ID
+table(annual_socdem_p2_data$HH_ID, useNA = "always")
+str(annual_socdem_p2_data$HH_ID)
+attr(annual_socdem_p2_data$HH_ID, "labels") 
+# looks good
+
+# memID
+table(annual_socdem_p2_data$memID, useNA = "always")
+str(annual_socdem_p2_data$memID)
+# looks good, leave as a character for merging
+
+# today
+table(annual_socdem_p2_data$today, useNA = "always")
+str(annual_socdem_p2_data$today, UseNA = "always")
+# check with today2 and remove today2 because incorrect
+table(annual_socdem_p2_data$today2, useNA = "always")
+annual_socdem_p2_data$today2 <- NULL
+# recode funky feb 23, 2019 entry
+annual_socdem_p2_data$today[annual_socdem_p2_data$today == "Feb 23, 2019"] = "2019-02-23"
+table(annual_socdem_p2_data$today, useNA = "always")
+# now change to date format
+annual_socdem_p2_data$today = ymd(annual_socdem_p2_data$today)
+table(annual_socdem_p2_data$today, useNA = "always")
+str(annual_socdem_p2_data$today)
+
+# unq_memID
+table(annual_socdem_p2_data$unq_memID, useNA = "always")
+# test that unq_memID was previously made correctly
+test_unqmemID = paste0(annual_socdem_p2_data$HH_ID,"_",annual_socdem_p2_data$memID)
+identical(test_unqmemID,annual_socdem_p2_data$unq_memID)
+for (i in 1:length(test_unqmemID)){
+  if (!(identical(test_unqmemID[i],annual_socdem_p2_data$unq_memID[i]))){
+    print(paste0(test_unqmemID[i],"_",annual_socdem_p2_data$unq_memID[i]))
+  }
+}
+table(test_unqmemID, useNA = "always")
+# looks fine
+
+# gender
+table(annual_socdem_p2_data$gender, useNA = "always")
+str(annual_socdem_p2_data$gender, UseNA = "always")
+# make a factor
+annual_socdem_p2_data$gender = factor(annual_socdem_p2_data$gender,levels = c(1,2), labels = c("Male","Female"))
+table(annual_socdem_p2_data$gender, useNA = "always")
+
+# uniq_key
+length(which(is.na(annual_socdem_p2_data$uniq_key)))
+str(annual_socdem_p2_data$uniq_key)
+# looks good
+
+# age
+table(annual_socdem_p2_data$age, useNA = "always")
+str(annual_socdem_p2_data$age, UseNA = "always")
+# assume is in years, looks good but missing for 2 people
+
+# date_enr
+table(annual_socdem_p2_data$date_enr, useNA = "always")
+str(annual_socdem_p2_data$date_enr, UseNA = "always")
+# make in date format
+annual_socdem_p2_data$date_enr = mdy(annual_socdem_p2_data$date_enr)
+table(annual_socdem_p2_data$date_enr, useNA = "always")
+str(annual_socdem_p2_data$date_enr, UseNA = "always")
+
+# study_status
+table(annual_socdem_p2_data$study_status, useNA = "always")
+str(annual_socdem_p2_data$study_status, UseNA = "always")
+# make a factor
+annual_socdem_p2_data$study_status = factor(annual_socdem_p2_data$study_status,levels = c(1,2,3), labels = c("Continuing","Exited","Other specify"))
+table(annual_socdem_p2_data$study_status, useNA = "always")
+
+# status_oth
+table(annual_socdem_p2_data$status_oth, useNA = "always")
+str(annual_socdem_p2_data$status_oth, UseNA = "always")
+annual_socdem_p2_data$status_oth[annual_socdem_p2_data$status_oth == ""] = NA
+
+# month_exited
+table(annual_socdem_p2_data$month_exited, useNA = "always")
+str(annual_socdem_p2_data$month_exited, UseNA = "always")
+annual_socdem_p2_data$month_exited[annual_socdem_p2_data$month_exited == ""] = NA
+
 
 
 #### -------- make variables that are not unique have unique names ------------ ####
@@ -1120,6 +1339,7 @@ hum_sick_data$age_type <- NULL
 # gender
 names(hum_monthly_data)[names(hum_monthly_data) == "gender"] <- "gender_hum_monthly_data"
 names(hum_sick_data)[names(hum_sick_data) == "gender"] <- "gender_hum_sick_data"
+names(annual_socdem_p2_data)[names(annual_socdem_p2_data) == "gender"] <- "gender_hum_socdem2_data"
 
 # key
 names(hum_monthly_data)[names(hum_monthly_data) == "key"] <- "key_hum_monthly_data"
@@ -1128,10 +1348,12 @@ names(hum_sick_data)[names(hum_sick_data) == "key"] <- "key_hum_sick_data"
 # mal_likely
 names(hum_monthly_data)[names(hum_monthly_data) == "mal_likely"] <- "mal_likely_hum_monthly_data"
 names(hum_sick_data)[names(hum_sick_data) == "mal_likely"] <- "mal_likely_hum_sick_data"
+names(annual_socdem_p2_data)[names(annual_socdem_p2_data) == "mal_likely"] <- "mal_likely_hum_socdem2_data"
 
 # malaria_al
 names(hum_monthly_data)[names(hum_monthly_data) == "malaria_al"] <- "malaria_al_hum_monthly_data"
 names(hum_sick_data)[names(hum_sick_data) == "malaria_al"] <- "malaria_al_hum_sick_data"
+names(annual_socdem_p2_data)[names(annual_socdem_p2_data) == "malaria_al"] <- "malaria_al_hum_socdem2_data"
 
 # med_oth
 names(hum_monthly_data)[names(hum_monthly_data) == "med_oth"] <- "med_oth_hum_monthly_data"
@@ -1198,6 +1420,12 @@ names(hum_sick_data)[names(hum_sick_data) == "village_name"] <- "village_name_hu
 names(hum_monthly_data)[names(hum_monthly_data) == "village_name"] <- "village_name_hum_monthly_data"
 
 
+
+
+
+
+
+
 #### --------- export each separate data set as a CSV or RDS file --------- ####
 
 # for hum_monthly_data
@@ -1208,7 +1436,9 @@ write_rds(hum_monthly_data, "Desktop/hum_monthly_data_v2_17SEP2019.RDS")
 write_csv(hum_sick_data, "Desktop/hum_sick_data_v2_17SEP2019.csv")
 write_rds(hum_sick_data, "Desktop/hum_sick_data_v2_17SEP2019.RDS")
 
-
+# for hum_socdem2_data
+write_csv(annual_socdem_p2_data, "Desktop/hum_socdem2_data_v2_17SEP2019.csv")
+write_rds(annual_socdem_p2_data, "Desktop/hum_socdem2_data_v2_17SEP2019.RDS")
 
 
 
