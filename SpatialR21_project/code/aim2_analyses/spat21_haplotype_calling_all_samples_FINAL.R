@@ -25,7 +25,7 @@ library(schoolmath)
 #### ------- read in the AMA haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Haplotype Results/AMA/AMA_spat21_allsamples_haplotypes.rds")
+foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Haplotype Results/AMA/raw haplotype output/AMA_spat21_allsamples_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -365,7 +365,7 @@ write_csv(ama_merge_data,"Desktop/spat21_AMA_haplotype_table_censored_final_vers
 #### ------- read in the CSP haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("")
+foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Haplotype Results/CSP/raw haplotype output/CSP_spat21_allsamples_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
