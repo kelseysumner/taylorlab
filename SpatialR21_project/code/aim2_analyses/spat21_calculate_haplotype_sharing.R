@@ -8,26 +8,14 @@
 
 #### --------- load packages ----------------- ####
 library(igraph)
+library(readr)
 
 
 #### ------------------ AMA ---------------------- ####
 
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
-finalfoo_all <- readRDS("/Users/kelseysumner/Desktop/Meshnick Lab/Steve Taylor's Lab/Webuye MESA Sequence Data/Mapped Cut Reads/AMA_haplotypes/AMA/23AUG2018 AMA MESA Update/MESA_AMA_haplotypes_final.rds")
+finalfoo_all <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
-# rename and resort the samples
-# first take off the "S" and order
-remove_s = strsplit(row.names(finalfoo_all),"")
-minus_s = rep(NA,nrow(finalfoo_all))
-for (ele in 1:nrow(finalfoo_all)){
-  minus_s[ele] = paste(remove_s[[ele]][-1], collapse = "")
-}
-# now order the samples
-row_order <- sort(as.numeric(minus_s))
-row_order_s <- paste0("S",row_order)
-finalfoo_all <- finalfoo_all[match(row_order_s, row.names(finalfoo_all)),]
-# check the output
-rownames(finalfoo_all)
 
 # calculate how many haplotypes are shared across samples for each sample
 # create the data frame (double loop through everything in data set)

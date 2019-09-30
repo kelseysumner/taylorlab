@@ -297,7 +297,6 @@ nrow(foo)
 
 # write out the haplotypes results as a fasta
 uniquesToFasta(getUniques(foo), fout="Desktop/spat21_AMA_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
-# created a sequence variant table with the haplotype sequences
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -384,7 +383,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$haplotype_reads == 0) # 1 sample removed
+needtoremove = which(haplotype_summary$haplotype_reads == 0) # 38 samples removed
 haplotype_summary = haplotype_summary[-needtoremove,]
 
 # write some code that removes haplotypes that occur in <250 of the sample reads
@@ -437,7 +436,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 3 samples removed
+needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 167 samples removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
 # remove any samples that have no haplotypes anymore
@@ -501,9 +500,6 @@ haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "ha
 # remove samples that ended up with no reads at the end
 needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
 
-# look at the controls
-control_check = haplotype_summary_censored_final[which(haplotype_summary_censored_final$sample_names %in% c("BF289","BF294","BF303","BF304","BF305")),]
-
 # make foo, foo_test
 orig_foo = foo
 foo = foo_test
@@ -543,6 +539,143 @@ foo = foo[,c(haplotype_num_summary$haplotype_ids)]
 
 # write out the haplotypes results as a fasta
 uniquesToFasta(getUniques(foo), fout="Desktop/CSP_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+# created a sequence variant table with the haplotype sequences
+
+
+### ---- read back in the haplotype sequence fasta file and haplotype sequence variant table
+
+# read in the haplotype sequence fasta file
+haplotype_sequences = read_tsv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Haplotype Results/CSP/raw variant table/CSP_uniqueSeqs.fasta")
+
+# read in the haplotype sequence variant table
+variant_table = read_tsv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Haplotype Results/CSP/raw variant table/csp_raw_variants_table")
+
+# filter variant table to see the variants that only occur in 1 haplotype
+filtered_variant_table = variant_table %>%
+  filter(`SNP %` == "0.29 %")
+
+# reorganize the haplotype sequence fasta file to be in a better format
+sequence_names = rep(NA,205)
+sequences = rep(NA,205)
+sequence_names[1] = ">Seq1"
+for (i in 1:nrow(haplotype_sequences)) {
+  if (is.even(i)) {
+    sequence_names[i+1] = haplotype_sequences$`>Seq1`[i]
+  }
+  if (is.odd(i)){
+    sequences[i] = haplotype_sequences$`>Seq1`[i]
+  }
+}
+new_haplotype_sequences = data.frame(sequence_names,sequences)
+new_haplotype_sequences = na.omit(new_haplotype_sequences)
+new_haplotype_sequences$sequences = as.character(new_haplotype_sequences$sequences)
+new_haplotype_sequences$sequence_names = as.character(new_haplotype_sequences$sequence_names)
+
+# now create a new sequence that is the reverse complement of the old one (only do for pfcsp - not pfama1!)
+# code from: https://www.r-bloggers.com/r-function-to-reverse-and-complement-a-dna-sequence/
+rev.comp<-function(x,rev=TRUE)
+{
+  x<-toupper(x)
+  y<-rep("N",nchar(x))
+  xx<-unlist(strsplit(x,NULL))
+  for (bbb in 1:nchar(x))
+  {
+    if(xx[bbb]=="A") y[bbb]<-"T"    
+    if(xx[bbb]=="C") y[bbb]<-"G"    
+    if(xx[bbb]=="G") y[bbb]<-"C"    
+    if(xx[bbb]=="T") y[bbb]<-"A"
+  }
+  if(rev==FALSE) 
+  {
+    for(ccc in (1:nchar(x)))
+    {
+      if(ccc==1) yy<-y[ccc] else yy<-paste(yy,y[ccc],sep="")
+    }
+  }
+  if(rev==T)
+  {
+    zz<-rep(NA,nchar(x))
+    for(ccc in (1:nchar(x)))
+    {
+      zz[ccc]<-y[nchar(x)+1-ccc]
+      if(ccc==1) yy<-zz[ccc] else yy<-paste(yy,zz[ccc],sep="")
+    }
+  }
+  return(yy)  
+}
+# now reverse complement each string
+reverse_complement_sequence = rep(NA,nrow(new_haplotype_sequences))
+for (i in 1:nrow(new_haplotype_sequences)){
+  reverse_complement_sequence[i] = rev.comp(new_haplotype_sequences$sequences[i])
+}
+new_haplotype_sequences$reverse_complement_sequence = reverse_complement_sequence
+
+# now loop through each of the haplotype sequences and see if they have the variant for those variants that were only found in 1 haplotype
+haplotypes_to_remove_from_final = rep(NA,nrow(variant_table))
+for (i in 1:nrow(new_haplotype_sequences)){
+  hap_chars = stringr::str_split(new_haplotype_sequences$reverse_complement_sequence[i],"")
+  for (k in 1:nrow(variant_table)){
+    contig_position = filtered_variant_table$`Contig Pos`[k]
+    called_base = filtered_variant_table$`Called Base`[k]
+    if (hap_chars[[1]][as.numeric(contig_position)] == as.character(called_base) & !(is.na(hap_chars[[1]][as.numeric(contig_position)])) & !(is.na(as.character(called_base)))){
+      haplotypes_to_remove_from_final[i] = new_haplotype_sequences$sequence_names[i]
+    }
+  }
+}
+# remove the missing values
+haplotypes_to_remove_from_final = na.omit(haplotypes_to_remove_from_final)
+length(haplotypes_to_remove_from_final) # 36
+nrow(filtered_variant_table) # 36
+haplotypes_to_remove_from_final = c(haplotypes_to_remove_from_final)
+colnames(foo)
+# pull out the haplotype sequences associated with each haplotype name
+haplotype_sequences_to_remove = c(new_haplotype_sequences$sequences[which(new_haplotype_sequences$sequence_names %in% haplotypes_to_remove_from_final)])
+
+# enforce censoring to rds data set
+ncol(foo) # 334
+foo = foo[,-(which(colnames(foo) %in% haplotype_sequences_to_remove))]
+ncol(foo) # 298 (which is 334-36 and correct)
+
+# look at an updated haplotype summary
+sample.names = row.names(foo)
+haplotype_num = rep(NA,nrow(foo))
+haplotype_reads = rep(NA,nrow(foo))
+for (i in 1:nrow(foo)){
+  haplotype_num[i] = length(which(foo[i,] > 0))
+  haplotype_reads[i] = sum(foo[i,])
+}
+haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
+# remove samples that ended up with no reads at the end
+needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 1 sample removed
+haplotype_summary_censored_final = haplotype_summary_censored_final[-needtoremove,]
+
+# remove any samples that have no haplotypes anymore
+ncol(foo)
+nrow(foo)
+foo = foo[(rownames(foo) %in% haplotype_summary_censored_final$sample_names),]
+ncol(foo)
+nrow(foo)
+
+# summarize the samples for each haplotype
+haplotype.names = rep(1:ncol(foo))
+haplotypes_in_samples = rep(NA,ncol(foo))
+total_reads_in_samples = rep(NA,ncol(foo))
+for (k in 1:ncol(foo)){
+  haplotypes_in_samples[k] = length(which(foo[,k] > 0))
+  total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
+}
+haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+# remove haplotypes with 0 reads after censoring
+haplotype_num_summary = haplotype_num_summary[which(haplotype_num_summary$total_reads_across_samples>0),]
+
+# enforce censoring to rds data set
+foo = foo[,c(haplotype_num_summary$haplotype_ids)]
+ncol(foo)
+nrow(foo)
+
+# write out the haplotypes results as a fasta
+uniquesToFasta(getUniques(foo), fout="Desktop/spat21_CSP_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+# created a sequence variant table with the haplotype sequences
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -573,7 +706,7 @@ miseq_inventory = dplyr::rename(miseq_inventory, "MiSeq.ID" = "New MiSeq ID","sa
 csp_merge_data = dplyr::left_join(miseq_inventory,foo,by="MiSeq.ID")
 
 # remove the controls
-csp_merge_data = csp_merge_data[-which(csp_merge_data$MiSeq.ID == "USID289" | csp_merge_data$MiSeq.ID == "USID294" | csp_merge_data$MiSeq.ID == "USID303" | csp_merge_data$MiSeq.ID == "USID304" | csp_merge_data$MiSeq.ID == "USID305" | csp_merge_data$MiSeq.ID == "USID779" | csp_merge_data$MiSeq.ID == "USID780" | csp_merge_data$MiSeq.ID == "USID781" | csp_merge_data$MiSeq.ID == "USID782" | csp_merge_data$MiSeq.ID == "USID783" | csp_merge_data$MiSeq.ID == "USID784" | ama_merge_data$MiSeq.ID == "USID350" | ama_merge_data$MiSeq.ID == "USID353" | ama_merge_data$MiSeq.ID == "USID936"),]
+csp_merge_data = csp_merge_data[-which(csp_merge_data$MiSeq.ID == "USID289" | csp_merge_data$MiSeq.ID == "USID294" | csp_merge_data$MiSeq.ID == "USID303" | csp_merge_data$MiSeq.ID == "USID304" | csp_merge_data$MiSeq.ID == "USID305" | csp_merge_data$MiSeq.ID == "USID779" | csp_merge_data$MiSeq.ID == "USID780" | csp_merge_data$MiSeq.ID == "USID781" | csp_merge_data$MiSeq.ID == "USID782" | csp_merge_data$MiSeq.ID == "USID783" | csp_merge_data$MiSeq.ID == "USID784" | csp_merge_data$MiSeq.ID == "USID350" | csp_merge_data$MiSeq.ID == "USID353" | csp_merge_data$MiSeq.ID == "USID936"),]
 
 # loop through the merged data for pfcsp1 and indicate whether mosquito part is an abdomen or head
 mosquito_part_type = rep(NA,nrow(csp_merge_data))
@@ -590,10 +723,17 @@ csp_merge_data$sample_type = mosquito_part_type
 table(csp_merge_data$sample_type, useNA = "always")
 
 # merge in the sample summaries with the csp data
-haplotype_summary_censored = dplyr::rename(haplotype_summary_censored,"MiSeq.ID"="sample_names")
-csp_merge_data = dplyr::left_join(csp_merge_data,haplotype_summary_censored,by="MiSeq.ID")
+haplotype_summary_censored_final = dplyr::rename(haplotype_summary_censored_final,"MiSeq.ID"="sample_names")
+csp_merge_data = dplyr::left_join(csp_merge_data,haplotype_summary_censored_final,by="MiSeq.ID")
 
+# remove samples without MOI
+length(which(is.na(csp_merge_data$haplotype_number))) # 269
+csp_merge_data = csp_merge_data %>%
+  filter(!(is.na(haplotype_number)))
 
+# write out as an RDS and CSV files
+write_rds(csp_merge_data,"Desktop/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_26SEPT2019.rds")
+write_csv(csp_merge_data,"Desktop/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_26SEPT2019.csv")
 
 
 
