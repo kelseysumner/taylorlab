@@ -16,6 +16,15 @@ library(readr)
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
 finalfoo_all <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
+# edit the data set to be in the correct format
+finalfoo_all = as.matrix(finalfoo_all)
+rownames(finalfoo_all) = finalfoo_all[,2]
+colnames(finalfoo_all)
+finalfoo_all=finalfoo_all[,-c(1,2,3,461,462,463)]
+colnames(finalfoo_all)
+
+# make finalfoo_all values numeric
+finalfoo_all = apply(finalfoo_all, 2, as.numeric)
 
 # calculate how many haplotypes are shared across samples for each sample
 # create the data frame (double loop through everything in data set)
@@ -66,7 +75,7 @@ edgelist_df_clean = edgelist_df[-indices,]
 length(which(edgelist_df$prop_haplotype_sharing[indices] != 1))
 
 # export the edgelist with all 5 columns before removing the repeated edges
-write.csv(edgelist_df_clean,"AMA_haplotypes_edgelist_repeated_edges.csv")
+write_csv(edgelist_df_clean,"AMA_haplotypes_edgelist_repeated_edges.csv")
 
 # convert edgelist to sociomatrix
 edgelist=as.matrix(edgelist_df_clean)
