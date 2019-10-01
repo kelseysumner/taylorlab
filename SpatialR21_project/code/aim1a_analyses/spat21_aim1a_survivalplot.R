@@ -19,10 +19,10 @@ library(tidyr)
 #### ------- read in the data sets -------- ####
 
 # read in the full data set
-final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_12AUG2019.rds")
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_1OCT2019.rds")
 
 # read in the consecutive monthly follow-up data set
-followup_data = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/Consecutive Follow-up Tables/aim1a_consecutive_follow_up_order_df_after_censoring.csv")
+followup_data = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/Consecutive Follow-up Tables/aim1a_consecutive_follow_up_order_df_after_censoring_1OCT2019.csv")
 
 
 #### -------- code the three main exposures ------ ####
@@ -236,8 +236,8 @@ table(final_data$main_exposure_secondary_permissive_case_def,final_data$main_out
 # all looks good
 
 # export data sets
-# write_csv(final_data,"spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_13AUG2019.csv")
-# write_rds(final_data,"spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_13AUG2019.rds")
+write_csv(final_data,"Desktop/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.csv")
+write_rds(final_data,"Desktop/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
 
 
 #### ------- set up the data sets to be in survival format -------- ####

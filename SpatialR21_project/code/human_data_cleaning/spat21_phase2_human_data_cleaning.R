@@ -14,12 +14,12 @@ library(lubridate)
 #### -------- read in the data sets --------- ####
 
 # read in the phase 2 data sets for monthly and sick visits
-hum_monthly_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/Monthly_VariablesLabled31stJuly2019_deID.dta")
-hum_sick_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/SickVisit_VariablesLabled31stJuly2019_deID.dta")
+hum_monthly_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/raw_data/Monthly_VariablesLabled30August2019_deID.dta .dta")
+hum_sick_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/raw_data/SickVisit_VariablesLabled31stJuly2019_deID.dta")
 
 # read in second annual household survey data sets
-annual_socdem_p2_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/2Annual_DemoVariablesLabled31stJuly2019_deID.dta")
-annual_householdvar_p2_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/2Annual_HH_VariablesLabled31stJuly2019_deID.dta")
+annual_socdem_p2_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/raw_data/2Annual_DemoVariablesLabled31stJuly2019_deID.dta")
+annual_householdvar_p2_data = read_dta("OneDrive - University of North Carolina at Chapel Hill/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/raw_data/2Annual_HH_VariablesLabled31stJuly2019_deID.dta")
 
 
 

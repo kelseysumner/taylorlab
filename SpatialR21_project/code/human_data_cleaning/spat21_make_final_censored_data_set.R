@@ -19,7 +19,7 @@ library(tidyr)
 #### -------- read in the data sets --------- ####
 
 # read in the spat21 human merged data set with dbs censoring
-final_merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_12AUG2019.rds")
+final_merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_1OCT2019.rds")
 length(unique(final_merged_data$unq_memID))
 # note: 1 participant removed after dbs censoring
 
@@ -124,10 +124,10 @@ consecutive_follow_up_ordered_df <- consecutive_follow_up_ordered_df[,c("unq_mem
 
 
 # export correct consecutive follow-up measures
-write_csv(consecutive_follow_up_ordered_df,"aim1a_consecutive_follow_up_order_df_after_censoring.csv")
+write_csv(consecutive_follow_up_ordered_df,"Desktop/aim1a_consecutive_follow_up_order_df_after_censoring_1OCT2019.csv")
 
 
 # write out the data frame with the final censoring criteria applied
-write_csv(final_merged_data,"spat21_human_final_censored_data_for_dissertation_12AUG2019.csv")
-write_rds(final_merged_data,"spat21_human_final_censored_data_for_dissertation_12AUG2019.rds")
+write_csv(final_merged_data,"spat21_human_final_censored_data_for_dissertation_1OCT2019.csv")
+write_rds(final_merged_data,"spat21_human_final_censored_data_for_dissertation_1OCT2019.rds")
 

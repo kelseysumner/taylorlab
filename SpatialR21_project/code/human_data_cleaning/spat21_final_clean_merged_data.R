@@ -381,9 +381,97 @@ write_csv(final_merged_data_nc,"Desktop/Dissertation Materials/SpatialR21 Grant/
 write_rds(final_merged_data_nc,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_12AUG2019.rds")
 
 
+#### ------- read these data sets back in and fix the gender coding -------- ####
+
+# read in final_merged_data with dbs censoring
+final_merged_data = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_12AUG2019.csv")
+
+# read in the final_merged_data_nc without dbs censoring
+final_merged_data_nc = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_12AUG2019.csv")
+
+# calculate gender for final_merged_data
+# females
+participant_data_female = final_merged_data %>%
+  filter(gender == "female") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+# males
+participant_data_male = final_merged_data %>%
+  filter(gender == "male") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+# look at the intercept
+intersect(participant_data_female$unq_memID,participant_data_male$unq_memID)
+# M16_5, S06_3
+m16_test = final_merged_data %>%
+  filter(unq_memID=="M16_5") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # really a male, once miscoded as female
+s06_test = final_merged_data %>%
+  filter(unq_memID=="S06_3") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # really a male, once miscoded as female
+# recode both female cases to male for M16_5 and S06_3
+final_merged_data$gender[which(final_merged_data$gender=="female" & final_merged_data$unq_memID=="M16_5")]="male"
+final_merged_data$gender[which(final_merged_data$gender=="female" & final_merged_data$unq_memID=="S06_3")]="male"
+# check the recode
+# M16_5, S06_3
+m16_test = final_merged_data %>%
+  filter(unq_memID=="M16_5") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # all male now
+s06_test = final_merged_data %>%
+  filter(unq_memID=="S06_3") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # all male now
+# looks good
+
+
+# calculate gender for final_merged_data_nc
+# females
+participant_data_female = final_merged_data_nc %>%
+  filter(gender == "female") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+# males
+participant_data_male = final_merged_data_nc %>%
+  filter(gender == "male") %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+# look at the intercept
+intersect(participant_data_female$unq_memID,participant_data_male$unq_memID)
+# M16_5, S06_3
+m16_test = final_merged_data_nc %>%
+  filter(unq_memID=="M16_5") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # really a male, once miscoded as female
+s06_test = final_merged_data_nc %>%
+  filter(unq_memID=="S06_3") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # really a male, once miscoded as female
+# recode both female cases to male for M16_5 and S06_3
+final_merged_data_nc$gender[which(final_merged_data_nc$gender=="female" & final_merged_data_nc$unq_memID=="M16_5")]="male"
+final_merged_data_nc$gender[which(final_merged_data_nc$gender=="female" & final_merged_data_nc$unq_memID=="S06_3")]="male"
+# check the recode
+# M16_5, S06_3
+m16_test = final_merged_data_nc %>%
+  filter(unq_memID=="M16_5") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # all male now
+s06_test = final_merged_data_nc %>%
+  filter(unq_memID=="S06_3") %>%
+  group_by(gender) %>%
+  summarize(n=n()) # all male now
+# looks good
 
 
 
+# write out the final data sets
 
+# final_merged_data
+write_csv(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_1OCT2019.csv")
+write_rds(final_merged_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_with_dbs_censoring_1OCT2019.rds")
 
-
+# final_merged_data_no_censoring
+write_csv(final_merged_data_nc,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_1OCT2019.csv")
+write_rds(final_merged_data_nc,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_merged_data_no_dbs_censoring_1OCT2019.rds")

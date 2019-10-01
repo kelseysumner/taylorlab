@@ -21,7 +21,7 @@ library(stringr)
 anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 
 # read in the full human data set
-final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_13AUG2019.rds")
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
 
 
 #### --------- subset the human and mosquito data sets to just the variables of interest ---------- ####
@@ -34,7 +34,7 @@ final_data$main_outcome_primary_case_def = as.factor(final_data$main_outcome_pri
 colnames(final_data)
 human_data = final_data %>%
   filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
-  select(visit_type,sample_id_date,sample_name_final,age_cat_baseline,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
+  select(visit_type,sample_id_date,sample_name_final,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
   mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def))) %>%
   select(-main_exposure_primary_case_def,-main_outcome_primary_case_def,-visit_type)
 
