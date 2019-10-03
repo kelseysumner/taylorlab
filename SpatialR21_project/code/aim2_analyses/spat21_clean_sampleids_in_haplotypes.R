@@ -240,7 +240,7 @@ test = ama_merge_data %>%
 test$haplotype_number
 test$haplotype_reads
 # id was miscoded
-ama_merge_data$sample_name_dbs[which(ama_merge_data$sample_name_dbs=="S10-050717-7-R" & ama_merge_data$MiSeq.ID=="USID552")] == "S10-050717-6-R"
+ama_merge_data$sample_id[which(ama_merge_data$MiSeq.ID=="USID552")] = "S10-050717-6-R"
 # check duplicates one more time
 length(unique(ama_merge_data$sample_id)) # 1120 unique 
 length(which(is.na(ama_merge_data$sample_id) == T)) # 0 missing
@@ -282,8 +282,8 @@ csp_merge_data = csp_merge_data[-which(csp_merge_data$sample_id=="K01-110717-9-R
 csp_merge_data = csp_merge_data[-which(csp_merge_data$sample_id=="K01-210817-5-R" & csp_merge_data$Run=="Human Pilot"),]
 # K02-050718-5
 csp_merge_data = csp_merge_data[-which(csp_merge_data$sample_id=="K02-050718-5" & csp_merge_data$Run=="Human 3"),]
-# S10-050717-7-R
-csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="S10-050717-7-R" & csp_merge_data$MiSeq.ID=="USID552")] == "S10-050717-6-R"
+# S10-050717-6-R
+csp_merge_data$sample_id[which(csp_merge_data$MiSeq.ID=="USID552")] = "S10-050717-6-R"
 # check again for duplicates
 length(unique(csp_merge_data$sample_id)) # 1286 unique 
 length(which(is.na(csp_merge_data$sample_id) == T)) # 0 missing
@@ -343,8 +343,8 @@ ama_merge_data$sample_name_dbs[which(ama_merge_data$sample_name_dbs=="K10-100418
 ama_merge_data$sample_name_dbs[which(ama_merge_data$sample_name_dbs=="K12-230518-3")]="K12-230518-3-R"
 # K01-250718-3 - this is miscoded so recode to have an R
 ama_merge_data$sample_name_dbs[which(ama_merge_data$sample_name_dbs=="K01-250718-3")]="K01-250718-3-R"
-# K02-060727-5 - this is miscoded so recode
-ama_merge_data$sample_name_dbs[which(ama_merge_data$sample_name_dbs=="K02-060727-5")]="K02-060717-5"
+# K02-060727-5 - could not find so remove
+ama_merge_data = ama_merge_data[-which(ama_merge_data$sample_name_dbs=="K02-060727-5"),]
 # K14-071217-04 - this is miscoded so recode
 ama_merge_data$sample_name_dbs[which(ama_merge_data$sample_name_dbs=="K14-071217-04")]="K14-071217-4"
 # K02-002117-5 - this is miscoded so recode
@@ -392,9 +392,15 @@ length(which(!(is.na(ama_merge_test$HH_ID)))) # still have two abdomen IDs to me
 ama_merge_data = ama_merge_data %>%
   rename("sample_name_dbs"="sample_id_abdomen")
 
+# check one more time for duplicates
+length(unique(ama_merge_data$sample_name_dbs)) # 1116 unique 
+length(which(is.na(ama_merge_data$sample_name_dbs) == T)) # 0 missing
+count_table = table(ama_merge_data$sample_name_dbs, useNA = "always")
+dups_table_inventory = count_table[which(count_table > 1)] # 18 duplicates (one a control)
+
 # write out as an RDS and CSV files for ama
-# write_rds(ama_merge_data,"Desktop/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
-# write_csv(ama_merge_data,"Desktop/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.csv")
+write_rds(ama_merge_data,"Desktop/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+write_csv(ama_merge_data,"Desktop/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.csv")
 
 
 
@@ -451,8 +457,8 @@ csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="K10-100418
 csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="K12-230518-3")]="K12-230518-3-R"
 # K01-250718-3 - this is miscoded so recode to have an R
 csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="K01-250718-3")]="K01-250718-3-R"
-# K02-060727-5 - this is miscoded so recode
-csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="K02-060727-5")]="K02-060717-5"
+# K02-060727-5 - could not find correct recode so removed
+csp_merge_data = csp_merge_data[-which(csp_merge_data$sample_name_dbs=="K02-060727-5"),]
 # K14-071217-04 - this is miscoded so recode
 csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="K14-071217-04")]="K14-071217-4"
 # K02-002117-5 - this is miscoded so recode
@@ -465,8 +471,8 @@ csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="S08-191017
 csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="M11-120617-3")]="M11-130617-3"
 # S11-240817-9 - this is miscoded so recode to S11-240617-9
 csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="S11-240817-9")]="S11-240617-9"
-# K01-130717-9 - this is miscoded so recode to K01-110717-9-R
-csp_merge_data$sample_name_dbs[which(csp_merge_data$sample_name_dbs=="K01-130717-9")]="K01-110717-9-R"
+# K01-130717-9 - could not figure out recode so removed
+csp_merge_data = csp_merge_data[-which(csp_merge_data$sample_name_dbs=="K01-130717-9"),]
 # now do another test to merge the data sets together
 csp_merge_test = left_join(csp_merge_data,final_data,by="sample_name_dbs")
 # check which ones didn't merge
@@ -517,6 +523,12 @@ length(which(!(is.na(csp_merge_test$HH_ID)))) # still have two abdomen IDs to me
 # first rename the sample id variable for the haplotype data set
 csp_merge_data = csp_merge_data %>%
   rename("sample_name_dbs"="sample_id_abdomen")
+
+# check one more time for duplicates
+length(unique(csp_merge_data$sample_name_dbs)) # 1281 unique 
+length(which(is.na(csp_merge_data$sample_name_dbs) == T)) # 0 missing
+count_table = table(csp_merge_data$sample_name_dbs, useNA = "always")
+dups_table_inventory = count_table[which(count_table > 1)] # 0 duplicates
 
 
 # write out as an RDS and CSV files for csp
