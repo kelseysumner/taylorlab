@@ -224,3 +224,144 @@ count # 687
 
 
 
+#### ---- read back in the data sets you made above and calculate how many mosquitoe we lose with sequencing data we currently have ------- ####
+
+# read in the ama data
+human_ama = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Samples that failed sequencing info/human samples that failed/ama_no_reads_miseq_inventory.csv")
+mosquito_ama = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Samples that failed sequencing info/mosquito samples that passed/spat21_ama_mosquito_samples_passed_sequencing_spor_positive_1OCT2019.csv")
+
+
+# now read in the csp data
+human_csp = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Samples that failed sequencing info/human samples that failed/csp_no_reads_miseq_inventory.csv")
+mosquito_csp = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Samples that failed sequencing info/mosquito samples that passed/spat21_csp_mosquito_samples_passed_sequencing_spor_positive_1OCT2019.csv")
+
+
+# subset the human_ama and human_csp data sets to just the human samples
+human_ama = human_ama %>%
+  filter((nchar(human_ama$`Sample ID`) >= 11) & !(str_detect(human_ama$`Sample ID`,"3D7")))
+human_csp = human_csp %>%
+  filter((nchar(human_csp$`Sample ID`) >= 11) & !(str_detect(human_csp$`Sample ID`,"3D7")) & human_csp$`Sample ID` != "K01- A00043")
+
+
+# now pull out the HH_ID for the human data sets
+# for ama
+HH_ID = rep(NA,nrow(human_ama))
+for (i in 1:nrow(human_ama)){
+  first_split = str_split(human_ama$`Sample ID`[i],"-")
+  if (str_detect(first_split[[1]][1],"R")){
+    HH_ID[i]=first_split[[1]][3]
+  } else {
+    HH_ID[i] = first_split[[1]][1]
+  }
+}
+table(HH_ID, useNA = "always")
+human_ama$HH_ID = HH_ID
+# for csp
+HH_ID = rep(NA,nrow(human_csp))
+for (i in 1:nrow(human_csp)){
+  first_split = str_split(human_csp$`Sample ID`[i],"-")
+  if (str_detect(first_split[[1]][1],"R")){
+    HH_ID[i]=first_split[[1]][3]
+  } else {
+    HH_ID[i] = first_split[[1]][1]
+  }
+}
+table(HH_ID, useNA = "always")
+human_csp$HH_ID = HH_ID
+
+
+# now pull out the date for the human data sets
+# for ama
+sample_id_date = rep(NA,nrow(human_ama))
+for (i in 1:nrow(human_ama)){
+  first_split = str_split(human_ama$`Sample ID`[i],"-")[[1]][2]
+  sample_id_date[i] = first_split
+  }
+human_ama$sample_id_date = sample_id_date
+human_ama %>%
+  filter(is.na(sample_id_date)) %>%
+  View()
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="M13-1700817-6")] = "170817"
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="K10-70917-1")] = "070917"
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="K12-70917-1")] = "070917"
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="K12-70917-4")] = "070917"
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="S08-1910176-6")] = "191017"
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="K13-70917-4")] = "070917"
+human_ama$sample_id_date[which(human_ama$`Sample ID`=="R-21087-K01-5")] = "210817"
+human_ama %>%
+  filter(is.na(sample_id_date)) %>%
+  View()
+human_ama$sample_id_date=dmy(human_ama$sample_id_date)
+# for csp
+sample_id_date = rep(NA,nrow(human_csp))
+for (i in 1:nrow(human_csp)){
+  first_split = str_split(human_csp$`Sample ID`[i],"-")[[1]][2]
+  sample_id_date[i] = first_split
+}
+human_csp$sample_id_date = sample_id_date
+human_csp %>%
+  filter(is.na(sample_id_date)) %>%
+  View()
+human_csp$sample_id_date[which(human_csp$`Sample ID`=="K10-70917-1")] = "070917"
+human_csp$sample_id_date[which(human_csp$`Sample ID`=="K12-70917-1")] = "070917"
+human_csp$sample_id_date[which(human_csp$`Sample ID`=="K12-70917-4")] = "070917"
+human_csp %>%
+  filter(is.na(sample_id_date)) %>%
+  View()
+human_csp$sample_id_date=dmy(human_csp$sample_id_date)
+
+
+# calculate the number of mosquito samples within those that failed in the same household for ama
+count = 0
+for (i in 1:nrow(human_ama)){
+  for (j in 1:nrow(mosquito_ama)){
+    if (human_ama$HH_ID[i] == mosquito_ama$HH_ID[j] & (mosquito_ama$collection_date[j]-human_ama$sample_id_date[i] < 19) & (mosquito_ama$collection_date[j]-human_ama$sample_id_date[i] >= 0)){
+      count = count + 1
+    }
+  }
+}
+count # 285
+
+
+# calculate the number of mosquito samples within those that failed in the same household for csp
+count = 0
+for (i in 1:nrow(human_csp)){
+  for (j in 1:nrow(mosquito_csp)){
+    if (human_csp$HH_ID[i] == mosquito_csp$HH_ID[j] & (mosquito_csp$collection_date[j]-human_csp$sample_id_date[i] < 19) & (mosquito_csp$collection_date[j]-human_csp$sample_id_date[i] >= 0)){
+      count = count + 1
+    }
+  }
+}
+count # 131
+
+
+# now filter to just run 3
+human_ama = human_ama %>%
+  filter(Run=="Human 3")
+human_csp = human_csp %>%
+  filter(Run=="Human 3")
+
+
+# calculate the number of mosquito samples within those that failed in the same household for ama
+count = 0
+for (i in 1:nrow(human_ama)){
+  for (j in 1:nrow(mosquito_ama)){
+    if (human_ama$HH_ID[i] == mosquito_ama$HH_ID[j] & (mosquito_ama$collection_date[j]-human_ama$sample_id_date[i] < 19) & (mosquito_ama$collection_date[j]-human_ama$sample_id_date[i] >= 0)){
+      count = count + 1
+    }
+  }
+}
+count # 48
+
+
+# calculate the number of mosquito samples within those that failed in the same household for csp
+count = 0
+for (i in 1:nrow(human_csp)){
+  for (j in 1:nrow(mosquito_csp)){
+    if (human_csp$HH_ID[i] == mosquito_csp$HH_ID[j] & (mosquito_csp$collection_date[j]-human_csp$sample_id_date[i] < 19) & (mosquito_csp$collection_date[j]-human_csp$sample_id_date[i] >= 0)){
+      count = count + 1
+    }
+  }
+}
+count # 23
+
