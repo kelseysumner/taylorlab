@@ -24,7 +24,7 @@ anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials
 # read in the full human data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
 
-# read in the pfcsp1 haplotype data set
+# read in the pfama1 haplotype data set
 ama_haplotype_df = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
 # read in the pfcsp haplotype data set
@@ -235,10 +235,7 @@ figure2_ama_subset_moi = gridExtra::grid.arrange(ama_human_plot,ama_abdomen_plot
 ggsave(figure2_ama_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_ama_subset_moi.png", device="png",
        height=10.5, width=17, units="in", dpi=400)
 
-# calculate median moi
-median(ama_human_df$haplotype_number)
-median(ama_abdomen_df$haplotype_number)
-median(ama_head_df$haplotype_number)
+
 
 
 # create a summarized data frame of the number of abdomens with each MOI for csp
@@ -303,13 +300,15 @@ figure2_csp_subset_moi = gridExtra::grid.arrange(csp_human_plot,csp_abdomen_plot
 ggsave(figure2_csp_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
        height=10.5, width=17, units="in", dpi=400)
 
+# calculate median values
+# for ama
 ama_summary = ama_haplotype_df %>%
   group_by(sample_type) %>%
   summarize(median=median(haplotype_number), mean=mean(haplotype_number))
-
+median(ama_haplotype_df$haplotype_number)
+# for csp
 csp_summary = csp_haplotype_df %>%
   group_by(sample_type) %>%
   summarize(median=median(haplotype_number), mean=mean(haplotype_number))
-
-
+median(csp_haplotype_df$haplotype_number)
 
