@@ -50,7 +50,7 @@ summary(random_intercept_model)
 random_intercept_model_covariates <- lmer(haps_shared~aim2_exposure+total_num_mosq_in_hh+village_name +(1|HH_ID/sample_id_human), data = csp_abdomens)
 summary(random_intercept_model_covariates)
 
-
+anova(random_intercept_model_covariates,null_model)
 
 
 
