@@ -167,9 +167,40 @@ csp_heads %>%
 table(csp_heads$aim2_exposure,csp_heads$haps_shared, useNA = "always")
 
 
-# look at distribution of human-mosquito abdomen pairs across covariates
+## look at distribution of human-mosquito abdomen pairs across covariates
+asymptomatic_infections_abdomens = csp_abdomens[which(csp_abdomens$aim2_exposure=="asymptomatic infection"),]
+symptomatic_infections_abdomens = csp_abdomens[which(csp_abdomens$aim2_exposure=="symptomatic infection"),]
+# look at time across asymptomatic and symptomatic infections
+csp_abdomens$month = paste0(lubridate::month(csp_abdomens$human_date),"-",lubridate::year(csp_abdomens$human_date))
+table(csp_abdomens$month,csp_abdomens$aim2_exposure, useNA = "always")
+# look at participants across asymptomatic and symptomatic infections
+table(csp_abdomens$unq_memID,csp_abdomens$aim2_exposure, useNA = "always")
+# look at households across asymptomatic and symptomatic infections
+table(csp_abdomens$HH_ID,csp_abdomens$aim2_exposure, useNA = "always")
+# look at household mosquito density across asymptomatic and symptomatic infections
+table(csp_abdomens$total_num_mosq_in_hh,csp_abdomens$aim2_exposure, useNA = "always")
+summary(asymptomatic_infections_abdomens$total_num_mosq_in_hh)
+summary(symptomatic_infections_abdomens$total_num_mosq_in_hh)
+# look at the age categories
+table(csp_abdomens$age_cat_baseline,csp_abdomens$aim2_exposure, useNA = "always")
 
 
+## look at distribution of human-mosquito heads pairs across covariates
+asymptomatic_infections_heads = csp_heads[which(csp_heads$aim2_exposure=="asymptomatic infection"),]
+symptomatic_infections_heads = csp_heads[which(csp_heads$aim2_exposure=="symptomatic infection"),]
+# look at time across asymptomatic and symptomatic infections
+csp_heads$month = paste0(lubridate::month(csp_heads$human_date),"-",lubridate::year(csp_heads$human_date))
+table(csp_heads$month,csp_heads$aim2_exposure, useNA = "always")
+# look at participants across asymptomatic and symptomatic infections
+table(csp_heads$unq_memID,csp_heads$aim2_exposure, useNA = "always")
+# look at households across asymptomatic and symptomatic infections
+table(csp_heads$HH_ID,csp_heads$aim2_exposure, useNA = "always")
+# look at household mosquito density across asymptomatic and symptomatic infections
+table(csp_heads$total_num_mosq_in_hh,csp_heads$aim2_exposure, useNA = "always")
+summary(asymptomatic_infections_heads$total_num_mosq_in_hh)
+summary(symptomatic_infections_heads$total_num_mosq_in_hh)
+# look at the age categories
+table(csp_heads$age_cat_baseline,csp_heads$aim2_exposure, useNA = "always")
 
 
 
@@ -256,8 +287,30 @@ ggsave(figure4_head_symptom_plot, filename="/Users/kelseysumner/Desktop/figure4_
        height=10.5, width=11.2, units="in", dpi=400)
 
 
+#### ---------- create venn diagram of csp haplotype sharing with literature ---------- ####
 
+# read in the literature variant table
+literature_variant_table = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/literature_csp_variants/merged_variant_output/literature_csp_variants_merged.csv")
 
+# read in the csp variants from our data
+our_csp_variants = read_tsv("/Users/kelseysumner/Desktop/clean_ids_haplotype_results/CSP/forward_csp_variant_table_report")
 
+# set up the csp variant table for merging
+our_csp_variants = our_csp_variants %>%
+  mutate("present_in_our_csp" = rep(1,nrow(our_csp_variants))) %>%
+  select("Ref Pos","present_in_our_csp")
+
+# now merge the files together
+final_merge_variants = full_join(literature_variant_table,our_csp_variants,by="Ref Pos")
+
+# reorder the file to be in numeric order
+final_merge_variants = final_merge_variants[order(final_merge_variants$`Ref Pos`),]
+
+# calculate how much overlap was found across literature values
+length(which(final_merge_variants$present_in_neafsey == 1 & final_merge_variants$present_in_pf3k == 1 & final_merge_variants$present_in_plasmodb == 1 & final_merge_variants$present_in_our_csp == 1))
+# 21/94 (22.3%) variants found in all literature sources 
+
+# write out as a final merged file
+write_csv(final_merge_variants,"Desktop/final_literature_and_our_csp_variants_merged.csv")
 
 

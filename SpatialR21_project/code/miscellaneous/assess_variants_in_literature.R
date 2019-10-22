@@ -14,7 +14,7 @@ library(tidyverse)
 #### ------ read in the variant tables ------- ####
 
 # read in the variants from the Neafsey data
-neafsey_variants = read_tsv("/Users/kelseysumner/Desktop/literature_csp_variants/neafsey_haplotype_output/final_censored_output/forward_csp_final_results/neafsey_forward_snp_report")
+neafsey_variants = read_tsv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/literature_csp_variants/neafsey_haplotype_output/final_censored_output/forward_csp_final_results/neafsey_forward_snp_report")
 
 # read in the variants from the plasmodb data
 plasmodb_variants = read_csv("/Users/kelseysumner/Desktop/literature_csp_variants/plasmodb_variant_output/plasmo_db_variants_10SEPT2019.csv")

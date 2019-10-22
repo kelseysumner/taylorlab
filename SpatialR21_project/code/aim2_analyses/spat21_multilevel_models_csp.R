@@ -15,10 +15,10 @@ library(lme4)
 #### ---------- read in the data sets ---------- ####
 
 # read in the merged csp abdomen edgelist
-csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_08OCT2019.rds")
+csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_15OCT2019.rds")
 
 # read in the merged csp head edgelist
-csp_heads = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_head_08OCT2019.rds")
+csp_heads = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_head_15OCT2019.rds")
 
 
 
@@ -39,15 +39,15 @@ csp_abdomens$age_cat_baseline = as.factor(csp_abdomens$age_cat_baseline)
 
 # first start out with a null model
 # now fit the model
-null_model <- lmer(haps_shared~1 +(1|HH_ID/sample_id_human), data = csp_abdomens)
+null_model <- lmer(haps_shared~1 +(1|HH_ID/unq_memID), data = csp_abdomens)
 summary(null_model)
 
 # then fit a random-intercept model with no covariates (just exposure and outcome)
-random_intercept_model <- lmer(haps_shared~aim2_exposure +(1|HH_ID/sample_id_human), data = csp_abdomens)
+random_intercept_model <- lmer(haps_shared~aim2_exposure +(1|HH_ID/unq_memID), data = csp_abdomens)
 summary(random_intercept_model)
 
 # then fit a random-intercept model with covariates 
-random_intercept_model_covariates <- lmer(haps_shared~aim2_exposure+total_num_mosq_in_hh+village_name +(1|HH_ID/sample_id_human), data = csp_abdomens)
+random_intercept_model_covariates <- lmer(haps_shared~aim2_exposure+total_num_mosq_in_hh+village_name +(1|HH_ID/unq_memID), data = csp_abdomens)
 summary(random_intercept_model_covariates)
 
 anova(random_intercept_model_covariates,null_model)
