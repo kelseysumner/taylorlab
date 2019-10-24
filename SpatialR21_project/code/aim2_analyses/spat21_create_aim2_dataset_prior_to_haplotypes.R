@@ -211,7 +211,7 @@ ama_edgelist_abdomen = ama_edgelist_abdomen %>%
 
 # now restrict the merged data set to only shared haplotypes in the correct time frame
 ama_edgelist_abdomen = ama_edgelist_abdomen %>%
-  filter(date_difference >= 0 & date_difference < 19) # between 0 and 18 days
+  filter(date_difference >= 0 & date_difference < 13) # between 0 and 12 days
 
 # clean up the final merged data set for the mosquito abdomens
 colnames(ama_edgelist_abdomen)
@@ -220,11 +220,11 @@ ama_edgelist_abdomen = ama_edgelist_abdomen %>%
   select(-HH_ID_mosquito,-date_difference)
 
 # count how many haplotypes were shared between mosquito abdomens and humans
-length(which(ama_edgelist_abdomen$haps_shared >0)) # 130 abdomens
+length(which(ama_edgelist_abdomen$haps_shared >0)) # 105 abdomens
 
 # write out the edgelist
-write_rds(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_15OCT2019.rds")
-write_csv(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_15OCT2019.csv")
+write_rds(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_22OCT2019.rds")
+write_csv(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_22OCT2019.csv")
 
 
 
@@ -424,7 +424,7 @@ csp_edgelist_abdomen = csp_edgelist_abdomen %>%
 
 # now restrict the merged data set to only shared haplotypes in the correct time frame
 csp_edgelist_abdomen = csp_edgelist_abdomen %>%
-  filter(date_difference >= 0 & date_difference < 19) # between 0 and 18 days
+  filter(date_difference >= 0 & date_difference < 13) # between 0 and 12 days
 
 # clean up the final merged data set for the mosquito abdomens
 colnames(csp_edgelist_abdomen)
@@ -433,11 +433,11 @@ csp_edgelist_abdomen = csp_edgelist_abdomen %>%
   select(-HH_ID_mosquito,-date_difference)
 
 # count how many haplotypes were shared between mosquito abdomens and humans
-length(which(csp_edgelist_abdomen$haps_shared >0)) # 275 abdomens
+length(which(csp_edgelist_abdomen$haps_shared >0)) # 234 abdomens
 
 # write out the edgelist
-write_rds(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_15OCT2019.rds")
-write_csv(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_15OCT2019.csv")
+write_rds(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_22OCT2019.rds")
+write_csv(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_22OCT2019.csv")
 
 
 

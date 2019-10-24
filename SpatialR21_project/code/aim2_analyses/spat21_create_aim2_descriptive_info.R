@@ -14,13 +14,13 @@ library(tidyverse)
 #### ---------- read in the data sets ---------- ####
 
 # read in the merged ama abdomen edgelist
-ama_abdomens = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_abdomen_15OCT2019.rds")
+ama_abdomens = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_abdomen_22OCT2019.rds")
 
 # read in the merged ama head edgelist
 ama_heads = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_head_15OCT2019.rds")
 
 # read in the merged csp abdomen edgelist
-csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_15OCT2019.rds")
+csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_22OCT2019.rds")
 
 # read in the merged csp head edgelist
 csp_heads = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_head_15OCT2019.rds")
@@ -108,7 +108,7 @@ ama_moi_plot = ggplot() +
   geom_bar(data=ama_moi_df,aes(x=haplotype_number,y=n), alpha=0.8,stat="identity",fill="#F1BB7B") +
   labs(x="Multiplicity of infection", y="Number of samples", title= ama_title, pch=18) +
   theme_bw() +
-  scale_x_continuous(breaks=c(0,5,10,20), limits=c(0,20)) +
+  scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   scale_y_continuous(breaks=c(0,60,120,180,320,360), limits=c(0,360)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 ama_moi_plot
@@ -119,7 +119,7 @@ csp_moi_plot = ggplot() +
   geom_bar(data=csp_moi_df,aes(x=haplotype_number,y=n), alpha=0.8,stat="identity",fill="#D67236") +
   labs(x="Multiplicity of infection", y="Number of samples", title= csp_title, pch=18) +
   theme_bw() +
-  scale_x_continuous(breaks=c(0,5,10,20), limits=c(0,20)) +
+  scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   scale_y_continuous(breaks=c(0,60,120,180,320,360), limits=c(0,360)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 csp_moi_plot
@@ -130,7 +130,6 @@ figure1_total_moi = gridExtra::grid.arrange(ama_moi_plot, csp_moi_plot, ncol=2)
 # export the figure
 ggsave(figure1_total_moi, filename="/Users/kelseysumner/Desktop/figure1_total_moi.png", device="png",
        height=10.5, width=11.2, units="in", dpi=400)
-
 
 
 
@@ -312,5 +311,39 @@ length(which(final_merge_variants$present_in_neafsey == 1 & final_merge_variants
 
 # write out as a final merged file
 write_csv(final_merge_variants,"Desktop/final_literature_and_our_csp_variants_merged.csv")
+
+
+
+#### ---- look at the number of unique infections by symptomatic status ---- ####
+
+# for csp abdomens
+asymp_abdomen = csp_abdomens %>%
+  filter(aim2_exposure=="asymptomatic infection")
+length(unique(asymp_abdomen$sample_id_human))
+length(unique(asymp_abdomen$sample_id_abdomen))
+length(unique(asymp_abdomen$unq_memID))
+length(unique(asymp_abdomen$HH_ID))
+symp_abdomen = csp_abdomens %>%
+  filter(aim2_exposure=="symptomatic infection")
+length(unique(symp_abdomen$sample_id_human))
+length(unique(symp_abdomen$sample_id_abdomen))
+length(unique(symp_abdomen$unq_memID))
+length(unique(symp_abdomen$HH_ID))
+
+#### ------- calculate how many people and mosquitoes are uniquely paired ----- ###
+
+# calculate how many people were paired with multiple mosquitoes
+dup_humans = table(csp_abdomens$sample_id_human)
+dup_humans[dup_humans>1]
+length(dup_humans[dup_humans>1]) # 63 people
+# now calculate how many people were uniquely paired with a mosquito
+length(dup_humans[dup_humans==1]) # 65 people
+
+# calculate how many mosquitoes were paired with multiple people
+dup_abdomens = table(csp_abdomens$sample_id_abdomen)
+dup_abdomens[dup_abdomens>1]
+length(dup_abdomens[dup_abdomens>1]) # 77
+# now calculate how many mosquitoes were uniquely paired with a human
+length(dup_abdomens[dup_abdomens==1]) # 29
 
 

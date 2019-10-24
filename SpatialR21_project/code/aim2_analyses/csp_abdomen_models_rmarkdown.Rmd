@@ -1,0 +1,96 @@
+---
+title: "pfcsp mosquito abdomen sharing multilevel models"
+author: "Kelsey Sumner"
+date: "10/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Set up work environment
+
+## Load packages
+
+```{r}
+library(readr)
+library(lme4)
+library(moments)
+```
+
+## Read in the csp abdomen data set
+
+This data set shows the pairs of human asymptomatic and symptomatic infections with mosquito abdomens that were Pf positive and collected within the same household as the human, 0-12 days after the human infection was reported.
+
+```{r}
+csp_abdomens <- read_rds("~/Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_22OCT2019.rds")
+```
+
+# Check data set up prior to running models
+
+## Make sure variables all coded correctly prior to running models
+
+Check that the exposure, outcome, and covariates are coded correctly
+
+```{r}
+# make sure the exposure and outcome are coded correctly
+str(csp_abdomens$aim2_exposure)
+csp_abdomens$aim2_exposure = as.factor(csp_abdomens$aim2_exposure)
+str(csp_abdomens$haps_shared)
+str(csp_abdomens$village_name)
+csp_abdomens$village_name = as.factor(csp_abdomens$village_name)
+str(csp_abdomens$total_num_mosq_in_hh)
+str(csp_abdomens$age_cat_baseline)
+csp_abdomens$age_cat_baseline = as.factor(csp_abdomens$age_cat_baseline)
+```
+
+Look at a summary of the variables in the analysis set. 
+
+```{r}
+# look at a summary of aim2_exposure
+table(csp_abdomens$aim2_exposure, useNA = "always")
+# look at haps_shared
+summary(csp_abdomens$haps_shared)
+sd(csp_abdomens$haps_shared)
+skewness(csp_abdomens$haps_shared)
+kurtosis(csp_abdomens$haps_shared)
+# look at total_num_mosq_in_hh
+summary(csp_abdomens$total_num_mosq_in_hh)
+sd(csp_abdomens$total_num_mosq_in_hh)
+skewness(csp_abdomens$total_num_mosq_in_hh)
+kurtosis(csp_abdomens$total_num_mosq_in_hh)
+# look at village_name
+table(csp_abdomens$village_name, useNA = "always")
+# look at age_cat
+table(csp_abdomens$age_cat_baseline, useNA = "always")
+```
+
+
+
+
+## Check for muticollinearity 
+
+```{r}
+
+```
+
+
+
+# Start model fitting
+
+## Fit a linear null model
+
+Create a linear null model to test the relationship between the outcome and random intercepts.
+
+```{r}
+# create a null model
+null_model <- lmer(haps_shared~1 +(1|HH_ID/unq_memID), data = csp_abdomens)
+summary(null_model)
+```
+
+
+
+
+
+

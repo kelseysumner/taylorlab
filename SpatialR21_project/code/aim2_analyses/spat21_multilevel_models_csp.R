@@ -15,10 +15,7 @@ library(lme4)
 #### ---------- read in the data sets ---------- ####
 
 # read in the merged csp abdomen edgelist
-csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_15OCT2019.rds")
-
-# read in the merged csp head edgelist
-csp_heads = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_head_15OCT2019.rds")
+csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_22OCT2019.rds")
 
 
 
