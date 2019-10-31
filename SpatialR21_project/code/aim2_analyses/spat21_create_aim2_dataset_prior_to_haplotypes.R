@@ -38,7 +38,7 @@ colnames(ama_edgelist)
 
 # remove the X1 column
 ama_edgelist = ama_edgelist %>%
-  select(-"X1")
+  dyplyr::select(-"X1")
 
 # look at how many unique observations
 length(unique(ama_edgelist$from)) # 1115
@@ -49,7 +49,7 @@ length(unique(ama_edgelist$to)) # 1115
 table(nchar(ama_edgelist$from))
 table(nchar(ama_edgelist$to))
 
-# remove the rows where both the to and from columns are human samples
+# remove the rows where both the to and from columns are human or mosquito samples
 ama_edgelist = ama_edgelist %>%
   filter(!(str_detect(from,"-") & str_detect(to,"-"))) %>%
   filter(!(str_detect(from," ") & str_detect(to," "))) 
@@ -95,15 +95,15 @@ final_data$main_outcome_primary_case_def = as.factor(final_data$main_outcome_pri
 colnames(final_data)
 human_data = final_data %>%
   filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
-  select(visit_type,sample_id_date,sample_name_final,sample_name_dbs,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
+  dplyr::select(visit_type,sample_id_date,sample_name_final,sample_name_dbs,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def,pfr364Q_std_combined,age_all_baseline) %>%
   mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def))) %>%
-  select(-main_exposure_primary_case_def,-main_outcome_primary_case_def,-visit_type)
+  dplyr::select(-main_exposure_primary_case_def,-main_outcome_primary_case_def,-visit_type)
 
 # select variables you need for mosquito data
 colnames(anoph_merged_data)
 mosquito_data = anoph_merged_data %>%
   filter(!(is.na(sample_id_head) & is.na(sample_id_abdomen)) | sample_id_mosquito == "K01 00030" | sample_id_mosquito == "K01 00047") %>%
-  select(HH_ID,collection_date,total_num_mosq_in_hh,sample_id_abdomen,sample_id_head,sample_id_mosquito)
+  dplyr::select(HH_ID,collection_date,total_num_mosq_in_hh,sample_id_abdomen,sample_id_head,sample_id_mosquito)
 # note: there are 15 entries where the lab didn't have mosquitoes so didn't have separate head and abdomen ids, removed these entries
 # K01 00030 and K01 00047 were sequenced and pf positive but were original test samples so weren't in the normal qpcr data set
 # add their information here for the data set ids
@@ -118,7 +118,7 @@ mosquito_data$sample_id_head[which(mosquito_data$sample_id_mosquito=="K01 00047"
 # check how the samples would merge with the full data set before asymptomatic/symptomatic criteria is enforced
 # check this observation
 final_data = final_data %>%
-  select(sample_name_dbs,sample_name_final)
+  dplyr::select(sample_name_dbs,sample_name_final)
 merge_check = left_join(ama_edgelist_head,final_data,by="sample_name_dbs")
 merge_check %>%
   filter(is.na(sample_name_final)) %>%
@@ -144,7 +144,7 @@ ama_edgelist_head %>%
 colnames(ama_edgelist_head)
 ama_edgelist_head = ama_edgelist_head %>%
   rename("sample_id_human" = "sample_name_dbs","HH_ID_human"="HH_ID.x","HH_ID_mosquito"="HH_ID.y","human_date"="sample_id_date","mosquito_date"="collection_date") %>%
-  select(-sample_id_abdomen,-sample_id_mosquito) 
+  dplyr::select(-sample_id_abdomen,-sample_id_mosquito) 
 colnames(ama_edgelist_head)
 
 # first create a variable that is the time diff between human and mosquito samples subtract human time from mosquito time
@@ -159,20 +159,20 @@ ama_edgelist_head = ama_edgelist_head %>%
 
 # now restrict the merged data set to only shared haplotypes in the correct time frame
 ama_edgelist_head = ama_edgelist_head %>%
-  filter(date_difference >= 0 & date_difference < 31) # between 0 and 30 days
+  filter(date_difference >= 10 & date_difference < 32) # between 10 and 31 days
 
 # clean up the final merged data set for the mosquito heads
 colnames(ama_edgelist_head)
 ama_edgelist_head = ama_edgelist_head %>%
   rename(HH_ID = HH_ID_human) %>%
-  select(-HH_ID_mosquito,-date_difference)
+  dplyr::select(-HH_ID_mosquito,-date_difference)
 
 # count how many haplotypes were shared between mosquito heads and humans
-length(which(ama_edgelist_head$haps_shared >0)) # 125 heads
+length(which(ama_edgelist_head$haps_shared >0)) # 79 heads
 
 # write out the edgelist
-write_rds(ama_edgelist_head,"Desktop/spat21_ama_edgelist_head_15OCT2019.rds")
-write_csv(ama_edgelist_head,"Desktop/spat21_ama_edgelist_head_15OCT2019.csv")
+write_rds(ama_edgelist_head,"Desktop/spat21_ama_edgelist_head_29OCT2019.rds")
+write_csv(ama_edgelist_head,"Desktop/spat21_ama_edgelist_head_29OCT2019.csv")
 
 
 
@@ -196,7 +196,7 @@ ama_edgelist_abdomen %>%
 colnames(ama_edgelist_abdomen)
 ama_edgelist_abdomen = ama_edgelist_abdomen %>%
   rename("sample_id_human" = "sample_name_dbs","HH_ID_human"="HH_ID.x","HH_ID_mosquito"="HH_ID.y","human_date"="sample_id_date","mosquito_date"="collection_date") %>%
-  select(-sample_id_head,-sample_id_mosquito) 
+  dplyr::select(-sample_id_head,-sample_id_mosquito) 
 colnames(ama_edgelist_abdomen)
 
 # first create a variable that is the time diff between human and mosquito samples subtract human time from mosquito time
@@ -211,20 +211,20 @@ ama_edgelist_abdomen = ama_edgelist_abdomen %>%
 
 # now restrict the merged data set to only shared haplotypes in the correct time frame
 ama_edgelist_abdomen = ama_edgelist_abdomen %>%
-  filter(date_difference >= 0 & date_difference < 13) # between 0 and 12 days
+  filter(date_difference >= 0 & date_difference < 15) # between 0 and 14 days
 
 # clean up the final merged data set for the mosquito abdomens
 colnames(ama_edgelist_abdomen)
 ama_edgelist_abdomen = ama_edgelist_abdomen %>%
   rename(HH_ID = HH_ID_human) %>%
-  select(-HH_ID_mosquito,-date_difference)
+  dplyr::select(-HH_ID_mosquito,-date_difference)
 
 # count how many haplotypes were shared between mosquito abdomens and humans
-length(which(ama_edgelist_abdomen$haps_shared >0)) # 105 abdomens
+length(which(ama_edgelist_abdomen$haps_shared >0)) # 106 abdomens
 
 # write out the edgelist
-write_rds(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_22OCT2019.rds")
-write_csv(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_22OCT2019.csv")
+write_rds(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_29OCT2019.rds")
+write_csv(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_29OCT2019.csv")
 
 
 
@@ -251,7 +251,7 @@ colnames(csp_edgelist)
 
 # remove the X1 column
 csp_edgelist = csp_edgelist %>%
-  select(-"X1")
+  dplyr::select(-"X1")
 
 # look at how many unique observations
 length(unique(csp_edgelist$from)) # 1280
@@ -308,15 +308,15 @@ final_data$main_outcome_primary_case_def = as.factor(final_data$main_outcome_pri
 colnames(final_data)
 human_data = final_data %>%
   filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
-  select(visit_type,sample_id_date,sample_name_final,sample_name_dbs,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
+  dplyr::select(visit_type,sample_id_date,sample_name_final,sample_name_dbs,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def,pfr364Q_std_combined,age_all_baseline) %>%
   mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def))) %>%
-  select(-main_exposure_primary_case_def,-main_outcome_primary_case_def,-visit_type)
+  dplyr::select(-main_exposure_primary_case_def,-main_outcome_primary_case_def,-visit_type)
 
 # select variables you need for mosquito data
 colnames(anoph_merged_data)
 mosquito_data = anoph_merged_data %>%
   filter(!(is.na(sample_id_head) & is.na(sample_id_abdomen)) | sample_id_mosquito == "K01 00030" | sample_id_mosquito == "K01 00047") %>%
-  select(HH_ID,collection_date,total_num_mosq_in_hh,sample_id_abdomen,sample_id_head,sample_id_mosquito)
+  dplyr::select(HH_ID,collection_date,total_num_mosq_in_hh,sample_id_abdomen,sample_id_head,sample_id_mosquito)
 # note: there are 15 entries where the lab didn't have mosquitoes so didn't have separate head and abdomen ids, removed these entries
 # K01 00030 and K01 00047 were sequenced and pf positive but were original test samples so weren't in the normal qpcr data set
 # add their information here for the data set ids
@@ -331,7 +331,7 @@ mosquito_data$sample_id_head[which(mosquito_data$sample_id_mosquito=="K01 00047"
 # check how the samples would merge with the full data set before asymptomatic/symptomatic criteria is enforced
 # check this observation
 final_data = final_data %>%
-  select(sample_name_dbs,sample_name_final)
+  dplyr::select(sample_name_dbs,sample_name_final)
 merge_check = left_join(csp_edgelist_head,final_data,by="sample_name_dbs")
 merge_check %>%
   filter(is.na(sample_name_final)) %>%
@@ -357,7 +357,7 @@ csp_edgelist_head %>%
 colnames(csp_edgelist_head)
 csp_edgelist_head = csp_edgelist_head %>%
   rename("sample_id_human" = "sample_name_dbs","HH_ID_human"="HH_ID.x","HH_ID_mosquito"="HH_ID.y","human_date"="sample_id_date","mosquito_date"="collection_date") %>%
-  select(-sample_id_abdomen,-sample_id_mosquito) 
+  dplyr::select(-sample_id_abdomen,-sample_id_mosquito) 
 colnames(csp_edgelist_head)
 
 # first create a variable that is the time diff between human and mosquito samples subtract human time from mosquito time
@@ -372,20 +372,20 @@ csp_edgelist_head = csp_edgelist_head %>%
 
 # now restrict the merged data set to only shared haplotypes in the correct time frame
 csp_edgelist_head = csp_edgelist_head %>%
-  filter(date_difference >= 0 & date_difference < 31) # between 0 and 30 days
+  filter(date_difference >= 10 & date_difference < 32) # between 10 and 31 days
 
 # clean up the final merged data set for the mosquito heads
 colnames(csp_edgelist_head)
 csp_edgelist_head = csp_edgelist_head %>%
   rename(HH_ID = HH_ID_human) %>%
-  select(-HH_ID_mosquito,-date_difference)
+  dplyr::select(-HH_ID_mosquito,-date_difference)
 
 # count how many haplotypes were shared between mosquito heads and humans
-length(which(csp_edgelist_head$haps_shared >0)) # 257 heads
+length(which(csp_edgelist_head$haps_shared >0)) # 166 heads
 
 # write out the edgelist
-write_rds(csp_edgelist_head,"Desktop/spat21_csp_edgelist_head_15OCT2019.rds")
-write_csv(csp_edgelist_head,"Desktop/spat21_csp_edgelist_head_15OCT2019.csv")
+write_rds(csp_edgelist_head,"Desktop/spat21_csp_edgelist_head_29OCT2019.rds")
+write_csv(csp_edgelist_head,"Desktop/spat21_csp_edgelist_head_29OCT2019.csv")
 
 
 
@@ -409,7 +409,7 @@ csp_edgelist_abdomen %>%
 colnames(csp_edgelist_abdomen)
 csp_edgelist_abdomen = csp_edgelist_abdomen %>%
   rename("sample_id_human" = "sample_name_dbs","HH_ID_human"="HH_ID.x","HH_ID_mosquito"="HH_ID.y","human_date"="sample_id_date","mosquito_date"="collection_date") %>%
-  select(-sample_id_head,-sample_id_mosquito) 
+  dplyr::select(-sample_id_head,-sample_id_mosquito) 
 colnames(csp_edgelist_abdomen)
 
 # first create a variable that is the time diff between human and mosquito samples subtract human time from mosquito time
@@ -424,20 +424,20 @@ csp_edgelist_abdomen = csp_edgelist_abdomen %>%
 
 # now restrict the merged data set to only shared haplotypes in the correct time frame
 csp_edgelist_abdomen = csp_edgelist_abdomen %>%
-  filter(date_difference >= 0 & date_difference < 13) # between 0 and 12 days
+  filter(date_difference >= 0 & date_difference < 15) # between 0 and 14 days
 
 # clean up the final merged data set for the mosquito abdomens
 colnames(csp_edgelist_abdomen)
 csp_edgelist_abdomen = csp_edgelist_abdomen %>%
   rename(HH_ID = HH_ID_human) %>%
-  select(-HH_ID_mosquito,-date_difference)
+  dplyr::select(-HH_ID_mosquito,-date_difference)
 
 # count how many haplotypes were shared between mosquito abdomens and humans
 length(which(csp_edgelist_abdomen$haps_shared >0)) # 234 abdomens
 
 # write out the edgelist
-write_rds(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_22OCT2019.rds")
-write_csv(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_22OCT2019.csv")
+write_rds(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_29OCT2019.rds")
+write_csv(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_29OCT2019.csv")
 
 
 

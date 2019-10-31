@@ -14,16 +14,16 @@ library(tidyverse)
 #### ---------- read in the data sets ---------- ####
 
 # read in the merged ama abdomen edgelist
-ama_abdomens = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_abdomen_22OCT2019.rds")
+ama_abdomens = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_abdomen_29OCT2019.rds")
 
 # read in the merged ama head edgelist
-ama_heads = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_head_15OCT2019.rds")
+ama_heads = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_ama_edgelist_head_29OCT2019.rds")
 
 # read in the merged csp abdomen edgelist
-csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_22OCT2019.rds")
+csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_29OCT2019.rds")
 
 # read in the merged csp head edgelist
-csp_heads = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_head_15OCT2019.rds")
+csp_heads = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_head_29OCT2019.rds")
 
 # read in the pfama1 haplotype data set
 ama_haplotype_df = read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")

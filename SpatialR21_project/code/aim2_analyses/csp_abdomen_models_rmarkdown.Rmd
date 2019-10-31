@@ -1,5 +1,5 @@
 ---
-title: "pfcsp mosquito abdomen sharing multilevel models"
+title: "pfcsp mosquito abdomen sharing model prep descriptives"
 author: "Kelsey Sumner"
 date: "10/24/2019"
 output: html_document
@@ -19,14 +19,15 @@ library(lme4)
 library(moments)
 library(ggplot2)
 library(epiDisplay)
+library(dplyr)
 ```
 
 ## Read in the csp abdomen data set
 
-This data set shows the pairs of human asymptomatic and symptomatic infections with mosquito abdomens that were Pf positive and collected within the same household as the human, 0-12 days after the human infection was reported.
+This data set shows the pairs of human asymptomatic and symptomatic infections with mosquito abdomens that were Pf positive and collected within the same household as the human, 0-14 days after the human infection was reported.
 
 ```{r}
-csp_abdomens <- read_rds("~/Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_22OCT2019.rds")
+csp_abdomens <- read_rds("~/Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_29OCT2019.rds")
 ```
 
 # Check data set up prior to running models
@@ -42,12 +43,14 @@ csp_abdomens$aim2_exposure = as.factor(csp_abdomens$aim2_exposure)
 str(csp_abdomens$haps_shared)
 str(csp_abdomens$village_name)
 csp_abdomens$village_name = as.factor(csp_abdomens$village_name)
-str(csp_abdomens$total_num_mosq_in_hh)
+str(csp_abdomens$pfr364Q_std_combined)
 str(csp_abdomens$age_cat_baseline)
 csp_abdomens$age_cat_baseline = as.factor(csp_abdomens$age_cat_baseline)
 str(csp_abdomens$sample_id_human)
 str(csp_abdomens$unq_memID)
 str(csp_abdomens$HH_ID)
+str(csp_abdomens$age_all_baseline)
+csp_abdomens$age_all_baseline = as.numeric(csp_abdomens$age_all_baseline)
 ```
 
 Look at a summary of the variables in the analysis set. 
@@ -60,15 +63,18 @@ summary(csp_abdomens$haps_shared)
 sd(csp_abdomens$haps_shared)
 skewness(csp_abdomens$haps_shared)
 kurtosis(csp_abdomens$haps_shared)
-# look at total_num_mosq_in_hh
-summary(csp_abdomens$total_num_mosq_in_hh)
-sd(csp_abdomens$total_num_mosq_in_hh)
-skewness(csp_abdomens$total_num_mosq_in_hh)
-kurtosis(csp_abdomens$total_num_mosq_in_hh)
-# look at village_name
-table(csp_abdomens$village_name, useNA = "always")
+# look at pfr364Q_combined_std
+summary(csp_abdomens$pfr364Q_std_combined)
+sd(csp_abdomens$pfr364Q_std_combined)
+skewness(csp_abdomens$pfr364Q_std_combined)
+kurtosis(csp_abdomens$pfr364Q_std_combined)
 # look at age_cat
 table(csp_abdomens$age_cat_baseline, useNA = "always")
+table(csp_abdomens$age_all_baseline, useNA = "always")
+summary(csp_abdomens$age_all_baseline)
+table(csp_abdomens$age_cat_baseline,csp_abdomens$age_all_baseline,useNA = "always")
+# look at village_name
+table(csp_abdomens$village_name, useNA = "always")
 # look at sample_id_human
 table(csp_abdomens$sample_id_human, useNA = "always")
 table(csp_abdomens$sample_id_abdomen, useNA = "always")
@@ -80,36 +86,78 @@ table(csp_abdomens$HH_ID, useNA = "always")
 # might want to do weighting to account for this
 ```
 
+# Remove Sitabicha from analysis
 
-## Assess functional form coding for total_num_mosq_in_hh
+Sitabicha was only included in 12 pairs (3%) of the final data set, so removing from the analysis because the small numbers are not representative of Sitabicha as a whole and will cause sparse data and model convergence issues. 
 
-Assessed functional form coding for the variable total_num_mosq_in_hh, which is a count variables of the number of Anopheles mosquitoes in the household at the time of the mosquito collection for the paired abdomen. A functional form assessment was not done for the age category covariate, because the age categories are commonly used in literature and want to keep them for comparability and interpretabilty of results.
+```{r}
+csp_abdomens = csp_abdomens %>%
+  filter(!(village_name=="Sitabicha"))
+```
+
+
+Look at a summary of the variables in the analysis set with Sitabicha removed. 
+
+```{r}
+# look at a summary of aim2_exposure
+table(csp_abdomens$aim2_exposure, useNA = "always")
+# look at haps_shared
+summary(csp_abdomens$haps_shared)
+sd(csp_abdomens$haps_shared)
+skewness(csp_abdomens$haps_shared)
+kurtosis(csp_abdomens$haps_shared)
+# look at pfr364Q_combined_std
+summary(csp_abdomens$pfr364Q_std_combined)
+sd(csp_abdomens$pfr364Q_std_combined)
+skewness(csp_abdomens$pfr364Q_std_combined)
+kurtosis(csp_abdomens$pfr364Q_std_combined)
+# look at age_cat
+table(csp_abdomens$age_cat_baseline, useNA = "always")
+table(csp_abdomens$age_all_baseline, useNA = "always")
+summary(csp_abdomens$age_all_baseline)
+table(csp_abdomens$age_cat_baseline,csp_abdomens$age_all_baseline,useNA = "always")
+# look at village_name
+table(csp_abdomens$village_name, useNA = "always")
+# look at sample_id_human
+table(csp_abdomens$sample_id_human, useNA = "always")
+table(csp_abdomens$sample_id_abdomen, useNA = "always")
+# look at unq_memID
+table(csp_abdomens$unq_memID, useNA = "always")
+# look at HH_ID
+table(csp_abdomens$HH_ID, useNA = "always")
+# note: looks like a lot of multiple pairings where have a mosquito with many people and many people with a mosquito, especially in K01
+# might want to do weighting to account for this
+```
+
+## Assess functional form coding for pfr364Q_combined_std
+
+Assessed functional form coding for the variable pfr364Q_std_combined, which measured the P. falciparum parasites/uL in the human blood samples. 
 
 First plot the natural form using a LOWESS curve. 
 
 ```{r}
-# look at the natural form of total_num_mosq_in_hh through the LOWESS curve
+# look at the natural form of pfr364Q_std_combined through the LOWESS curve
 # plot the lowess graph 
 plot_loess = ggplot(data=csp_abdomens) +
-  geom_point(aes(x=total_num_mosq_in_hh,y=haps_shared)) +
-  geom_smooth(aes(x=total_num_mosq_in_hh,y=haps_shared),method="loess")
+  geom_point(aes(x=pfr364Q_std_combined,y=haps_shared)) +
+  geom_smooth(aes(x=pfr364Q_std_combined,y=haps_shared),method="loess")
 plot_loess
 ```
 
 
-Now look at the linear coding of total_num_mosq_in_hh.
+Now look at the linear coding of pfr364Q_std_combined.
 
 ```{r}
-model1=glm(haps_shared~total_num_mosq_in_hh,family=poisson(link = "log"),data=csp_abdomens) 
+model1=glm(haps_shared~pfr364Q_std_combined,family=poisson(link = "log"),data=csp_abdomens) 
 summary(model1) 
 # exponentiate coefficient
-exp(0.03833)
+exp(-8.831e-06)
 # pull out log likelihood test value
 logLik(model1) 
 # plot the linear model fit
-linear_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=haps_shared)) + 
+linear_plot = ggplot(csp_abdomens, aes(x=pfr364Q_std_combined, y=haps_shared)) + 
   labs(title="LINEAR Model",
-       x="Total number of mosquitoes in household",
+       x="Parasite density",
        y="Number of haplotypes shared",
        caption="NOTE: LOESS is blue. Linear is red. 95%CI is for the linear trend alone.") +
   geom_smooth(method="loess", se = F) +                   
@@ -118,24 +166,24 @@ linear_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=haps_shared)) +
 linear_plot
 ```
 
-Now look at the quadratic coding of total_num_mosq_in_hh.
+Now look at the quadratic coding of pfr364Q_std_combined.
 
 ```{r}
 # first make the quadratic term
-csp_abdomens$total_num_mosq_in_hh_quad = csp_abdomens$total_num_mosq_in_hh*csp_abdomens$total_num_mosq_in_hh
+csp_abdomens$pfr364Q_std_combined_quad = csp_abdomens$pfr364Q_std_combined*csp_abdomens$pfr364Q_std_combined
 # then run the model
-model2=glm(haps_shared~total_num_mosq_in_hh+total_num_mosq_in_hh_quad,family=poisson(link = "log"),data=csp_abdomens) 
+model2=glm(haps_shared~pfr364Q_std_combined+pfr364Q_std_combined_quad,family=poisson(link = "log"),data=csp_abdomens) 
 summary(model2) 
 # exponentiate coefficient
-exp(0.120136)
-exp(-0.004990)
+exp(-1.321e-04)
+exp(2.277e-09)
 # pull out log likelihood test value
 logLik(model2) 
 csp_abdomens$pred.quad = model2$fitted.values
 # plot the model fit
-quadratic_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=haps_shared)) + 
+quadratic_plot = ggplot(csp_abdomens, aes(x=pfr364Q_std_combined, y=haps_shared)) + 
   labs(title="QUADRATIC Model",
-       x="Total number of mosquitoes in household",
+       x="Parasite density",
        y="Number of haplotypes shared",
        caption="NOTE: LOESS is blue. Quadratic is red [y~ (x+x^2)]. 95%CI is for the quadratic trend alone.") +
   geom_smooth(method="loess", se = F) +                   
@@ -144,25 +192,25 @@ quadratic_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=haps_shared)
 quadratic_plot
 ```
 
-Now look at the cubic coding of total_num_mosq_in_hh.
+Now look at the cubic coding of pfr364Q_std_combined.
 
 ```{r}
 # first make the cubic term
-csp_abdomens$total_num_mosq_in_hh_cubed = csp_abdomens$total_num_mosq_in_hh*csp_abdomens$total_num_mosq_in_hh*csp_abdomens$total_num_mosq_in_hh
+csp_abdomens$pfr364Q_std_combined_cubed = csp_abdomens$pfr364Q_std_combined*csp_abdomens$pfr364Q_std_combined*csp_abdomens$pfr364Q_std_combined
 # then run the model
-model3=glm(haps_shared~total_num_mosq_in_hh+total_num_mosq_in_hh_quad+total_num_mosq_in_hh_cubed,family=poisson(link = "log"),data=csp_abdomens) 
+model3=glm(haps_shared~pfr364Q_std_combined+pfr364Q_std_combined_quad+pfr364Q_std_combined_cubed,family=poisson(link = "log"),data=csp_abdomens) 
 summary(model3) 
 # exponentiate coefficient
-exp(1.199e-01)
-exp(-4.960e-03)
-exp(-1.296e-06)
+exp(-1.317e-04)
+exp(2.213e-09)
+exp(1.015e-15)
 # pull out log likelihood test value
 logLik(model3) 
 csp_abdomens$pred.quad.cubed = model3$fitted.values
 # plot the model fit
-cubic_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=haps_shared)) + 
+cubic_plot = ggplot(csp_abdomens, aes(x=pfr364Q_std_combined, y=haps_shared)) + 
   labs(title="CUBIC Model",
-       x="Total number of mosquitoes in household",
+       x="Parasite density",
        y="Number of haplotypes shared",
        caption="NOTE: LOESS is blue. Cubic is red [y~ (x+x^2+x^3)]. 95%CI is for the cubic trend alone.") +
   geom_smooth(method="loess", se = F) +                   
@@ -172,27 +220,26 @@ cubic_plot
 ```
 
 
-Now look at the categorical coding of total_num_mosq_in_hh.
+Now look at the categorical coding of pfr364Q_std_combined.
 
 ```{r}
 # first make the categorical term
-csp_abdomens$total_num_mosq_in_hh_cat = ifelse(csp_abdomens$total_num_mosq_in_hh<6,"0to5",ifelse(
-  csp_abdomens$total_num_mosq_in_hh>=6 & csp_abdomens$total_num_mosq_in_hh<11,"6to10", "11to16"))
-table(csp_abdomens$total_num_mosq_in_hh_cat,csp_abdomens$total_num_mosq_in_hh, useNA = "always")
-csp_abdomens$total_num_mosq_in_hh_cat = as.factor(csp_abdomens$total_num_mosq_in_hh_cat)
+csp_abdomens$pfr364Q_std_combined_cat = ifelse(csp_abdomens$pfr364Q_std_combined<100,"under_rdt_detection",
+  "over_rdt_detection")
+table(csp_abdomens$pfr364Q_std_combined_cat,csp_abdomens$pfr364Q_std_combined, useNA = "always")
+csp_abdomens$pfr364Q_std_combined_cat = as.factor(csp_abdomens$pfr364Q_std_combined_cat)
 # then run the model
-model4=glm(haps_shared~total_num_mosq_in_hh_cat,family=poisson(link = "log"),data=csp_abdomens) 
+model4=glm(haps_shared~pfr364Q_std_combined_cat,family=poisson(link = "log"),data=csp_abdomens) 
 summary(model4) 
 # exponentiate coefficient
-exp(0.36575)
-exp(0.17162)
+exp(0.89882)
 # pull out log likelihood test value
 logLik(model4) 
 csp_abdomens$pred.cat = model4$fitted.values
 # plot the model fit
-categorical_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=pred.cat)) + 
+categorical_plot = ggplot(csp_abdomens, aes(x=pfr364Q_std_combined, y=pred.cat)) + 
   labs(title="CATEGORICAL Model",
-       x="Total number of mosquitoes in household",
+       x="Parasite density",
        y="Number of haplotypes shared",
        caption="NOTE: LOESS is blue. Categorical is red. 95%CI is for the categorical trend alone.") +
   geom_smooth(method="loess", se = F) +                   
@@ -201,15 +248,220 @@ categorical_plot = ggplot(csp_abdomens, aes(x=total_num_mosq_in_hh, y=pred.cat))
 categorical_plot
 ```
 
+Now look at the natural log (ln) coding of pfr364Q_std_combined.
+
+```{r}
+# first make the categorical term
+csp_abdomens$pfr364Q_std_combined_ln = log(csp_abdomens$pfr364Q_std_combined)
+# then run the model
+model5=glm(haps_shared~pfr364Q_std_combined_ln,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model5) 
+# exponentiate coefficient
+exp(-0.12288)
+# pull out log likelihood test value
+logLik(model5) 
+# plot the model fit
+ln_plot = ggplot(csp_abdomens, aes(x=pfr364Q_std_combined_ln, y=pred.cat)) + 
+  labs(title="NATURAL LOG Model",
+       x="Parasite density",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Ln is red. 95%CI is for the ln trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+ln_plot
+```
+
+
+
+
+
 Will do log-likelihood test to compare nested models for differential coding of the total number of mosquitoes in the households.
 
 ```{r}
 # compare quadratic and linear models
-lrtest(model1,model2) # linear better than quadratic
+lrtest(model1,model2) # quadratic is better than linear
 # compare cubic and linear models
-lrtest(model1,model3) # linear better than cubic
+lrtest(model1,model3) # cubic is better than linear
+# compare the quadratic and cubic
+lrtest(model2,model3) # quadratic is better than cubic
 ```
 
+
+
+
+
+## Assess functional form coding for age
+
+Assessed functional form coding for the age of the participants at baseline.
+
+First plot the natural form using a LOWESS curve. 
+
+```{r}
+# look at the natural form of age through the LOWESS curve
+# plot the lowess graph 
+plot_loess = ggplot(data=csp_abdomens) +
+  geom_point(aes(x=age_all_baseline,y=haps_shared)) +
+  geom_smooth(aes(x=age_all_baseline,y=haps_shared),method="loess")
+plot_loess
+```
+
+Now look at the linear coding of age_all_baseline.
+
+```{r}
+model1=glm(haps_shared~age_all_baseline,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model1) 
+# exponentiate coefficient
+exp(0.003648)
+# pull out log likelihood test value
+logLik(model1) 
+# plot the linear model fit
+linear_plot = ggplot(csp_abdomens, aes(x=age_all_baseline, y=haps_shared)) + 
+  labs(title="LINEAR Model",
+       x="Age",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Linear is red. 95%CI is for the linear trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+linear_plot
+```
+
+Now look at the quadratic coding of age_all_baseline.
+
+```{r}
+# first make the quadratic term
+csp_abdomens$age_all_baseline_quad = csp_abdomens$age_all_baseline*csp_abdomens$age_all_baseline
+# then run the model
+model2=glm(haps_shared~age_all_baseline+age_all_baseline_quad,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model2) 
+# exponentiate coefficient
+exp(0.0289608)
+exp(-0.0003769)
+# pull out log likelihood test value
+logLik(model2) 
+csp_abdomens$pred.quad = model2$fitted.values
+# plot the model fit
+quadratic_plot = ggplot(csp_abdomens, aes(x=age_all_baseline, y=haps_shared)) + 
+  labs(title="QUADRATIC Model",
+       x="age",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Quadratic is red [y~ (x+x^2)]. 95%CI is for the quadratic trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~poly(x,2), color="red", linetype="dashed") +
+  theme_bw()
+quadratic_plot
+```
+
+
+Now look at the cubic coding of age_all_baseline.
+
+```{r}
+# first make the cubic term
+csp_abdomens$age_all_baseline_cubed = csp_abdomens$age_all_baseline*csp_abdomens$age_all_baseline*csp_abdomens$age_all_baseline
+# then run the model
+model3=glm(haps_shared~age_all_baseline+age_all_baseline_quad+age_all_baseline_cubed,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model3) 
+# exponentiate coefficient
+exp(-3.783e-02)
+exp(2.251e-03)
+exp(-2.555e-05)
+# pull out log likelihood test value
+logLik(model3) 
+csp_abdomens$pred.cubed = model3$fitted.values
+# plot the model fit
+cubic_plot = ggplot(csp_abdomens, aes(x=age_all_baseline, y=haps_shared)) + 
+  labs(title="CUBIC Model",
+       x="age",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Cubic is red [y~ (x+x^2+x^3)]. 95%CI is for the cubic trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~poly(x,3), color="red", linetype="dashed") +
+  theme_bw()
+cubic_plot
+```
+
+Now look at the categorical coding of pfr364Q_std_combined.
+
+```{r}
+# first make the categorical term
+csp_abdomens$age_cat_baseline = factor(csp_abdomens$age_cat_baseline)
+csp_abdomens$age_cat_baseline = relevel(csp_abdomens$age_cat_baseline,ref = ">15 years")
+# then run the model
+model4=glm(haps_shared~age_cat_baseline,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model4) 
+# exponentiate coefficient
+exp(-0.24660)
+exp(-0.31650)
+# pull out log likelihood test value
+logLik(model4) 
+csp_abdomens$pred.cat = model4$fitted.values
+# plot the model fit
+categorical_plot = ggplot(csp_abdomens, aes(x=age_cat_baseline, y=pred.cat)) + 
+  labs(title="CATEGORICAL Model",
+       x="age",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Categorical is red. 95%CI is for the categorical trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+categorical_plot
+```
+
+
+Now look at the natural log (ln) coding of age_all_baseline.
+
+```{r}
+# first make the categorical term
+csp_abdomens$age_all_baseline_ln = log(csp_abdomens$age_all_baseline)
+# then run the model
+model5=glm(haps_shared~age_all_baseline_ln,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model5) 
+# exponentiate coefficient
+exp(0.08881)
+# pull out log likelihood test value
+logLik(model5) 
+# plot the model fit
+ln_plot = ggplot(csp_abdomens, aes(x=pfr364Q_std_combined_ln, y=pred.cat)) + 
+  labs(title="NATURAL LOG Model",
+       x="Parasite density",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Ln is red. 95%CI is for the ln trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+ln_plot
+```
+
+
+
+Will do log-likelihood test to compare nested models for differential coding of the total number of mosquitoes in the households.
+
+```{r}
+# compare quadratic and linear models
+lrtest(model1,model2) # quadratic is better than linear
+# compare cubic and linear models
+lrtest(model1,model3) # cubic is better than linear
+# compare the quadratic and cubic
+lrtest(model2,model3) # cubic is better than quadratic
+```
+
+## Clean up the variables in the data set
+
+```{r}
+colnames(csp_abdomens)
+csp_abdomens = csp_abdomens %>%
+  dplyr::select(-c(pfr364Q_std_combined_quad,pfr364Q_std_combined_cubed,pfr364Q_std_combined_cubed,pfr364Q_std_combined_ln,pred.quad,pred.quad.cubed,pred.cat,pred.cubed,age_all_baseline_ln))
+colnames(csp_abdomens)
+```
+
+
+## Relevel the village_name variables
+```{r}
+table(csp_abdomens$village_name, useNA = "always")
+csp_abdomens$village_name = as.factor(ifelse(csp_abdomens$village_name=="Kinesamo","Kinesamo","Maruti"))
+table(csp_abdomens$village_name, useNA = "always")
+```
 
 
 ## Check for muticollinearity 
@@ -223,91 +475,82 @@ symptomatic_mean = mean(symptomatic$haps_shared, na.rm = TRUE)
 pooled_sd = sd(append(asymptomatic$haps_shared, symptomatic$haps_shared), na.rm = TRUE)
 (symptomatic_mean - asymptomatic_mean)/pooled_sd
 
-# comparing aim2_exposure vs. total_num_mosq_in_hh
-asymptomatic = csp_abdomens[which(csp_abdomens$aim2_exposure=="asymptomatic infection"),]
-symptomatic = csp_abdomens[which(csp_abdomens$aim2_exposure=="symptomatic infection"),]
-asymptomatic_mean = mean(asymptomatic$total_num_mosq_in_hh, na.rm = TRUE) 
-symptomatic_mean = mean(symptomatic$total_num_mosq_in_hh, na.rm = TRUE) 
-pooled_sd = sd(append(asymptomatic$total_num_mosq_in_hh, symptomatic$total_num_mosq_in_hh), na.rm = TRUE)
-(symptomatic_mean - asymptomatic_mean)/pooled_sd
+# comparing aim2_exposure vs. age_cat_baseline
+table(csp_abdomens$aim2_exposure,csp_abdomens$age_cat_baseline, useNA = "always")
+firstmodel = glm(aim2_exposure ~ age_cat_baseline, data=csp_abdomens, family=binomial(link="logit"))
+summary(firstmodel)
+exp(-0.6628)
+exp(0.8177)
 
 # comparing aim2_exposure vs. village_name
 table(csp_abdomens$aim2_exposure,csp_abdomens$village_name, useNA = "always")
 firstmodel = glm(village_name ~ aim2_exposure, data=csp_abdomens, family=binomial(link="logit"))
 summary(firstmodel)
-exp(-0.9673)
+exp(-1.0526)
 
-# comparing aim2_exposure vs. age_cat_baseline
-table(csp_abdomens$aim2_exposure,csp_abdomens$age_cat_baseline, useNA = "always")
-firstmodel = glm(age_cat_baseline ~ aim2_exposure, data=csp_abdomens, family=binomial(link="logit"))
+# comparing aim2_exposure vs. pfr364Q_std_combined_cat
+table(csp_abdomens$aim2_exposure,csp_abdomens$pfr364Q_std_combined_cat, useNA = "always")
+firstmodel = glm(pfr364Q_std_combined_cat ~ aim2_exposure, data=csp_abdomens, family=binomial(link="logit"))
 summary(firstmodel)
-exp(0.8300)
+exp(-0.8974)
 
-# comparing haps_shared vs. total_num_mosq_in_hh
-cor(csp_abdomens$haps_shared,csp_abdomens$total_num_mosq_in_hh)
+# comparing haps_shared vs. age_cat_baseline
+cat1 = csp_abdomens[which(csp_abdomens$age_cat_baseline=="<5 years"),]
+cat2 = csp_abdomens[which(csp_abdomens$age_cat_baseline=="5-15 years"),]
+cat3 = csp_abdomens[which(csp_abdomens$age_cat_baseline==">15 years"),]
+cat1_mean = mean(cat1$haps_shared, na.rm = TRUE) 
+cat2_mean = mean(cat2$haps_shared, na.rm = TRUE) 
+cat3_mean = mean(cat3$haps_shared, na.rm = TRUE) 
+pooled_sd = sd(append(cat2$haps_shared, cat3$haps_shared), na.rm = TRUE)
+(cat2_mean - cat3_mean)/pooled_sd
 
 # comparing haps_shared vs. village_name
 kinesamo = csp_abdomens[which(csp_abdomens$village_name=="Kinesamo"),]
 maruti = csp_abdomens[which(csp_abdomens$village_name=="Maruti"),]
-sitabicha = csp_abdomens[which(csp_abdomens$village_name=="Sitabicha"),]
 kinesamo_mean = mean(kinesamo$haps_shared, na.rm = TRUE) 
 maruti_mean = mean(maruti$haps_shared, na.rm = TRUE) 
-sitabicha_mean = mean(sitabicha$haps_shared, na.rm = TRUE) 
-pooled_sd = sd(append(kinesamo$haps_shared, sitabicha$haps_shared), na.rm = TRUE)
-(kinesamo_mean - sitabicha_mean)/pooled_sd
+pooled_sd = sd(append(kinesamo$haps_shared, maruti$haps_shared), na.rm = TRUE)
+(kinesamo_mean - maruti_mean)/pooled_sd
 
-# comparing haps_shared vs. age_cat_baseline
-agecat1 = csp_abdomens[which(csp_abdomens$age_cat_baseline=="<5 years"),]
-agecat2 = csp_abdomens[which(csp_abdomens$age_cat_baseline=="5-15 years"),]
-agecat3 = csp_abdomens[which(csp_abdomens$age_cat_baseline==">15 years"),]
-agecat1_mean = mean(agecat1$haps_shared, na.rm = TRUE) 
-agecat2_mean = mean(agecat2$haps_shared, na.rm = TRUE) 
-agecat3_mean = mean(agecat3$haps_shared, na.rm = TRUE) 
-pooled_sd = sd(append(agecat2$haps_shared, agecat3$haps_shared), na.rm = TRUE)
-(agecat2_mean - agecat3_mean)/pooled_sd
+# comparing haps_shared vs. pfr364Q_std_combined_cat
+cat1 = csp_abdomens[which(csp_abdomens$pfr364Q_std_combined_cat=="over_rdt_detection"),]
+cat2 = csp_abdomens[which(csp_abdomens$pfr364Q_std_combined_cat=="under_rdt_detection"),]
+cat1_mean = mean(cat1$haps_shared, na.rm = TRUE) 
+cat2_mean = mean(cat2$haps_shared, na.rm = TRUE) 
+pooled_sd = sd(append(cat2$haps_shared, cat1$haps_shared), na.rm = TRUE)
+(cat2_mean - cat1_mean)/pooled_sd
 
-# comparing total_num_mosq_in_hh vs. village_name
-kinesamo = csp_abdomens[which(csp_abdomens$village_name=="Kinesamo"),]
-maruti = csp_abdomens[which(csp_abdomens$village_name=="Maruti"),]
-sitabicha = csp_abdomens[which(csp_abdomens$village_name=="Sitabicha"),]
-kinesamo_mean = mean(kinesamo$total_num_mosq_in_hh, na.rm = TRUE) 
-maruti_mean = mean(maruti$total_num_mosq_in_hh, na.rm = TRUE) 
-sitabicha_mean = mean(sitabicha$total_num_mosq_in_hh, na.rm = TRUE) 
-pooled_sd = sd(append(kinesamo$haps_shared, sitabicha$haps_shared), na.rm = TRUE)
-(kinesamo_mean - sitabicha_mean)/pooled_sd
-
-# comparing total_num_mosq_in_hh vs. age_cat_baseline
-agecat1 = csp_abdomens[which(csp_abdomens$age_cat_baseline=="<5 years"),]
-agecat2 = csp_abdomens[which(csp_abdomens$age_cat_baseline=="5-15 years"),]
-agecat3 = csp_abdomens[which(csp_abdomens$age_cat_baseline==">15 years"),]
-agecat1_mean = mean(agecat1$total_num_mosq_in_hh, na.rm = TRUE) 
-agecat2_mean = mean(agecat2$total_num_mosq_in_hh, na.rm = TRUE) 
-agecat3_mean = mean(agecat3$total_num_mosq_in_hh, na.rm = TRUE) 
-pooled_sd = sd(append(agecat1$haps_shared, agecat3$haps_shared), na.rm = TRUE)
-(agecat1_mean - agecat3_mean)/pooled_sd
-
-# comparing village_name vs. age_cat_baseline
+# comparing age_cat_baseline vs. village_name
 table(csp_abdomens$village_name,csp_abdomens$age_cat_baseline, useNA = "always")
-firstmodel = glm(age_cat_baseline ~ village_name, data=csp_abdomens, family=binomial(link="logit"))
+firstmodel = glm(village_name ~ age_cat_baseline, data=csp_abdomens, family=binomial(link="logit"))
 summary(firstmodel)
-exp(-0.4557)
-exp(-0.9877)
+exp(-0.0641)
+exp(-0.7809)
+
+# comparing age_cat_baseline vs. pfr364Q_std_combined_cat
+table(csp_abdomens$pfr364Q_std_combined_cat,csp_abdomens$age_cat_baseline, useNA = "always")
+firstmodel = glm(pfr364Q_std_combined_cat ~ age_cat_baseline, data=csp_abdomens, family=binomial(link="logit"))
+summary(firstmodel)
+exp(-1.3252)
+exp(-1.7151)
+
+# comparing village_name vs. pfr364Q_std_combined
+table(csp_abdomens$village_name,csp_abdomens$pfr364Q_std_combined_cat, useNA = "always")
+firstmodel = glm(pfr364Q_std_combined_cat ~ village_name, data=csp_abdomens, family=binomial(link="logit"))
+summary(firstmodel)
+exp(1.2826)
 
 ```
 
 
-
-# Start model fitting
-
-## Fit a linear null model
-
-Create a linear null model to test the relationship between the outcome and random intercepts.
-
+## write out the final model data set for csp abdomen sharing
 ```{r}
-# create a null model
-null_model <- lmer(haps_shared~1 +(1|HH_ID/unq_memID), data = csp_abdomens)
-summary(null_model)
+# write_csv(csp_abdomens,"Desktop/spat21_csp_abdomen_sharing_final_model_data_31OCT2019.csv")
+# write_rds(csp_abdomens,"Desktop/spat21_csp_abdomen_sharing_final_model_data_31OCT2019.rds")
 ```
+
+
+
 
 
 

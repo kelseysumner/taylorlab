@@ -1,0 +1,23 @@
+---
+title: "csp_abdomen_multilevel_models"
+author: "Kelsey Sumner"
+date: "10/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Start model fitting
+
+## Fit a linear null model
+
+Create a linear null model to test the relationship between the outcome and random intercepts.
+
+```{r}
+# create a null model
+null_model <- lmer(haps_shared~1 +(1|HH_ID/unq_memID), data = csp_abdomens)
+summary(null_model)
+```
+
