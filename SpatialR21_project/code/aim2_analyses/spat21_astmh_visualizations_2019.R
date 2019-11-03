@@ -12,6 +12,7 @@ library(devtools)
 library(streamgraph)
 library(lubridate)
 library(ggalluvial)
+library(gridExtra)
 
 
 #### ---------- read in the data sets ---------- ####
@@ -47,17 +48,10 @@ mosquito_data = anoph_merged_data %>%
 
 # make the plot
 mosquito_plot = mosquito_data %>%
-  streamgraph("new_abdominal_status","n","month_date", offset="zero", interactive = TRUE) %>%
-  sg_fill_brewer("RdBu") %>%
-  sg_legend(TRUE,"Abdominal Status: ")
+  streamgraph("new_abdominal_status","n","month_date", offset="zero", interactive = F) %>%
+  sg_fill_brewer("RdBu")
 mosquito_plot  
 
-# load webshot library
-# library(webshot)
-#install phantom:
-# webshot::install_phantomjs()
-# Make a webshot in pdf : high quality but can not choose printed zone
-# webshot("paste_your_html_here.html" , "output.pdf", delay = 0.2)
 
 
 #### -------- make visualization 2 --------- ####
@@ -199,9 +193,9 @@ plot_human_data_withperc = plot_human_data %>%
   mutate(perc_n=n/sum(n))
 
 # set order for x-axis for months
-table(plot_human_data, useNA = "always")
+table(plot_human_data_withperc, useNA = "always")
 month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
-plot_human_data <- within(plot_human_data, month <- factor(month, levels=month_order))
+plot_human_data_withperc <- within(plot_human_data_withperc, month <- factor(month, levels=month_order))
 
 # now make an alluvial plot of how infection status changes over time
 figure3_plot = ggplot(plot_human_data_withperc,
@@ -262,10 +256,141 @@ plot4 = ggplot(data = plot_human_data_symp,aes(x=month,y=n,fill=symp_infection))
 plot4
 
 # export the plot
-ggsave(plot4, filename="/Users/kelseysumner/Desktop/figure4_plot_stackedsymp.png", device="png",
- height=10.5, width=22, units="in", dpi=500)
+# ggsave(plot4, filename="/Users/kelseysumner/Desktop/figure4_plot_stackedsymp.png", device="png",
+ # height=10.5, width=22, units="in", dpi=500)
 
 
+#### ------ make a plot of the mois for humans and mosquito abdomens for csp ------ ####
+
+### create histograms of moi subset by sample type
+
+# create a summarized data frame of the number of abdomens with each MOI for csp
+# for humans
+csp_human_df <- csp_haplotypes %>% 
+  filter(!(is.na(haplotype_number)) & sample_type=="Human") %>%
+  group_by(haplotype_number) %>%
+  summarise(n=n())
+csp_human_df$haplotype_number = as.numeric(csp_human_df$haplotype_number)
+sum(csp_human_df$n) 
+# for abdomens
+csp_abdomen_df <- csp_haplotypes %>% 
+  filter(!(is.na(haplotype_number)) & sample_type=="Abdomen") %>%
+  group_by(haplotype_number) %>%
+  summarise(n=n())
+csp_abdomen_df$haplotype_number = as.numeric(csp_abdomen_df$haplotype_number)
+sum(csp_abdomen_df$n)
+
+# make csp moi figures by sample type
+# for human samples
+csp_human_title <- expression(paste(italic("pfcsp"), ": Human DBS"))
+csp_human_plot = ggplot() +
+  geom_bar(data=csp_human_df,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#e31a1c") +
+  labs(x="Multiplicity of infection", y="Number of samples", title= csp_human_title, pch=18) +
+  theme_bw() +
+  scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
+  scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+csp_human_plot
+# for abdomen samples
+csp_abdomen_title <- expression(paste(italic("pfcsp"), ": Mosquito abdomens"))
+csp_abdomen_plot = ggplot() +
+  geom_bar(data=csp_abdomen_df,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#fdd0a2") +
+  labs(x="Multiplicity of infection", y="Number of samples", title= csp_abdomen_title, pch=18) +
+  theme_bw() +
+  scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
+  scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+csp_abdomen_plot
+
+# put both csp moi plots on same grid
+figure2_csp_subset_moi = gridExtra::grid.arrange(csp_human_plot,csp_abdomen_plot,ncol=2)
+
+# export the figure
+ggsave(figure2_csp_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
+       height=10.5, width=17, units="in", dpi=400)
+
+# calculate median values
+# for csp
+csp_summary = csp_haplotypes %>%
+  group_by(sample_type) %>%
+  summarize(median=median(haplotype_number), mean=mean(haplotype_number))
+median(csp_haplotypes$haplotype_number)
+
+
+#### -------- figure 6: make layered histogram of human-mosquito pairs and haplotype sharing ------- ####
+
+## make a plot of the haplotypes shared across human-mosquito pairs
+
+# make a data set of the number of pairs that shared at least 1 haplotype across households
+csp_abdomen_shared_pairs_in_HH = csp_abdomens %>%
+  filter(haps_shared > 0) %>%
+  group_by(village_name,HH_ID) %>%
+  summarize(number_pairs_with_sharing = n())
+
+# make a data set of the number of Pf+ infections in humans detected across each household
+pf_infection_in_HH_mosq = final_data %>%
+  filter(pf_pcr_infection_status == "positive") %>%
+  group_by(HH_ID) %>%
+  summarize(number_infection=n())
+
+# make a data set of the number of Pf+ infections in mosquito abdomens detected across each household
+pf_infection_in_HH_humans = anoph_merged_data %>%
+  filter(pf_pcr_infection_status_sample_level_a == "positive") %>%
+  group_by(HH_ID) %>%
+  summarize(number_infection=n())
+
+# make a layered plot of the pairs over time
+# layer1
+layered1_plot = ggplot() +
+  geom_bar(data=csp_abdomen_shared_pairs_in_HH,aes(x=HH_ID,y=number_pairs_with_sharing), alpha=0.95,stat="identity",fill="grey") +
+  labs(x="Households", y="Number of pairs with at least 1 shared haplotype", title= "Human-mosquito abdomen haplotype pairs", pch=18) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+layered1_plot
+# layer2
+layered2_plot = ggplot() +
+  geom_bar(data=pf_infection_in_HH_humans,aes(x=HH_ID,y=number_infection), alpha=0.95,stat="identity",fill="#e31a1c") +
+  labs(x="Households", y="Number of Pf positive infections", title= "Human infections", pch=18) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+layered2_plot
+# layer3
+layered3_plot = ggplot() +
+  geom_bar(data=pf_infection_in_HH_mosq,aes(x=HH_ID,y=number_infection), alpha=0.95,stat="identity",fill="#fdd0a2") +
+  labs(x="Households", y="Number of Pf positive infections", title= "Mosquito abdomen infections", pch=18) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+layered3_plot
+
+# put both csp moi plots on same grid
+figure6_layer_plot = gridExtra::grid.arrange(layered1_plot,layered2_plot,layered3_plot,nrow=3)
+
+# export the figure
+# ggsave(figure6_layer_plot, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
+       # height=10.5, width=17, units="in", dpi=400)
+
+
+#### ----- figure 7: dot plot of number of haplotypes shared in human-mosquito pairs ------- ####
+
+## make a plot of the outcome of the number of haplotypes shared across human-mosquito pairs
+
+# set up the data set for a dot plot
+dot_plot_df <- csp_abdomens %>% 
+  group_by(haps_shared) %>%
+  summarise(n=n())
+
+# make figures of the number of haps shared
+dot_plot = ggplot(csp_abdomens, aes(x = factor(village_name), fill = factor(village_name), y = haps_shared)) +
+  geom_dotplot(binaxis = "y", stackdir = "center",alpha=0.8,dotsize=0.5)+
+  labs(y="Number of haplotypes shared", x="Village name", pch=18) +
+  theme_bw() +
+  theme(legend.position = "none", text = element_text(size=25)) +
+  scale_fill_manual(values=c("#c7e9b4","#41b6c4"))
+dot_plot
+
+# export the plot
+ggsave(dot_plot, filename="/Users/kelseysumner/Desktop/figure7_dot_plot.png", device="png",
+ height=8, width=18, units="in", dpi=400)
 
 
 
