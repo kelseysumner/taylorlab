@@ -197,6 +197,9 @@ table(plot_human_data_withperc, useNA = "always")
 month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
 plot_human_data_withperc <- within(plot_human_data_withperc, month <- factor(month, levels=month_order))
 
+# reorder so asymptomatic infections are on the bottom
+plot_human_data_withperc$infection_status = relevel(as.factor(plot_human_data_withperc$infection_status),"no infection")
+  
 # now make an alluvial plot of how infection status changes over time
 figure3_plot = ggplot(plot_human_data_withperc,
        aes(x = month, stratum = infection_status, alluvium = unq_memID,
@@ -204,7 +207,7 @@ figure3_plot = ggplot(plot_human_data_withperc,
            fill = infection_status, label = infection_status)) +
   geom_flow(na.rm=T,alpha=0.25) +
   geom_stratum() +
-  scale_fill_manual(values=c("#ff7f00","#1f78b4")) +
+  scale_fill_manual(values=c("#1f78b4","#ff7f00")) +
   theme_bw() +
   xlab("Month")+
   ylab("Proportion of participants")+
@@ -240,14 +243,10 @@ table(plot_human_data_symp, useNA = "always")
 month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
 plot_human_data_symp <- within(plot_human_data_symp, month <- factor(month, levels=month_order))
 
-# reorder the group variable
-plot_human_data_symp$symp_infection = as.factor(plot_human_data_symp$symp_infection)
-plot_human_data_symp$symp_infection <- relevel(plot_human_data_symp$symp_infection, 'symptomatic infection')
-
 # make a stacked bar plot of the symptomatic infections tested over time
 plot4 = ggplot(data = plot_human_data_symp,aes(x=month,y=n,fill=symp_infection)) +
   geom_bar(stat="identity")+
-  scale_fill_manual(values=c("#e31a1c","#1f78b4")) +
+  scale_fill_manual(values=c("#1f78b4","#e31a1c")) +
   theme_bw() +
   xlab("Month")+
   ylab("Number of participants")+
@@ -256,22 +255,47 @@ plot4 = ggplot(data = plot_human_data_symp,aes(x=month,y=n,fill=symp_infection))
 plot4
 
 # export the plot
-# ggsave(plot4, filename="/Users/kelseysumner/Desktop/figure4_plot_stackedsymp.png", device="png",
- # height=10.5, width=22, units="in", dpi=500)
+ggsave(plot4, filename="/Users/kelseysumner/Desktop/figure4_plot_stackedsymp.png", device="png",
+  height=10.5, width=22, units="in", dpi=500)
 
 
 #### ------ make a plot of the mois for humans and mosquito abdomens for csp ------ ####
 
 ### create histograms of moi subset by sample type
 
+human_data_exposure = final_data %>%
+  filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
+  dplyr::select(visit_type,sample_id_date,sample_name_final,sample_name_dbs,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def,pfr364Q_std_combined,age_all_baseline) %>%
+  mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def))) %>%
+  dplyr::select(-main_exposure_primary_case_def,-main_outcome_primary_case_def,-visit_type)
+
+# merge in symptomatic info with the haplotype data set
+merge_hap_human_data = left_join(csp_haplotypes,human_data_exposure,by="sample_name_dbs")
+
+# check the merge
+setdiff(csp_haplotypes$sample_name_dbs,merge_hap_human_data$sample_name_dbs)
+setdiff(human_data_exposure$sample_name_dbs,merge_hap_human_data$sample_name_dbs)
+length(which(is.na(merge_hap_human_data$sample_id_date)))
+merge_hap_human_data %>%
+  filter(is.na(merge_hap_human_data$sample_id_date)) %>%
+  select(sample_name_dbs,pfr364Q_std_combined,aim2_exposure,haplotype_reads) %>%
+  View()
+
 # create a summarized data frame of the number of abdomens with each MOI for csp
-# for humans
-csp_human_df <- csp_haplotypes %>% 
-  filter(!(is.na(haplotype_number)) & sample_type=="Human") %>%
+# for humans asymptomatic
+csp_human_df_asymp <- merge_hap_human_data %>% 
+  filter(!(is.na(haplotype_number)) & sample_type == "Human" & aim2_exposure == "asymptomatic infection") %>%
   group_by(haplotype_number) %>%
   summarise(n=n())
-csp_human_df$haplotype_number = as.numeric(csp_human_df$haplotype_number)
-sum(csp_human_df$n) 
+csp_human_df_asymp$haplotype_number = as.numeric(csp_human_df_asymp$haplotype_number)
+sum(csp_human_df_asymp$n) 
+# for humans symptomatic
+csp_human_df_symp <- merge_hap_human_data %>% 
+  filter(!(is.na(haplotype_number)) & sample_type == "Human" & aim2_exposure == "symptomatic infection") %>%
+  group_by(haplotype_number) %>%
+  summarise(n=n())
+csp_human_df_symp$haplotype_number = as.numeric(csp_human_df_symp$haplotype_number)
+sum(csp_human_df_symp$n) 
 # for abdomens
 csp_abdomen_df <- csp_haplotypes %>% 
   filter(!(is.na(haplotype_number)) & sample_type=="Abdomen") %>%
@@ -281,16 +305,26 @@ csp_abdomen_df$haplotype_number = as.numeric(csp_abdomen_df$haplotype_number)
 sum(csp_abdomen_df$n)
 
 # make csp moi figures by sample type
-# for human samples
-csp_human_title <- expression(paste(italic("pfcsp"), ": Human DBS"))
-csp_human_plot = ggplot() +
-  geom_bar(data=csp_human_df,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#e31a1c") +
-  labs(x="Multiplicity of infection", y="Number of samples", title= csp_human_title, pch=18) +
+# for human samples asymptomatic
+csp_human_title_asymp <- expression(paste(italic("pfcsp"), ": Asymptomatic humans"))
+csp_human_plot_asymp = ggplot() +
+  geom_bar(data=csp_human_df_asymp,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#ff7f00") +
+  labs(x="Multiplicity of infection", y="Number of samples", title= csp_human_title_asymp, pch=18) +
   theme_bw() +
   scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-csp_human_plot
+csp_human_plot_asymp
+# for human samples asymptomatic
+csp_human_title_symp <- expression(paste(italic("pfcsp"), ": Symptomatic humans"))
+csp_human_plot_symp = ggplot() +
+  geom_bar(data=csp_human_df_symp,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#e31a1c") +
+  labs(x="Multiplicity of infection", y="Number of samples", title= csp_human_title_symp, pch=18) +
+  theme_bw() +
+  scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
+  scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+csp_human_plot_symp
 # for abdomen samples
 csp_abdomen_title <- expression(paste(italic("pfcsp"), ": Mosquito abdomens"))
 csp_abdomen_plot = ggplot() +
@@ -303,7 +337,7 @@ csp_abdomen_plot = ggplot() +
 csp_abdomen_plot
 
 # put both csp moi plots on same grid
-figure2_csp_subset_moi = gridExtra::grid.arrange(csp_human_plot,csp_abdomen_plot,ncol=2)
+figure2_csp_subset_moi = gridExtra::grid.arrange(csp_human_plot_asymp,csp_human_plot_symp,csp_abdomen_plot,ncol=3)
 
 # export the figure
 ggsave(figure2_csp_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
@@ -311,11 +345,15 @@ ggsave(figure2_csp_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_csp
 
 # calculate median values
 # for csp
-csp_summary = csp_haplotypes %>%
-  group_by(sample_type) %>%
-  summarize(median=median(haplotype_number), mean=mean(haplotype_number))
-median(csp_haplotypes$haplotype_number)
-
+csp_asymp = merge_hap_human_data %>%
+  filter(aim2_exposure=="asymptomatic infection")
+summary(csp_asymp$haplotype_number)
+csp_symp = merge_hap_human_data %>%
+  filter(aim2_exposure == "symptomatic infection") 
+summary(csp_symp$haplotype_number)
+csp_mosq = merge_hap_human_data %>%
+  filter(sample_type == "Abdomen")
+summary(csp_mosq$haplotype_number)
 
 #### -------- figure 6: make layered histogram of human-mosquito pairs and haplotype sharing ------- ####
 
