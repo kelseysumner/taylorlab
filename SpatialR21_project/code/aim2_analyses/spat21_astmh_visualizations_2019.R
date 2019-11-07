@@ -53,6 +53,25 @@ mosquito_plot = mosquito_data %>%
 mosquito_plot  
 
 
+## make a plot of the mosquito infection status in abdomens using the stream graph plot
+
+# set up the data set
+mosquito_data_infected = anoph_merged_data %>%
+  filter(!(is.na(pf_pcr_infection_status_sample_level_a))) %>%
+  select(collection_date,pf_pcr_infection_status_sample_level_a) %>%
+  mutate(value=rep(1,length(!(is.na(pf_pcr_infection_status_sample_level_a)))), month_date = floor_date(collection_date, "month")) %>%
+  group_by(month_date,pf_pcr_infection_status_sample_level_a) %>%
+  tally(wt=value)
+
+# relevel the data
+mosquito_data_infected$pf_pcr_infection_status_sample_level_a = relevel(mosquito_data_infected$pf_pcr_infection_status_sample_level_a,"positive")
+
+# make the plot
+mosquito_plot_infected = mosquito_data_infected %>%
+  streamgraph("pf_pcr_infection_status_sample_level_a","n","month_date", offset="zero", interactive = F) %>%
+  sg_fill_manual(values = c("#1f78b4","#fdd0a2"))
+mosquito_plot_infected  
+
 
 #### -------- make visualization 2 --------- ####
 
@@ -309,17 +328,17 @@ sum(csp_abdomen_df$n)
 csp_human_title_asymp <- expression(paste(italic("pfcsp"), ": Asymptomatic humans"))
 csp_human_plot_asymp = ggplot() +
   geom_bar(data=csp_human_df_asymp,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#ff7f00") +
-  labs(x="Multiplicity of infection", y="Number of samples", title= csp_human_title_asymp, pch=18) +
+  labs(x="Number of haplotypes", y="Number of samples", title= csp_human_title_asymp, pch=18) +
   theme_bw() +
   scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 csp_human_plot_asymp
-# for human samples asymptomatic
+# for human samples symptomatic
 csp_human_title_symp <- expression(paste(italic("pfcsp"), ": Symptomatic humans"))
 csp_human_plot_symp = ggplot() +
   geom_bar(data=csp_human_df_symp,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#e31a1c") +
-  labs(x="Multiplicity of infection", y="Number of samples", title= csp_human_title_symp, pch=18) +
+  labs(x="Number of haplotypes", y="Number of samples", title= csp_human_title_symp, pch=18) +
   theme_bw() +
   scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
@@ -329,7 +348,7 @@ csp_human_plot_symp
 csp_abdomen_title <- expression(paste(italic("pfcsp"), ": Mosquito abdomens"))
 csp_abdomen_plot = ggplot() +
   geom_bar(data=csp_abdomen_df,aes(x=haplotype_number,y=n), alpha=0.95,stat="identity",fill="#fdd0a2") +
-  labs(x="Multiplicity of infection", y="Number of samples", title= csp_abdomen_title, pch=18) +
+  labs(x="Number of haplotypes", y="Number of samples", title= csp_abdomen_title, pch=18) +
   theme_bw() +
   scale_x_continuous(breaks=c(0,5,10,15,20), limits=c(0,20)) +
   scale_y_continuous(breaks=c(0,60,120,180,240,300,360), limits=c(0,320)) +
@@ -430,5 +449,115 @@ dot_plot
 ggsave(dot_plot, filename="/Users/kelseysumner/Desktop/figure7_dot_plot.png", device="png",
  height=8, width=18, units="in", dpi=400)
 
+
+#### ------- make a plot with the haplotype sharing outcome across a range of definitions for a successful transmission event --------- ####
+
+# look at the number of human-mosquito pairs sharing across symptomatic status with different definitions for a transmission event
+# at least 1 haplotype shared = transmission event
+csp_abdomens_1hap = csp_abdomens %>%
+  group_by(aim2_exposure) %>%
+  summarize(number_of_pairs = n(), number_with_a_shared_hap = length(which(haps_shared>0)), prop_shared = (number_with_a_shared_hap/number_of_pairs)*100) %>%
+  mutate(hap_range = "1 or more haplotypes")
+# at least 2 haplotypes shared = transmission event
+csp_abdomens_2hap = csp_abdomens %>%
+  group_by(aim2_exposure) %>%
+  summarize(number_of_pairs = n(), number_with_a_shared_hap = length(which(haps_shared>1)), prop_shared = (number_with_a_shared_hap/number_of_pairs)*100) %>%
+  mutate(hap_range = "2 or more haplotypes")
+# at least 3 haplotypes shared = transmission event
+csp_abdomens_3hap = csp_abdomens %>%
+  group_by(aim2_exposure) %>%
+  summarize(number_of_pairs = n(), number_with_a_shared_hap = length(which(haps_shared>2)), prop_shared = (number_with_a_shared_hap/number_of_pairs)*100) %>%
+  mutate(hap_range = "3 or more haplotypes")
+# at least 4 haplotypes shared = transmission event
+csp_abdomens_4hap = csp_abdomens %>%
+  group_by(aim2_exposure) %>%
+  summarize(number_of_pairs = n(), number_with_a_shared_hap = length(which(haps_shared>3)), prop_shared = (number_with_a_shared_hap/number_of_pairs)*100) %>%
+  mutate(hap_range = "4 or more haplotypes")
+# at least 5 haplotypes shared = transmission event
+csp_abdomens_5hap = csp_abdomens %>%
+  group_by(aim2_exposure) %>%
+  summarize(number_of_pairs = n(), number_with_a_shared_hap = length(which(haps_shared>4)), prop_shared = (number_with_a_shared_hap/number_of_pairs)*100) %>%
+  mutate(hap_range = "5 or more haplotypes")
+
+# make a combined data frame
+hap_sharing_combined_df = rbind(csp_abdomens_1hap,csp_abdomens_2hap,csp_abdomens_3hap,csp_abdomens_4hap,csp_abdomens_5hap)
+hap_sharing_combined_df = data.frame(hap_sharing_combined_df)
+
+# use the binom package to compute an exact confidence interval
+library(binom)
+# create an empty vector
+hap_sharing_combined_df$lower_ci = rep(NA,nrow(hap_sharing_combined_df))
+hap_sharing_combined_df$upper_ci = rep(NA,nrow(hap_sharing_combined_df))
+
+# for at least 1 hap
+# for asymptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[1],hap_sharing_combined_df$number_of_pairs[1])
+hap_sharing_combined_df$lower_ci[1] = full$lower[5]
+hap_sharing_combined_df$upper_ci[1] = full$upper[5]
+# for symptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[2],hap_sharing_combined_df$number_of_pairs[2])
+hap_sharing_combined_df$lower_ci[2] = full$lower[5]
+hap_sharing_combined_df$upper_ci[2] = full$upper[5]
+
+# for at least 2 hap
+# for asymptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[3],hap_sharing_combined_df$number_of_pairs[3])
+hap_sharing_combined_df$lower_ci[3] = full$lower[5]
+hap_sharing_combined_df$upper_ci[3] = full$upper[5]
+# for symptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[4],hap_sharing_combined_df$number_of_pairs[4])
+hap_sharing_combined_df$lower_ci[4] = full$lower[5]
+hap_sharing_combined_df$upper_ci[4] = full$upper[5]
+
+# for at least 3 hap
+# for asymptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[5],hap_sharing_combined_df$number_of_pairs[5])
+hap_sharing_combined_df$lower_ci[5] = full$lower[5]
+hap_sharing_combined_df$upper_ci[5] = full$upper[5]
+# for symptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[6],hap_sharing_combined_df$number_of_pairs[6])
+hap_sharing_combined_df$lower_ci[6] = full$lower[5]
+hap_sharing_combined_df$upper_ci[6] = full$upper[5]
+
+# for at least 4 hap
+# for asymptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[7],hap_sharing_combined_df$number_of_pairs[7])
+hap_sharing_combined_df$lower_ci[7] = full$lower[5]
+hap_sharing_combined_df$upper_ci[7] = full$upper[5]
+# for symptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[8],hap_sharing_combined_df$number_of_pairs[8])
+hap_sharing_combined_df$lower_ci[8] = full$lower[5]
+hap_sharing_combined_df$upper_ci[8] = full$upper[5]
+
+# for at least 5 hap
+# for asymptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[9],hap_sharing_combined_df$number_of_pairs[9])
+hap_sharing_combined_df$lower_ci[9] = full$lower[5]
+hap_sharing_combined_df$upper_ci[9] = full$upper[5]
+# for symptomatic
+full = binom.confint(hap_sharing_combined_df$number_with_a_shared_hap[10],hap_sharing_combined_df$number_of_pairs[10])
+hap_sharing_combined_df$lower_ci[10] = full$lower[5]
+hap_sharing_combined_df$upper_ci[10] = full$upper[5]
+
+# split into an asymp and symp data sets for the plot
+asymp_data = hap_sharing_combined_df %>% filter(aim2_exposure == "asymptomatic infection")
+symp_data = hap_sharing_combined_df %>% filter(aim2_exposure == "symptomatic infection")
+asymp_data$hap_range = as.factor(asymp_data$hap_range)
+symp_data$hap_range = as.factor(symp_data$hap_range)
+
+# make plots of how the number of pairs changes over time
+csp_abdomen_hap_pairs_plot = ggplot() +
+  geom_line(data=asymp_data,aes(x=hap_range,y=prop_shared,group=1),cex=1.5,col="#ff7f00") +
+  geom_ribbon(data=asymp_data,aes(x=1:length(hap_range),ymin = lower_ci*100, ymax = upper_ci*100),alpha=0.2,fill="#ff7f00") +
+  geom_line(data=symp_data,aes(x=hap_range,y=prop_shared,group=1),cex=1.5,col="#e31a1c") +
+  geom_ribbon(data=symp_data,aes(x=1:length(hap_range),ymin = lower_ci*100, ymax = upper_ci*100),alpha=0.2,fill="#e31a1c") +
+  theme_bw() +
+  xlab("Number of haplotypes that signified a successful transmission event") + 
+  ylab("Percentage of pairs with successful transmission event")
+csp_abdomen_hap_pairs_plot
+
+# export the plot
+ggsave(csp_abdomen_hap_pairs_plot, filename="/Users/kelseysumner/Desktop/csp_abdomen_hap_pairs_over_time.png", device="png",
+       height=5, width=8, units="in", dpi=400)
 
 

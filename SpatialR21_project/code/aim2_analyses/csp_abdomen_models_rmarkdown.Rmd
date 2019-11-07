@@ -28,9 +28,27 @@ This data set shows the pairs of human asymptomatic and symptomatic infections w
 
 ```{r}
 csp_abdomens <- read_rds("~/Desktop/clean_ids_haplotype_results/CSP/spat21_csp_edgelist_abdomen_29OCT2019.rds")
+
+# load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
+csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+
 ```
 
 # Check data set up prior to running models
+
+## Merge human MOI into the data set
+
+```{r}
+# subset th csp_haplotpes data set to sample id and moi
+csp_haplotypes = csp_haplotypes %>% 
+  select(sample_name_dbs,haplotype_number) %>%
+  rename("sample_id_human" = "sample_name_dbs","moi"="haplotype_number")
+
+# merge the csp_abdomens and csp_haplotypes data sets to get moi
+csp_abdomens = left_join(csp_abdomens,csp_haplotypes,by="sample_id_human")
+length(which(is.na(csp_abdomens$moi)))
+str(csp_abdomens$moi)
+```
 
 ## Make sure variables all coded correctly prior to running models
 
@@ -445,6 +463,171 @@ lrtest(model1,model3) # cubic is better than linear
 # compare the quadratic and cubic
 lrtest(model2,model3) # cubic is better than quadratic
 ```
+
+
+
+
+
+
+
+## Assess functional form coding for moi
+
+Assessed functional form coding for the moi of the participants at baseline.
+
+First plot the natural form using a LOWESS curve. 
+
+```{r}
+# look at the natural form of age through the LOWESS curve
+# plot the lowess graph 
+plot_loess = ggplot(data=csp_abdomens) +
+  geom_point(aes(x=moi,y=haps_shared)) +
+  geom_smooth(aes(x=moi,y=haps_shared),method="loess")
+plot_loess
+```
+
+Now look at the linear coding of moi.
+
+```{r}
+model1=glm(haps_shared~moi,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model1) 
+# exponentiate coefficient
+exp(0.17340)
+# pull out log likelihood test value
+logLik(model1) 
+# plot the linear model fit
+linear_plot = ggplot(csp_abdomens, aes(x=moi, y=haps_shared)) + 
+  labs(title="LINEAR Model",
+       x="MOI",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Linear is red. 95%CI is for the linear trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+linear_plot
+```
+
+Now look at the quadratic coding of moi.
+
+```{r}
+# first make the quadratic term
+csp_abdomens$moi_quad = csp_abdomens$moi*csp_abdomens$moi
+# then run the model
+model2=glm(haps_shared~moi+moi_quad,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model2) 
+# exponentiate coefficient
+exp(0.377701)
+exp(-0.015523)
+# pull out log likelihood test value
+logLik(model2) 
+# plot the model fit
+quadratic_plot = ggplot(csp_abdomens, aes(x=moi, y=haps_shared)) + 
+  labs(title="QUADRATIC Model",
+       x="moi",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Quadratic is red [y~ (x+x^2)]. 95%CI is for the quadratic trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~poly(x,2), color="red", linetype="dashed") +
+  theme_bw()
+quadratic_plot
+```
+
+Now look at the cubic coding of moi.
+
+```{r}
+# first make the cubic term
+csp_abdomens$moi_cubed = csp_abdomens$moi*csp_abdomens$moi*csp_abdomens$moi
+# then run the model
+model3=glm(haps_shared~moi+moi_quad+moi_cubed,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model3) 
+# exponentiate coefficient
+exp(0.526914)
+exp(-0.041696)
+exp(0.001296)
+# pull out log likelihood test value
+logLik(model3) 
+# plot the model fit
+cubic_plot = ggplot(csp_abdomens, aes(x=moi, y=haps_shared)) + 
+  labs(title="CUBIC Model",
+       x="moi",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Cubic is red [y~ (x+x^2+x^3)]. 95%CI is for the cubic trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~poly(x,3), color="red", linetype="dashed") +
+  theme_bw()
+cubic_plot
+```
+
+
+Now look at the categorical coding of moi.
+
+```{r}
+# first make the categorical term
+csp_abdomens$moi_cat = ifelse(csp_abdomens$moi < 3,"1-2 haplotypes",ifelse(
+  csp_abdomens$moi > 2 & csp_abdomens$moi <8,"3-7 haplotypes","8 or more haplotypes"
+))
+table(csp_abdomens$moi,csp_abdomens$moi_cat,useNA = "always")
+# then run the model
+model4=glm(haps_shared~moi_cat,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model4) 
+# exponentiate coefficient
+exp(0.7286)
+exp(1.5348)
+# pull out log likelihood test value
+logLik(model4) 
+csp_abdomens$pred.cat = model4$fitted.values
+# plot the model fit
+categorical_plot = ggplot(csp_abdomens, aes(x=moi, y=pred.cat)) + 
+  labs(title="CATEGORICAL Model",
+       x="moi",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Categorical is red. 95%CI is for the categorical trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+categorical_plot
+```
+
+Now look at the natural log (ln) coding of moi.
+
+```{r}
+# first make the categorical term
+csp_abdomens$moi_ln = log(csp_abdomens$moi)
+# then run the model
+model5=glm(haps_shared~moi_ln,family=poisson(link = "log"),data=csp_abdomens) 
+summary(model5) 
+# exponentiate coefficient
+exp(0.89247)
+# pull out log likelihood test value
+logLik(model5) 
+# plot the model fit
+ln_plot = ggplot(csp_abdomens, aes(x=moi_ln, y=pred.cat)) + 
+  labs(title="NATURAL LOG Model",
+       x="moi",
+       y="Number of haplotypes shared",
+       caption="NOTE: LOESS is blue. Ln is red. 95%CI is for the ln trend alone.") +
+  geom_smooth(method="loess", se = F) +                   
+  geom_smooth(method="glm", formula = y ~x, color="red", linetype="dashed") +
+  theme_bw()
+ln_plot
+```
+
+
+
+Will do log-likelihood test to compare nested models for differential coding of the human moi.
+
+```{r}
+# compare quadratic and linear models
+lrtest(model1,model2) # quadratic is better than linear
+# compare cubic and linear models
+lrtest(model1,model3) # cubic is better than linear
+# compare the quadratic and cubic
+lrtest(model2,model3) # quadratic is better than cubic
+```
+
+
+
+
+
 
 ## Clean up the variables in the data set
 
