@@ -17,6 +17,9 @@ library(tidyverse)
 # read in the merged variant table
 variant_table = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/literature_csp_variants/final_merged_output_with_our_data/final_literature_and_our_csp_variants_merged.csv")
 
+# read in the variants from our data
+our_variants = read_tsv("Desktop/clean_ids_haplotype_results/CSP/Variant Table/forward_csp_variant_table_report")
+
 
 #### ------- make a venn diagram ------- ####
 
@@ -75,6 +78,21 @@ length(which(variant_table$present_in_our_csp==1 & variant_table$present_in_plas
 
 # everything shared
 length(which(variant_table$present_in_our_csp==1 & variant_table$present_in_plasmodb==1 & variant_table$present_in_neafsey==1 & variant_table$present_in_pf3k==1)) # 21
+
+
+
+#### ----- look at the variants that were only found in our data ------ ####
+
+# our csp only
+length(which(variant_table$present_in_our_csp==1 & is.na(variant_table$present_in_plasmodb) & is.na(variant_table$present_in_neafsey) & is.na(variant_table$present_in_pf3k))) # 37
+our_csp_only = variant_table %>%
+  filter(present_in_our_csp==1 & is.na(present_in_plasmodb) & is.na(present_in_neafsey) & is.na(present_in_pf3k))
+
+# figure out which of those are our variants
+combo_our_variants = left_join(our_csp_only,our_variants,by="Ref Pos")
+
+# see how rare these SNPs were 
+table(combo_our_variants$`SNP %`)
 
 
 

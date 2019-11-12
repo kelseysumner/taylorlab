@@ -27,7 +27,7 @@ csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_h
 
 #### ----- merge moi into the data set ------ ####
 
-# subset th csp_haplotpes data set to sample id and moi
+# subset the csp_haplotpes data set to sample id and moi
 csp_haplotypes = csp_haplotypes %>% 
   select(sample_name_dbs,haplotype_number) %>%
   rename("sample_id_human" = "sample_name_dbs","moi"="haplotype_number")
@@ -145,12 +145,11 @@ estimates = c(exp(0.29888),exp(0.18301),exp(-0.02634),exp(0.08375))
 exp(confint(model3))
 lower_ci = c(1.0434545,1.1633398,0.6941831,0.8396665)
 upper_ci = c(1.7618341,1.2423616,1.3834605,1.4269567)
-names = c("Asymptomatic infection","Number of haplotypes in human infection","Age <5 years","Age 5-15 years")
-forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = as.factor(forest_plot_df$names)
+names_f = c("Z   Asymptomatic infection","Number of haplotypes in human infection","Age <5 years","Age 5-15 years")
+forest_plot_df = data.frame(names_f,estimates,lower_ci,upper_ci)
 
 # create a forest plot
-fp <- ggplot(data=forest_plot_df, aes(x=names, y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+fp <- ggplot(data=forest_plot_df, aes(x=names_f, y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=2) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
@@ -176,7 +175,7 @@ csp_abdomens$binary_outcome_two_hap = ifelse(csp_abdomens$haps_shared>=2,1,0) # 
 table(csp_abdomens$binary_outcome_two_hap,csp_abdomens$haps_shared, useNA = "always")
 
 # now try running a multi-level logistic regression model for 1 hap binary outcome
-logistic_1hap <- glmer(binary_outcome_one_hap~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+moi+aim2_exposure*moi+village_name + (1|HH_ID/unq_memID),family=poisson, data = csp_abdomens)
+logistic_1hap <- glmer(binary_outcome_one_hap~aim2_exposure+age_cat_baseline+moi+village_name + (1|HH_ID/unq_memID),family=poisson, data = csp_abdomens)
 summary(logistic_1hap)
 1-pchisq(deviance(logistic_1hap),df.residual(logistic_1hap)) # p > 0.05 so not good model fit
 
@@ -186,4 +185,87 @@ summary(logistic_1hap)
 
 
 
+#### ------ run a secondary model that is just for asymptomatic infections and parasite density ------- ####
+
+# subset the data set to just asymptomatic infections
+asymp_data = csp_abdomens %>%
+  filter(aim2_exposure == "asymptomatic infection")
+
+# now run a poisson model that has the exposure be parasite density instead of sympomatic status and outcome haplotypes shared
+model1a <- glmer(haps_shared~pfr364Q_std_combined_cat+moi+age_cat_baseline+pfr364Q_std_combined_cat*age_cat_baseline+village_name + (1|HH_ID/unq_memID),family=poisson, data = asymp_data)
+summary(model1a)
+1-pchisq(deviance(model1a),df.residual(model1a)) # p > 0.05 so not good model fit
+# looks like no interaction between main exposure and age
+
+# now run a model that takes out the interaction term with age
+model2a <- glmer(haps_shared~pfr364Q_std_combined_cat+moi+age_cat_baseline+village_name + (1|HH_ID/unq_memID),family=poisson, data = asymp_data)
+summary(model2a)
+1-pchisq(deviance(model2a),df.residual(model2a)) # p > 0.05 so not good model fit
+# looks like the model had a little trouble converging
+anova(model2a,model1a)
+# stick with model 2a
+
+# now run a model that takes out village
+model3a <- glmer(haps_shared~pfr364Q_std_combined_cat+moi+age_cat_baseline+ (1|HH_ID/unq_memID),family=poisson, data = asymp_data)
+summary(model3a)
+anova(model3a,model2a)
+# looksl ike model 3a is better
+
+# try a model that takes out age
+model4a <- glmer(haps_shared~pfr364Q_std_combined_cat+moi+ (1|HH_ID/unq_memID),family=poisson, data = asymp_data)
+summary(model4a)
+anova(model4a,model3a)
+# model 4a is better but sticking with model 3a for comparison to the previous analysis
+
+##  decision: go with model 3a with parasite density, age, and moi because controls for confounding in the DAG
+
+# create a data frame of model 4 output
+summary(model3a)
+estimates = c(exp(0.35663),exp(0.15230),exp(-0.01747),exp(0.07910))
+exp(confint(model3a))
+lower_ci = c(1.0342958,1.1167254,0.7058552,0.8405492)
+upper_ci = c(1.9695617,1.2184185,1.3857355,1.4275038)
+names = c("Parasite density below limit of cRDT detection","Number of haplotypes in human infection","Age <5 years","Age 5-15 years")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = as.factor(forest_plot_df$names)
+
+# create a forest plot
+fp <- ggplot(data=forest_plot_df, aes(x=names, y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=2) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("Covariate") + ylab("Rate Ratio (95% CI)") +
+  theme_bw() +
+  theme(text = element_text(size=25)) 
+fp
+
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_parasite_density.png", device="png",
+       height=9, width=12.5, units="in", dpi=400)
+
+
+#### ------- test out the relationship with mosquitoes collected within 2 days of human samples ------ ####
+
+# read in the edgelist of only mosquitoes collected within 2 days
+csp_abdomens_2days = read_rds("Desktop/clean_ids_haplotype_results/CSP/within 2 days mosquitoes collected/spat21_csp_edgelist_abdomen_2days_12NOV2019.rds")
+
+# subset the csp_haplotpes data set to sample id and moi
+csp_haplotypes = csp_haplotypes %>% 
+  select(sample_name_dbs,haplotype_number) %>%
+  rename("sample_id_human" = "sample_name_dbs","moi"="haplotype_number")
+
+# merge the csp_abdomens and csp_haplotypes data sets to get moi
+csp_abdomens_2days = left_join(csp_abdomens_2days,csp_haplotypes,by="sample_id_human")
+length(which(is.na(csp_abdomens_2days$moi)))
+str(csp_abdomens_2days$moi)
+
+# rerun the model
+model_2day <- glmer(haps_shared~aim2_exposure+moi+age_cat_baseline+ (1|HH_ID/unq_memID),family=poisson, data = csp_abdomens_2days)
+summary(model_2day)
+# model really couldn't be fit because such sparse data with only 38 obs
+
+# look at the table of the main exposure and outcome
+table(csp_abdomens_2days$aim2_exposure,csp_abdomens_2days$haps_shared,useNA = "always")
+table(csp_abdomens_2days$aim2_exposure) # only had 3 asymptomatic infections and 30 symptomatic infections
+# with super small numbers had 62.5% of asymptomatic infections having a shared haplotypes and 60.0% of symptomatic infections
 
