@@ -294,7 +294,7 @@ ln_plot
 
 
 
-Will do log-likelihood test to compare nested models for differential coding of the total number of mosquitoes in the households.
+Will do log-likelihood test to compare nested models.
 
 ```{r}
 # compare quadratic and linear models

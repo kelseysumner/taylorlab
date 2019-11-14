@@ -24,6 +24,10 @@ csp_abdomens = read_rds("Desktop/clean_ids_haplotype_results/CSP/model data set/
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
 csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
+# read in the full human data set
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
+
+
 
 #### ----- merge moi into the data set ------ ####
 
@@ -37,10 +41,57 @@ csp_abdomens = left_join(csp_abdomens,csp_haplotypes,by="sample_id_human")
 length(which(is.na(csp_abdomens$moi)))
 str(csp_abdomens$moi)
 
-# make a quadratic moi variable
-csp_abdomens$moi_quad = csp_abdomens$moi*csp_abdomens$moi
 
 
+### ------ check to see who had antimalarials recently ------- ####
+
+# tally up the people that had antimalarials at a monthly visit at least 14 days before their infection
+had_antimalarials_recently = final_data %>%
+  filter(main_exposure_primary_case_def == "asymptomatic infection" & mal_illness == "yes" & ill_med == "yes" &
+           (medicine_ACT_hum_monthly_data == "yes" | medicine_Qui_hum_monthly_data == "yes" | medicine_SP_hum_monthly_data == "yes" | 
+              medicine_OACT_hum_monthly_data == "yes" | medicine_AMO_hum_monthly_data == "yes" | medicine_SPT_hum_monthly_data == "yes" |
+              medicine_CIP_hum_monthly_data == "yes" | medicine_PAN_hum_monthly_data == "yes" | medicine_DNT_hum_monthly_data == "yes" |
+              medicine_OTH_hum_monthly_data == "yes")) %>%
+  select(main_exposure_primary_case_def,med_date,recover,sample_id_date,ill_med,sample_name_dbs) %>%
+  mutate(time_since_antimalarials_taken = sample_id_date - med_date) %>%
+  filter(time_since_antimalarials_taken < 15 | is.na(time_since_antimalarials_taken)) %>%
+  rename(sample_id_human = sample_name_dbs)
+
+# see if any of these asymptomatic infections are in the paired data set
+test = left_join(csp_abdomens,had_antimalarials_recently,by="sample_id_human")
+test = test %>%
+  filter(ill_med=="yes")
+# the self-reported use of antimalarials isn't that reputable
+
+# let's see how many people had a positive RDT at a symptomatic visit and received an antimalarial within 14 days of the asymptomatic infection
+# first reorder the data set
+final_data = final_data[with(final_data, order(final_data$unq_memID, final_data$sample_id_date)),]
+final_data %>%
+  select(sample_name_final,sample_id_date,unq_memID) %>%
+  View()
+
+# then do a for loop
+received_antimalarial = rep(NA,nrow(final_data))
+date_diff = rep(NA,nrow(final_data))
+for (i in 1:nrow(final_data)){
+  if (final_data$unq_memID[i] == final_data$unq_memID[i+1] & final_data$prescription[i] == "prescribed" & !(is.na(final_data$prescription[i])) & i != nrow(final_data) &
+      final_data$main_exposure_primary_case_def[i+1] == "asymptomatic infection" & !(is.na(final_data$main_exposure_primary_case_def[i+1]))){
+    date_diff[i] = final_data$sample_id_date[i+1] - final_data$sample_id_date[i]
+    if (date_diff[i] < 15){
+      received_antimalarial[i+1] = "yes"
+    }
+  } 
+}
+final_data$date_diff = date_diff
+final_data$received_antimalarial = received_antimalarial
+final_data %>%
+  select(visit_type,sample_name_final,sample_id_date,unq_memID,main_exposure_primary_case_def,main_outcome_primary_case_def,date_diff,received_antimalarial) %>%
+  filter(received_antimalarial == "yes") %>%
+  View()
+# looks like there are 23 asymptomatic infections that should be censored
+
+test = final_data %>%
+  select(age_all_baseline,unq_memID,sample_id_date,sample_name_final,pf_pcr_infection_status,rdt_rst,main_exposure_primary_case_def,main_outcome_primary_case_def,prescription,taken_al)
 
 #### --------- set up the data ---------- ####
 

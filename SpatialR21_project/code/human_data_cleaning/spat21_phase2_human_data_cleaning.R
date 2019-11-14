@@ -30,16 +30,14 @@ annual_householdvar_p2_data = read_dta("OneDrive - University of North Carolina 
 # look at the variables
 colnames(hum_monthly_data)
 
-# today
-summary(hum_monthly_data$today)
-# originally not in date format but a character with MDY
-# recoded in date format
-newdate = mdy(hum_monthly_data$today)
-head(newdate)
-head(hum_monthly_data$today)
-summary(newdate)
-str(newdate)
-hum_monthly_data$today = newdate
+# today2
+summary(hum_monthly_data$today2)
+str(hum_monthly_data$today2)
+
+# first restrict monthly data to July 2019
+hum_monthly_data = hum_monthly_data %>%
+  filter(today2 < "2019-08-01")
+summary(hum_monthly_data$today2)
 
 # village_name
 summary(as.factor(hum_monthly_data$village_name))
@@ -49,6 +47,11 @@ str(hum_monthly_data$village_name)
 # recoded as factor with village names as levels
 hum_monthly_data$village_name = factor(hum_monthly_data$village_name,levels = c(1,3,5), labels = c("Kinesamo", "Maruti","Sitabicha"))
 table(hum_monthly_data$village_name, useNA = "always")
+
+# v68
+table(hum_monthly_data$v68, useNA = "always")
+# not a meaningful variable - remove
+hum_monthly_data$v68 <- NULL
 
 # gender
 table(hum_monthly_data$gender, useNA = "always")
