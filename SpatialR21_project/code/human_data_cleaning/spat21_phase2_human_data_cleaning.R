@@ -204,6 +204,8 @@ hum_monthly_data$act_ill_other[hum_monthly_data$act_ill_other == "Non"] = "nothi
 hum_monthly_data$act_ill_other[hum_monthly_data$act_ill_other == "None"] = "nothing"
 hum_monthly_data$act_ill_other[hum_monthly_data$act_ill_other == ""] = NA
 hum_monthly_data$act_ill_other[hum_monthly_data$act_ill_other == "."] = NA
+hum_monthly_data$act_ill_other[hum_monthly_data$act_ill_other == "No action taken"] = "nothing"
+hum_monthly_data$act_ill_other[hum_monthly_data$act_ill_other == "No drug"] = "nothing"
 # check recoding
 table(hum_monthly_data$act_ill_other, useNA = "always")
 # make a factor
@@ -516,6 +518,12 @@ table(hum_monthly_data$HH_ID, useNA = "always")
 str(hum_monthly_data$HH_ID)
 # keep the variable as a character for now because will be used to create a unique ID for each person eventually
 
+#HHID
+table(hum_monthly_data$HHID, useNA = "always")
+# not sure what this is
+# remove
+hum_monthly_data$HHID <- NULL
+
 # memID
 table(hum_monthly_data$memID, useNA = "always")
 str(hum_monthly_data$memID)
@@ -689,21 +697,14 @@ str(hum_monthly_data$act_illness_k)
 hum_monthly_data$act_illness_k = factor(hum_monthly_data$act_illness_k,levels = c(1,0), labels = c("yes","no"))
 table(hum_monthly_data$act_illness_k, useNA = "always")
 
-# today2
-table(hum_monthly_data$today2, useNA = "always")
-str(hum_monthly_data$today2)
-# compare this to the today variable
-head(hum_monthly_data$today2)
-head(hum_monthly_data$today)
-tail(hum_monthly_data$today)
-tail(hum_monthly_data$today2)
-identical(hum_monthly_data$today2,hum_monthly_data$today)
-summary(hum_monthly_data$today2)
-summary(hum_monthly_data$today)
-table(hum_monthly_data$today, useNA = "always")
-str(hum_monthly_data$today)
-# rename to stata today2 variable because same as today
-hum_monthly_data$today2 <- NULL
+# age_type
+table(hum_monthly_data$age_type, useNA = "always")
+str(hum_monthly_data$age_type)
+# coded with 1 as below one year and 2 as one year and above
+# recode as a factor
+hum_monthly_data$age_type = factor(hum_monthly_data$age_type,levels = c(1,2), labels = c("Below One year (<1 year)","One year and above (=>1 year)"))
+table(hum_monthly_data$age_type, useNA = "always")
+# has a lot of missingness
 
 # age_y_hum_monthly_data
 summary(as.factor(hum_monthly_data$age_years))
@@ -731,16 +732,11 @@ for (i in 1:length(test_unqmemID)){
     print(paste0(test_unqmemID[i],"_",hum_monthly_data$unq_memID[i]))
   }
 }
-# looks like K09_14 was miscoded as K09_P for one of the data sets
-# replace unq_memID with K09_14
-# remove the K09_P entry
-hum_monthly_data = hum_monthly_data[-which(hum_monthly_data$unq_memID=="K09_P"),]
-# retest that the unq_memIDs are unique
-test_unqmemID = paste0(hum_monthly_data$HH_ID,"_",hum_monthly_data$memID)
-identical(hum_monthly_data$unq_memID,test_unqmemID)
-# now are identical and correct
+# looks like should be identical and correct
 
-
+# med_date2
+table(hum_monthly_data$med_date2, useNA = "always")
+str(hum_monthly_data$med_date2)
 
 
 # ------------- hum_sick_data
@@ -1415,7 +1411,7 @@ names(hum_monthly_data)[names(hum_monthly_data) == "mrdt_p"] <- "mrdt_p_hum_mont
 names(hum_sick_data)[names(hum_sick_data) == "mrdt_p"] <- "mrdt_p_hum_sick_data"
 
 # today
-names(hum_monthly_data)[names(hum_monthly_data) == "today"] <- "today_hum_monthly_data"
+names(hum_monthly_data)[names(hum_monthly_data) == "today2"] <- "today_hum_monthly_data"
 names(hum_sick_data)[names(hum_sick_data) == "today"] <- "today_hum_sick_data"
 
 # village_name
@@ -1432,16 +1428,16 @@ names(hum_monthly_data)[names(hum_monthly_data) == "village_name"] <- "village_n
 #### --------- export each separate data set as a CSV or RDS file --------- ####
 
 # for hum_monthly_data
-write_csv(hum_monthly_data, "Desktop/hum_monthly_data_v2_17SEP2019.csv")
-write_rds(hum_monthly_data, "Desktop/hum_monthly_data_v2_17SEP2019.RDS")
+write_csv(hum_monthly_data, "Desktop/hum_monthly_data_p2_14NOV2019.csv")
+write_rds(hum_monthly_data, "Desktop/hum_monthly_data_p2_14NOV2019.RDS")
 
 # for hum_sick_data
-write_csv(hum_sick_data, "Desktop/hum_sick_data_v2_17SEP2019.csv")
-write_rds(hum_sick_data, "Desktop/hum_sick_data_v2_17SEP2019.RDS")
+write_csv(hum_sick_data, "Desktop/hum_sick_data_p2_14NOV2019.csv")
+write_rds(hum_sick_data, "Desktop/hum_sick_data_p2_14NOV2019.RDS")
 
 # for hum_socdem2_data
-write_csv(annual_socdem_p2_data, "Desktop/hum_socdem2_data_v2_17SEP2019.csv")
-write_rds(annual_socdem_p2_data, "Desktop/hum_socdem2_data_v2_17SEP2019.RDS")
+write_csv(annual_socdem_p2_data, "Desktop/hum_socdem2_data_p2_14NOV2019.csv")
+write_rds(annual_socdem_p2_data, "Desktop/hum_socdem2_data_p2_14NOV2019.RDS")
 
 
 

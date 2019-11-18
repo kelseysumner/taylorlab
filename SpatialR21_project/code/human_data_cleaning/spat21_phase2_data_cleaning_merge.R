@@ -19,9 +19,10 @@ library(stringr)
 #### --------- read in the data sets ----------------- ####
 
 # human data sets
-hum_monthly_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/clean_data/hum_monthly_data_v2_17SEP2019.RDS")
-hum_sick_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/clean_data/hum_sick_data_v2_17SEP2019.RDS")
+hum_monthly_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/clean_data/hum_monthly_data_p2_14NOV2019.RDS")
+hum_sick_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/clean_data/hum_sick_data_p2_14NOV2019.RDS")
 hum_table_household_data = readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/hum_table_household_data_19DEC2018.RDS")
+hum_table_household_data_p2= readRDS("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Cohort data through August July 2019/clean_data/hum_socdem2_data_p2_14NOV2019.rds")
 
 
 #### -------- merge together data sets ------------ ####

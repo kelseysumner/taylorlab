@@ -561,3 +561,72 @@ ggsave(csp_abdomen_hap_pairs_plot, filename="/Users/kelseysumner/Desktop/csp_abd
        height=5, width=8, units="in", dpi=400)
 
 
+#### -------- make a plot of the number of samples within each haplotype ----- ####
+
+# make separate data sets for humans and mosquitoes
+human_haps = csp_haplotypes %>%
+  filter(sample_type=="Human")
+human_haps = human_haps[,c(4:301)]
+abdomen_haps = csp_haplotypes %>%
+  filter(sample_type=="Abdomen")
+abdomen_haps = abdomen_haps[,c(4:301)]
+
+# summarize the number of samples within each haplotype for the human samples
+haplotype.names = rep(1:ncol(human_haps))
+haplotypes_in_samples = rep(NA,ncol(human_haps))
+total_reads_in_samples = rep(NA,ncol(human_haps))
+for (k in 1:ncol(human_haps)){
+  haplotypes_in_samples[k] = length(which(human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(human_haps[,k],na.rm=T)
+}
+human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# summarize the number of samples within each haplotype for the mosquito abdomen samples
+haplotype.names = rep(1:ncol(abdomen_haps))
+haplotypes_in_samples = rep(NA,ncol(abdomen_haps))
+total_reads_in_samples = rep(NA,ncol(abdomen_haps))
+for (k in 1:ncol(abdomen_haps)){
+  haplotypes_in_samples[k] = length(which(abdomen_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(abdomen_haps[,k],na.rm=T)
+}
+abdomen_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+hap_order = order(-human_hap_summary$haplotypes_across_samples)
+human_hap_summary = human_hap_summary[hap_order,]
+abdomen_hap_summary = abdomen_hap_summary[hap_order,]
+human_hap_summary$haplotype_ids = factor(human_hap_summary$haplotype_ids, levels=human_hap_summary$haplotype_ids[order(-human_hap_summary$haplotypes_across_samples)])
+abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-human_hap_summary$haplotypes_across_samples)])
+
+# make plot of human haplotypes
+human_hap_plot = ggplot() +
+  geom_bar(data=human_hap_summary,aes(x=haplotype_ids,y=haplotypes_across_samples),alpha=0.8,fill="#e31a1c",stat = "identity") +
+  theme_bw() +
+  xlab("Haplotype ID") + 
+  ylab("Number of samples") +
+  ggtitle("Human samples") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+human_hap_plot
+
+# make plot of mosquito abdomen haplotypes
+abdomen_hap_plot = ggplot() +
+  geom_bar(data=abdomen_hap_summary,aes(x=haplotype_ids,y=haplotypes_across_samples),alpha=0.8,fill="#fdd0a2",stat = "identity") +
+  theme_bw() +
+  xlab("Haplotype ID") + 
+  ylab("Number of samples") +
+  ggtitle("Mosquito samples") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+abdomen_hap_plot
+
+
+# put both csp moi plots on same grid
+figure_number_samples_in_haplotypes = gridExtra::grid.arrange(human_hap_plot,abdomen_hap_plot,nrow=2)
+
+# export the figure
+ggsave(figure_number_samples_in_haplotypes, filename="/Users/kelseysumner/Desktop/figure_number_samples_in_haplotypes.png", device="png",
+       height=10.5, width=17, units="in", dpi=400)
+
+
+
+
