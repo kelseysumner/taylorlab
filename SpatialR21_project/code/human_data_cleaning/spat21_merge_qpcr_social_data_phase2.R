@@ -50,7 +50,7 @@ human_qpcr_data$`Sample Name`[human_qpcr_data$`Sample Name` == "K07-030817-08"] 
 human_qpcr_data$`Sample Name`[human_qpcr_data$`Sample Name` == "K07-030817-09"] = "K07-030817-9" 
 
 # first check for duplicates in the sample name column for the human_merged_all_data data set
-length(unique(human_merged_all_data$`Sample Name`)) # 3140 unique 
+length(unique(human_merged_all_data$`Sample Name`)) # 5803 unique 
 length(which(is.na(human_merged_all_data$`Sample Name`) == T)) # 0 missing
 count_table = table(human_merged_all_data$`Sample Name`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # 0 duplicates
@@ -67,6 +67,8 @@ cols_to_remove = c("HbtubStd1a","HbtubStd1b","HbtubStd2a","HbtubStd2b","HbtubStd
                    "pfr364Q1","pfr364Q2","pfr364Q1_std","pfr364Q2_std","Experiment Name")
 human_qpcr_data = human_qpcr_data[,!(colnames(human_qpcr_data) %in% cols_to_remove)]
 redo_qpcr_data = redo_qpcr_data[,!(colnames(redo_qpcr_data) %in% cols_to_remove)]
+human_pcr_data_p2 = human_pcr_data_p2[,!(colnames(human_pcr_data_p2) %in% cols_to_remove)]
+human_pcr_data_p2$`pfr364R²` <- NULL
 
 # check for duplicates in the qpcr data
 intersect(human_qpcr_data$`Sample Name`,redo_qpcr_data$`Sample Name`)
@@ -177,12 +179,64 @@ intersect(human_qpcr_data$`Sample Name`,redo_qpcr_data$`Sample Name`)
 # now rbind the two qpcr data sets together
 human_qpcr_data = rbind(human_qpcr_data,redo_qpcr_data)
 
+# now check if any duplicates between that human_qpcr_data and the human_pcr_p2_data
+intersect(human_qpcr_data$`Sample Name`,human_pcr_data_p2$`Sample Name`)
+# looks like no duplicates 
+
+# now rbind the two data sets together
+human_qpcr_data = rbind(human_qpcr_data,human_pcr_data_p2)
+
 # add an empty column for the date associated with the sample id for the social demographic data
 str(human_merged_all_data$today_hum_monthly_data)
 str(human_merged_all_data$today_hum_sick_data)
 human_merged_all_data$sample_id_date = if_else(is.na(human_merged_all_data$today_hum_sick_data),human_merged_all_data$today_hum_monthly_data,human_merged_all_data$today_hum_sick_data)
 table(human_merged_all_data$sample_id_date, useNA = "always")
 str(human_merged_all_data$sample_id_date)
+
+# 21 sample ids need to be recoded in the qpcr data
+# K05-2502019-5-R
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K05-2502019-5-R")] = "K05-250219-5-R"
+# S11-201319-7
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "S11-201319-7")] = "S11-200319-7"
+# S09-115118-7
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "S09-115118-7")] = "S09-151118-7"
+# K10-061918-1
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K10-061918-1")] = "K10-190618-1"
+# K02-60619-10
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K02-60619-10")] = "K02-060619-10"
+# K07-60619-14
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-60619-14")] = "K07-060619-14"
+# K07-60619-13
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-60619-13")] = "K07-060619-13"
+# K09-60619-12
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K09-60619-12")] = "K09-060619-12"
+# K09-50919-14
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K09-50919-14")] = "K09-050919-14"
+# K09-50919-12
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K09-50919-12")] = "K09-050919-12"
+# K07-50919-12
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-50919-12")] = "K07-050919-12"
+# K07-40719-13
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-40719-13")] = "K07-040719-13"
+# K02-40719-10
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K02-40719-10")] = "K02-040719-10"
+# K07-40719-14
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-40719-14")] = "K07-040719-14"
+# K09-60619-14
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K09-60619-14")] = "K09-060619-14"
+# K09-40719-14
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K09-40719-14")] = "K09-040719-14"
+# K07-50719-14-R
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-50719-14-R")] = "K07-050719-14-R"
+# M13-40619-12-R
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "M13-40619-12-R")] = "M13-040619-12-R"
+# K07-50919-13
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-50919-13")] = "K07-050919-13"
+# K09-80819-15
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K09-80819-15")] = "K09-080819-15"
+# K07-50919-14
+human_qpcr_data$`Sample Name`[which(human_qpcr_data$`Sample Name` == "K07-50919-14")] = "K07-050919-14"
+
 
 # add an empty column for the date associated with the sample id for the qpcr data
 qpcr_new_date = rep(NA,nrow(human_qpcr_data))
@@ -194,6 +248,11 @@ human_qpcr_data$qpcr_new_date = dmy(qpcr_new_date)
 table(human_qpcr_data$qpcr_new_date, useNA="always")
 head(human_qpcr_data$qpcr_new_date)
 head(human_qpcr_data$`Sample Name`)
+human_qpcr_data %>%
+  select(`Sample Name`,qpcr_new_date) %>%
+  filter(is.na(qpcr_new_date)) %>%
+  View()
+
 
 
 # create a household id variable for qpcr data
@@ -207,7 +266,11 @@ table(human_qpcr_data$mem_id, useNA="always")
 head(human_qpcr_data$mem_id)
 head(human_qpcr_data$`Sample Name`)
 
-# create a large for loop that will merge together the qpcr results if they match the social demographic data by within 6 years
+# check if any missing sample ids
+length(which(is.na(human_merged_all_data$`Sample Name`)))
+length(which(is.na(human_qpcr_data$`Sample Name`)))
+
+# create a large for loop that will merge together the qpcr results if they match the social demographic data by within 6 days
 # add three empty columns to the human social demographic data set
 human_merged_all_data$sample_name_from_merge = rep(NA,nrow(human_merged_all_data))
 human_merged_all_data$pf_pcr_infection_status = rep(NA,nrow(human_merged_all_data))
@@ -216,46 +279,78 @@ human_merged_all_data$pfr364Q_std_combined = rep(NA,nrow(human_merged_all_data))
 # then do the for loop
 for (i in 1:nrow(human_merged_all_data)){
   for (j in 1:nrow(human_qpcr_data)){
-    if (human_merged_all_data$`Sample Name`[i]==human_qpcr_data$`Sample Name`[j]){
-      human_merged_all_data[i,130:132] = human_qpcr_data[j,1:3]
+    if (human_merged_all_data$`Sample Name`[i]==human_qpcr_data$`Sample Name`[j] & !(is.na(human_merged_all_data$`Sample Name`[i])) & !(is.na(human_qpcr_data$`Sample Name`[j]))){
+      human_merged_all_data[i,134:136] = human_qpcr_data[j,1:3]
     } else if (str_detect(human_qpcr_data$`Sample Name`[j],"R") & 
                str_detect(human_merged_all_data$`Sample Name`[i],"R") & 
                (human_qpcr_data$mem_id[j]==human_merged_all_data$unq_memID[i]) & 
                (as.numeric(human_merged_all_data$sample_id_date[i]-human_qpcr_data$qpcr_new_date[j])<=6) &
-               (as.numeric(human_merged_all_data$sample_id_date[i]-human_qpcr_data$qpcr_new_date[j])>0)) {
-      human_merged_all_data[i,130:132] = human_qpcr_data[j,1:3]
+               (as.numeric(human_merged_all_data$sample_id_date[i]-human_qpcr_data$qpcr_new_date[j])>0) & 
+               !(is.na(human_merged_all_data$`Sample Name`[i])) & !(is.na(human_qpcr_data$`Sample Name`[j]))) {
+      human_merged_all_data[i,134:136] = human_qpcr_data[j,1:3]
     } else if (!(str_detect(human_qpcr_data$`Sample Name`[j],"R")) & 
                !(str_detect(human_merged_all_data$`Sample Name`[i],"R")) & 
                (human_qpcr_data$mem_id[j]==human_merged_all_data$unq_memID[i]) & 
                (as.numeric(human_merged_all_data$sample_id_date[i]-human_qpcr_data$qpcr_new_date[j])<=6) &
-               (as.numeric(human_merged_all_data$sample_id_date[i]-human_qpcr_data$qpcr_new_date[j])>0)) {
-      human_merged_all_data[i,130:132] = human_qpcr_data[j,1:3]
+               (as.numeric(human_merged_all_data$sample_id_date[i]-human_qpcr_data$qpcr_new_date[j])>0) & 
+               !(is.na(human_merged_all_data$`Sample Name`[i])) & !(is.na(human_qpcr_data$`Sample Name`[j]))) {
+      human_merged_all_data[i,134:136] = human_qpcr_data[j,1:3]
     }
   }
 }
-small_data = human_merged_all_data[,125:132]
-
+small_data = human_merged_all_data[,125:136]
+test_data = human_merged_all_data
 # check the data merge
 # see how many ids didn't merge
-length(which(is.na(human_merged_all_data$sample_name_from_merge))) # 367 missing
-length(which(!(is.na(human_merged_all_data$sample_name_from_merge)))) # 2773
-# 3140-2890= 250 should not have merged
-# had 367 not merge so: 367-250=117 that didn't merge
+length(which(is.na(human_merged_all_data$sample_name_from_merge))) # 612 missing
+length(which(!(is.na(human_merged_all_data$sample_name_from_merge)))) # 5191 total merged
+# 5803-5641=162 should not have merged
+# had 612 not merge so: 612-162 = 450 that didn't merge
 # check if all merged ids unique
-length(unique(human_merged_all_data$sample_name_from_merge)) # 2773 unique
-# 2890-117 = 2773 so all that merged in were unique and no duplicate merges
+length(unique(human_merged_all_data$sample_name_from_merge)) # 5189 unique
+count_table = table(human_merged_all_data$sample_name_from_merge, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 3 duplicates
+length(dups_table)
+dups_table
+# fix these three duplicates
+# K05-021117-4-R
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$sample_name_from_merge=="K05-021117-4-R" & human_merged_all_data$`Sample Name` == "K05-031117-4-R")] = NA
+human_merged_all_data$pf_pcr_infection_status[which(human_merged_all_data$sample_name_from_merge=="K05-021117-4-R" & human_merged_all_data$`Sample Name` == "K05-031117-4-R")] = NA
+# S02-120719-1-R
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$sample_name_from_merge=="S02-120719-1-R" & human_merged_all_data$`Sample Name` == "S02-180719-1-R")] = NA
+human_merged_all_data$pf_pcr_infection_status[which(human_merged_all_data$sample_name_from_merge=="S02-120719-1-R" & human_merged_all_data$`Sample Name` == "S02-180719-1-R")] = NA
+human_merged_all_data$pfr364Q_std_combined[which(human_merged_all_data$sample_name_from_merge=="S02-120719-1-R" & human_merged_all_data$`Sample Name` == "S02-180719-1-R")] = NA
+# S10-260719-6-R
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$sample_name_from_merge=="S10-260719-6-R" & human_merged_all_data$`Sample Name` == "S10-300719-6-R")] = NA
+human_merged_all_data$pf_pcr_infection_status[which(human_merged_all_data$sample_name_from_merge=="S10-260719-6-R" & human_merged_all_data$`Sample Name` == "S10-300719-6-R")] = NA
+human_merged_all_data$pfr364Q_std_combined[which(human_merged_all_data$sample_name_from_merge=="S10-260719-6-R" & human_merged_all_data$`Sample Name` == "S10-300719-6-R")] = NA
+# recheck if all merged ids unique
+length(unique(human_merged_all_data$sample_name_from_merge)) # 5189 unique
+length(which(is.na(human_merged_all_data$sample_name_from_merge))) # 615 missing now which is correct
+count_table = table(human_merged_all_data$sample_name_from_merge, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 3 duplicates
+length(dups_table)
+dups_table
+# no duplicates now
 
 # figure out what qpcr results didn't merge in
-length(intersect(human_merged_all_data$sample_name_from_merge,human_qpcr_data$`Sample Name`)) # 2758 samples merged (but 2759 unique?)
+length(intersect(human_merged_all_data$sample_name_from_merge,human_qpcr_data$`Sample Name`)) # 5188 samples merged (but 5189 unique?)
 length(setdiff(human_merged_all_data$sample_name_from_merge,human_qpcr_data$`Sample Name`)) # 1: missing value NA
-length(setdiff(human_qpcr_data$`Sample Name`,human_merged_all_data$sample_name_from_merge)) # 132
+length(setdiff(human_qpcr_data$`Sample Name`,human_merged_all_data$sample_name_from_merge)) # 453, which is how many didn't merge
 nomerge_list = setdiff(human_qpcr_data$`Sample Name`,human_merged_all_data$sample_name_from_merge)
 # look at those that didn't merge and try to figure out why they didn't merge
 nomerge = human_qpcr_data[which(human_qpcr_data$`Sample Name` %in% nomerge_list),]
 # export to decide how to change each sample
-# write_csv(nomerge,"human_qpcr_no_merge.csv")
+# write_csv(nomerge,"Desktop/phase2_human_qpcr_no_merge.csv")
 # look at those that didn't merge in the large human social demograhpic data set
 nomerge_social = human_merged_all_data[which(is.na(human_merged_all_data$sample_name_from_merge)),]
+nomerge_social %>%
+  select(`Sample Name`,unq_memID) %>%
+  View()
+
+# write out the merged data set before making changes
+# write_rds(human_merged_all_data,"Desktop/phase2_qpcr_merged_prelim.rds")
+human_merged_all_data = read_rds("Desktop/phase2_qpcr_merged_prelim.rds")
 
 # add an empty column for the date associated with the sample id for the qpcr data merged into the social data
 merge_date = rep(NA,nrow(human_merged_all_data))
@@ -279,7 +374,7 @@ for (k in 1:nrow(human_merged_all_data)){
   }
 }
 count
-# count = 2773 so the merge worked correctly!
+# count = 5188 so the merge worked correctly!
 
 # for the samples that didn't merge and had typos, merge those in
 human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="K01-110717-9")] = "K01-130717-9"
@@ -341,16 +436,24 @@ human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample
 human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S11-240817-1")] = "S11-240617-1"
 human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S11-240817-5")] = "S11-240617-5"
 human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S11-240817-9")] = "S11-240617-9"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="K07-100119-13")] = "K07-100191-13"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S05-130617-2")] = "S05-140617-2"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S09-130617-2")] = "S09-140617-2"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S02-130917-3")] = "S02-210917-3"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="M13-111018-8")] = "M13-011018-8"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S10-100119-4-R")] = "S10-110119-4-R"
+human_merged_all_data$sample_name_from_merge[which(human_merged_all_data$`Sample Name`=="S10-300719-6-R")] = "S10-300719-6-R"
 
 # check the data merge
 # see how many ids didn't merge
-length(which(is.na(human_merged_all_data$sample_name_from_merge))) # 308 missing, looks like worked correctly
-length(which(!(is.na(human_merged_all_data$sample_name_from_merge)))) # 2832
-# 3140-2890= 250 should not have merged
-# had 308 not merge so: 308-250=58 that didn't merge
+length(which(is.na(human_merged_all_data$sample_name_from_merge))) # 549 missing, looks like worked correctly
+length(which(!(is.na(human_merged_all_data$sample_name_from_merge)))) # 5254
 # check if all merged ids unique
-length(unique(human_merged_all_data$sample_name_from_merge)) # 2832 unique
-# 2890-58 = 2832 so all that merged in were unique and no duplicate merges
+length(unique(human_merged_all_data$sample_name_from_merge)) # 5255 unique
+count_table = table(human_merged_all_data$sample_name_from_merge, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 0 duplicates
+length(dups_table)
+dups_table
 
 # now merge in the rest of the qpcr result information for the 58 new samples
 qpcr_small_data = human_qpcr_data[,1:3]
@@ -358,7 +461,7 @@ qpcr_small_data = rename(qpcr_small_data,"sample_name_from_merge"="Sample Name")
 qpcr_small_data = qpcr_small_data[which(qpcr_small_data$sample_name_from_merge %in% nomerge$`Sample Name`),]
 human_merged_all_data = left_join(human_merged_all_data,qpcr_small_data,by = "sample_name_from_merge")
 # check the merge
-length(which(!(is.na(human_merged_all_data$pf_pcr_infection_status.y)))) # 59 
+length(which(!(is.na(human_merged_all_data$pf_pcr_infection_status.y)))) # 66
 # look correct
 
 # remove merge_date column
@@ -370,36 +473,37 @@ orig_data = human_merged_all_data
 # if messes up do this
 human_merged_all_data = orig_data
 
+
 # now loop through each row and move over those two columns
 # check colnames
 colnames(human_merged_all_data)
 # start for loop to combine qpcr results
 for (i in 1:nrow(human_merged_all_data)){
-  if (is.na(human_merged_all_data[i,131])){
+  if (is.na(human_merged_all_data[i,135])){
     for (k in 1:2){   # this is for all data that is present in .y files but not in .x
-      startpoint = 130 + k
+      startpoint = 134 + k
       human_merged_all_data[i,startpoint] = human_merged_all_data[i,startpoint+2]
       human_merged_all_data[i,startpoint+2] <- NA
     }
-  } else if (is.na(human_merged_all_data[i,133])){
+  } else if (is.na(human_merged_all_data[i,137])){
     for (k in 1:2){ # this is for all data that is present in .x files but not in .y -> just make it NULL
-      startpoint = 130 + k
+      startpoint = 134 + k
       human_merged_all_data[i,startpoint+2] <- NA
     }
   } else {
     for (k in 1:2){ # both data sets are missing -> just make it NULL at .y location
-      startpoint = 130 + k
+      startpoint = 134 + k
       human_merged_all_data[i,startpoint+2] <- NA
     }
   } 
 }
 # check the output
-length(which(is.na(human_merged_all_data$pf_pcr_infection_status.x))) # 322 missing
-length(which(is.na(human_merged_all_data$pf_pcr_infection_status.y))) # 3140 missing
+length(which(is.na(human_merged_all_data$pf_pcr_infection_status.x))) # 554 missing (remember that there were 7 Hb missing so Pf results missing but merged in)
+length(which(is.na(human_merged_all_data$pf_pcr_infection_status.y))) # 5803 missing
 # looks like it worked correctly
-small_check = human_merged_all_data[,130:134]
+small_check = human_merged_all_data[,134:138]
 # remove the .y columns
-human_merged_all_data_final = human_merged_all_data[,-c(133:134)]
+human_merged_all_data_final = human_merged_all_data[,-c(137:138)]
 human_merged_all_data_final = rename(human_merged_all_data_final,"pf_pcr_infection_status"="pf_pcr_infection_status.x","pfr364Q_std_combined"="pfr364Q_std_combined.x")
 colnames(human_merged_all_data_final)
 
@@ -407,8 +511,8 @@ colnames(human_merged_all_data_final)
 # re-add the double visit test names to the data set to point out people who had the sick and monthly visit on the same day
 # create a new sample name variable
 # merge together the monthly_unq_memID and sick_unq_memID columns
-length(which(is.na(human_merged_all_data_final$monthly_unq_memID))) # 519 - all the sick IDs
-length(which(is.na(human_merged_all_data_final$sick_unq_memID))) # 2621 - all the monthly IDs
+length(which(is.na(human_merged_all_data_final$monthly_unq_memID))) # 901 - all the sick IDs
+length(which(is.na(human_merged_all_data_final$sick_unq_memID))) # 4902 - all the monthly IDs
 monthly_or_sick_unq_memID = ifelse(is.na(human_merged_all_data_final$sick_unq_memID),human_merged_all_data_final$monthly_unq_memID,human_merged_all_data_final$sick_unq_memID)
 length(which(is.na(monthly_or_sick_unq_memID))) # no missing, which is good
 # add to the data set and compare with the monthly and sick ID columns
@@ -427,21 +531,21 @@ for (i in 1:nrow(human_merged_all_data_final)){
 }
 
 # look for duplicates in double visit_test
-length(unique(double_visit_test)) # 2919 unique/3140 obs
+length(unique(double_visit_test)) # 5487 unique/5803 obs
 length(which(is.na(double_visit_test) == T)) # 0 missing
 count_table = table(double_visit_test, useNA = "always")
-dups_table = count_table[which(count_table > 1)] # 221 duplicates
+dups_table = count_table[which(count_table > 1)] # 316 duplicates
 length(dups_table)
 dups_table_df = data.frame(dups_table)
 
 # for all these IDs, remove the asymptomatic visit information 
 human_merged_all_data_final$double_visit_test = double_visit_test
 head(human_merged_all_data_final$double_visit_test,20)
-small_check = human_merged_all_data_final[,120:134]
+small_check = human_merged_all_data_final[,130:138]
 
 # sort the double_visit_test variable
 human_merged_all_data_final = human_merged_all_data_final[order(human_merged_all_data_final$double_visit_test),]
-small_check = human_merged_all_data_final[,130:134]
+small_check = human_merged_all_data_final[,130:138]
 
 # look at the colnames
 colnames(human_merged_all_data_final)
@@ -467,8 +571,8 @@ for (i in 1:nrow(human_merged_all_data_final)){
 }
 # check the output
 colnames(human_merged_all_data_final)
-length(which(is.na(human_merged_all_data_final$monthly_unq_memID))) # 298 - (519-221 = 298)
-length(which(is.na(human_merged_all_data_final$sick_unq_memID))) # 2400 - (2621-221 = 2400)
+length(which(is.na(human_merged_all_data_final$monthly_unq_memID))) # 585 - (901-316 = 585)
+length(which(is.na(human_merged_all_data_final$sick_unq_memID))) # 4586 - (4902-316 = 4586)
 # looks like it is working correctly
 # delete the rows that are now duplicates
 for (i in 1:nrow(human_merged_all_data_final)){
@@ -477,8 +581,8 @@ for (i in 1:nrow(human_merged_all_data_final)){
   }
 }
 # check the output
-length(which(is.na(human_merged_all_data_final$monthly_unq_memID))) # 298 - (519-221 = 298)
-length(which(is.na(human_merged_all_data_final$sick_unq_memID))) # 2400 - (2621-221 = 2400)
+length(which(is.na(human_merged_all_data_final$monthly_unq_memID))) # 585 - (901-316 = 585)
+length(which(is.na(human_merged_all_data_final$sick_unq_memID))) # 4586 - (4902-316 = 4586)
 # also tested a few ids in dups_table_df to see if occurred in duplicate still
 # all looks good
 
@@ -504,6 +608,6 @@ table(human_merged_all_data_final$pf_pcr_infection_status, useNA = "always")
 length(which(human_merged_all_data_final$pfr364Q_std_combined > 0))
 
 # export as a CSV and RDS file
-write_csv(human_merged_all_data_final,"spat21_human_merged_all_data_21MAY2019.csv")
-write_rds(human_merged_all_data_final,"spat21_human_merged_all_data_21MAY2019.rds")
+write_csv(human_merged_all_data_final,"Desktop/phase2_spat21_human_merged_all_data_2DEC2019.csv")
+write_rds(human_merged_all_data_final,"Desktop/phase2_spat21_human_merged_all_data_2DEC2019.rds")
 
