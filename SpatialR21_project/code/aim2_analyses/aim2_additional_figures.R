@@ -112,8 +112,125 @@ correlation_plot
 ggsave(correlation_plot, filename="/Users/kelseysumner/Desktop/correlation_plot.png", device="png",
        height=4, width=5, units="in", dpi=500)
 
+# create distance categories
+table(merged_data$distance, useNA = "always")
+summary(merged_data$distance)
+merged_data$distance_categories = ifelse(merged_data$distance < 4000,"< 4000 m",
+                                         ifelse(merged_data$distance >= 4000 & merged_data$distance < 8000, "4000-8000 m","> 8000 m"))
+merged_data$distance_categories = factor(merged_data$distance_categories, levels = c("< 4000 m", "4000-8000 m","> 8000 m","NA"))
 
 
+# make a violin plot
+violin_plot = ggplot() +
+  geom_violin(data=merged_data,aes(x=distance_categories,y=haps_shared), fill = "#ff7f00", colour = "#ff7f00", alpha=0.7) +
+  theme_bw() +
+  labs(x="Distance between human and mosquito (m)",y="Number of haplotypes shared") 
+violin_plot
+ggsave(violin_plot, filename="/Users/kelseysumner/Desktop/violin_plot.png", device="png",
+       height=4, width=5, units="in", dpi=500)
+
+
+#### -------- make a plot of the number of samples within each haplotype ----- ####
+
+# make separate data sets for humans and mosquitoes
+human_haps = csp_haplotypes %>%
+  filter(sample_type=="Human")
+abdomen_haps = csp_haplotypes %>%
+  filter(sample_type=="Abdomen")
+abdomen_haps = abdomen_haps[,c(4:301)]
+
+# merge the final_data info for symptomatic status with the human haps
+cut_data = final_data %>%
+  filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
+  select(sample_name_dbs,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
+  mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def)))
+table(cut_data$aim2_exposure, useNA = "always")
+human_haps = left_join(human_haps,cut_data,by="sample_name_dbs")
+table(human_haps$aim2_exposure, useNA = "always")
+colnames(human_haps)
+asymp_human_haps = human_haps %>% filter(aim2_exposure == "asymptomatic infection")
+symp_human_haps = human_haps %>% filter(aim2_exposure == "symptomatic infection")
+asymp_human_haps = asymp_human_haps[,c(4:301)]
+symp_human_haps = symp_human_haps[,c(4:301)]
+
+# summarize the number of samples within each haplotype for the asymp human samples
+haplotype.names = rep(1:ncol(asymp_human_haps))
+haplotypes_in_samples = rep(NA,ncol(asymp_human_haps))
+total_reads_in_samples = rep(NA,ncol(asymp_human_haps))
+for (k in 1:ncol(asymp_human_haps)){
+  haplotypes_in_samples[k] = length(which(asymp_human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(asymp_human_haps[,k],na.rm=T)
+}
+asymp_human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# summarize the number of samples within each haplotype for the symp human samples
+haplotype.names = rep(1:ncol(symp_human_haps))
+haplotypes_in_samples = rep(NA,ncol(symp_human_haps))
+total_reads_in_samples = rep(NA,ncol(symp_human_haps))
+for (k in 1:ncol(symp_human_haps)){
+  haplotypes_in_samples[k] = length(which(symp_human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(symp_human_haps[,k],na.rm=T)
+}
+symp_human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# summarize the number of samples within each haplotype for the mosquito abdomen samples
+haplotype.names = rep(1:ncol(abdomen_haps))
+haplotypes_in_samples = rep(NA,ncol(abdomen_haps))
+total_reads_in_samples = rep(NA,ncol(abdomen_haps))
+for (k in 1:ncol(abdomen_haps)){
+  haplotypes_in_samples[k] = length(which(abdomen_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(abdomen_haps[,k],na.rm=T)
+}
+abdomen_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+hap_order = order(-asymp_human_hap_summary$haplotypes_across_samples)
+asymp_human_hap_summary = asymp_human_hap_summary[hap_order,]
+symp_human_hap_summary = symp_human_hap_summary[hap_order,]
+abdomen_hap_summary = abdomen_hap_summary[hap_order,]
+asymp_human_hap_summary$haplotype_ids = factor(asymp_human_hap_summary$haplotype_ids, levels=asymp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_ids, levels=symp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+
+# make plot of asymptomatic human haplotypes
+asymp_human_hap_plot = ggplot() +
+  geom_bar(data=asymp_human_hap_summary,aes(x=haplotype_ids,y=haplotypes_across_samples),alpha=0.8,fill="#ff7f00",stat = "identity") +
+  theme_bw() +
+  xlab("Haplotype ID") + 
+  ylab("Number of samples") +
+  ggtitle("Asymptomatic human samples") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+asymp_human_hap_plot
+
+# make plot of symptomatic human haplotypes
+symp_human_hap_plot = ggplot() +
+  geom_bar(data=symp_human_hap_summary,aes(x=haplotype_ids,y=haplotypes_across_samples),alpha=0.8,fill="#e31a1c",stat = "identity") +
+  theme_bw() +
+  xlab("Haplotype ID") + 
+  ylab("Number of samples") +
+  ggtitle("Symptomatic human samples") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+symp_human_hap_plot
+
+# make plot of mosquito abdomen haplotypes
+abdomen_hap_plot = ggplot() +
+  geom_bar(data=abdomen_hap_summary,aes(x=haplotype_ids,y=haplotypes_across_samples),alpha=0.8,fill="#fdd0a2",stat = "identity") +
+  theme_bw() +
+  xlab("Haplotype ID") + 
+  ylab("Number of samples") +
+  ggtitle("Mosquito samples") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+abdomen_hap_plot
+
+
+# put both csp moi plots on same grid
+figure_number_samples_in_haplotypes = gridExtra::grid.arrange(asymp_human_hap_plot,symp_human_hap_plot,abdomen_hap_plot,nrow=3)
+
+# export the figure
+ggsave(figure_number_samples_in_haplotypes, filename="/Users/kelseysumner/Desktop/figure_number_samples_in_haplotypes.png", device="png",
+       height=10.5, width=17, units="in", dpi=400)
 
 
 
