@@ -233,8 +233,24 @@ ggsave(figure_number_samples_in_haplotypes, filename="/Users/kelseysumner/Deskto
        height=10.5, width=17, units="in", dpi=400)
 
 
+#### -------- calculate the prevalence of each haplotype in the general population -------- ####
 
+# first subset the haplotype table
+hap_prevalence_data = csp_haplotypes 
+hap_prevalence_data = hap_prevalence_data[,c(4:301)]
 
+# summarize the number of samples within each haplotype for the asymp human samples
+haplotype.names = rep(1:ncol(hap_prevalence_data))
+haplotypes_in_samples = rep(NA,ncol(hap_prevalence_data))
+total_reads_in_samples = rep(NA,ncol(hap_prevalence_data))
+for (k in 1:ncol(hap_prevalence_data)){
+  haplotypes_in_samples[k] = length(which(hap_prevalence_data[,k] > 0))
+  total_reads_in_samples[k] = sum(hap_prevalence_data[,k],na.rm=T)
+}
+hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# add a column that is the haplotype prevalence
+hap_summary$hap_prevalence = hap_summary$haplotypes_across_samples/nrow(csp_haplotypes)
 
 
 
