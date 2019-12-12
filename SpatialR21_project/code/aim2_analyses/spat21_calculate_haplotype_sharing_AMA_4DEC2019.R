@@ -16,13 +16,13 @@ library(readr)
 #### ------------------ AMA ---------------------- ####
 
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
-finalfoo_all <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+finalfoo_all <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
 
 # edit the data set to be in the correct format
 finalfoo_all = as.matrix(finalfoo_all)
 rownames(finalfoo_all) = finalfoo_all[,2]
 colnames(finalfoo_all)
-finalfoo_all=finalfoo_all[,-c(1,2,3,461,462,463)]
+finalfoo_all=finalfoo_all[,-c(1,2,3,460,461,462)]
 colnames(finalfoo_all)
 
 # make finalfoo_all values numeric
@@ -81,6 +81,8 @@ edgelist_df_clean = edgelist_df[-indices,]
 
 # export the edgelist with all 5 columns before removing the repeated edges
 write_csv(edgelist_df_clean,"AMA_haplotypes_edgelist_repeated_edges.csv")
+# read this data set in
+edgelist_df_clean = read_csv("Desktop/clean_ids_haplotype_results/AMA/AMA_haplotypes_edgelist_repeated_edges.csv")
 
 # convert edgelist to sociomatrix
 edgelist=as.matrix(edgelist_df_clean)
@@ -97,18 +99,14 @@ g = k
 # change the simplified graph back to an edgelist
 edgelist_df_final = get.data.frame(g)
 
-# now write some code to loop through the edgelist_df_clean data set and merged back in list of shared haplotypes info
-edgelist_df_final$list_haplotypes_shared = rep(NA,nrow(edgelist_df_final))
-for (i in 1:nrow(edgelist_df_final)){
-  for (j in 1:nrow(edgelist_df_clean)){
-    if (edgelist_df_final$from[i] == edgelist_df_clean$sample_1[j] & edgelist_df_final$to[i] == edgelist_df_clean$sample_2[j]) {
-      edgelist_df_final$list_haplotypes_shared[i] = as.character(edgelist_df_clean$list_haplotypes_shared[j])
-    }
-  }
-}
+# try an alternative way to merge the info in
+edgelist_df_clean_short = edgelist_df_clean %>%
+  select(sample_1,sample_2,list_haplotypes_shared) %>%
+  rename(from=sample_1,to=sample_2)
+edgelist_df_merge = left_join(edgelist_df_final,edgelist_df_clean_short,by=c("from","to"))
 
 # export the file as a csv
-write.csv(edgelist_df_final,"AMA_haplotypes_edgelist_simplified_number_haps_shared.csv")
+write.csv(edgelist_df_merge,"Desktop/AMA_haplotypes_edgelist_simplified_number_haps_shared.csv")
 
 
 

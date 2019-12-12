@@ -39,7 +39,7 @@ colnames(ama_edgelist)
 
 # remove the X1 column
 ama_edgelist = ama_edgelist %>%
-  dyplyr::select(-"X1")
+  dplyr::select(-"X1")
 
 # look at how many unique observations
 length(unique(ama_edgelist$from)) # 1115
@@ -153,8 +153,12 @@ colnames(ama_edgelist_head)
 ama_edgelist_head = ama_edgelist_head %>%
   mutate(date_difference = mosquito_date - human_date)
 
+# note there are some sequenced results that didn't match the symptomatic and asymptomatic case definitions, remove these
+ama_edgelist_head = ama_edgelist_head[-which(is.na(ama_edgelist_head$human_date) | is.na(ama_edgelist_head$mosquito_date)),]
+length(which(is.na(ama_edgelist_head$date_difference))) # 0, correct
+
 # count how many haplotypes were shared between mosquito heads and humans
-length(which(ama_edgelist_head$haps_shared >0)) # 32739 heads
+length(which(ama_edgelist_head$haps_shared >0)) # 28544 heads
 
 # write out the edgelist
 write_rds(ama_edgelist_head,"Desktop/spat21_ama_edgelist_head_no_restrictions_3DEC2019.rds")
@@ -190,8 +194,12 @@ colnames(ama_edgelist_abdomen)
 ama_edgelist_abdomen = ama_edgelist_abdomen %>%
   mutate(date_difference = mosquito_date - human_date)
 
+# note there are some sequenced results that didn't match the symptomatic and asymptomatic case definitions, remove these
+ama_edgelist_abdomen = ama_edgelist_abdomen[-which(is.na(ama_edgelist_abdomen$human_date) | is.na(ama_edgelist_abdomen$mosquito_date)),]
+length(which(is.na(ama_edgelist_abdomen$date_difference))) # 0, correct
+
 # count how many haplotypes were shared between mosquito abdomens and humans
-length(which(ama_edgelist_abdomen$haps_shared >0)) # 53316 abdomens
+length(which(ama_edgelist_abdomen$haps_shared >0)) # 46639 abdomens
 
 # write out the edgelist
 write_rds(ama_edgelist_abdomen,"Desktop/spat21_ama_edgelist_abdomen_no_restrictions_3DEC2019.rds")
@@ -336,8 +344,12 @@ colnames(csp_edgelist_head)
 csp_edgelist_head = csp_edgelist_head %>%
   mutate(date_difference = mosquito_date - human_date)
 
+# note there are some sequenced results that didn't match the symptomatic and asymptomatic case definitions, remove these
+csp_edgelist_head = csp_edgelist_head[-which(is.na(csp_edgelist_head$human_date) | is.na(csp_edgelist_head$mosquito_date)),]
+length(which(is.na(csp_edgelist_head$date_difference))) # 0, correct
+
 # count how many haplotypes were shared between mosquito heads and humans
-length(which(csp_edgelist_head$haps_shared >0)) # 70493 heads
+length(which(csp_edgelist_head$haps_shared >0)) # 60968 heads
 
 # write out the edgelist
 write_rds(csp_edgelist_head,"Desktop/spat21_csp_edgelist_head_no_restrictions_3DEC2019.rds")
@@ -373,12 +385,16 @@ colnames(csp_edgelist_abdomen)
 csp_edgelist_abdomen = csp_edgelist_abdomen %>%
   mutate(date_difference = mosquito_date - human_date)
 
+# note there are some sequenced results that didn't match the symptomatic and asymptomatic case definitions, remove these
+csp_edgelist_abdomen = csp_edgelist_abdomen[-which(is.na(csp_edgelist_abdomen$human_date) | is.na(csp_edgelist_abdomen$mosquito_date)),]
+length(which(is.na(csp_edgelist_abdomen$date_difference))) # 0, correct
+
 # count how many haplotypes were shared between mosquito abdomens and humans
-length(which(csp_edgelist_abdomen$haps_shared >0)) # 111485 abdomens
+length(which(csp_edgelist_abdomen$haps_shared >0)) # 96544 abdomens
 
 # write out the edgelist
-write_rds(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_3DEC2019.rds")
-write_csv(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen_3DEC2019.csv")
+write_rds(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomens_no_restrictions_3DEC2019.rds")
+write_csv(csp_edgelist_abdomen,"Desktop/spat21_csp_edgelist_abdomen__no_restrictions_3DEC2019.csv")
 
 
 

@@ -1,0 +1,284 @@
+# ------------------------------------------- #
+#  Add in variable parameters for comp model  #
+#               Mozzie Phase 1                #
+#                   Aim 2                     #
+#             CSP and AMA data                #
+#            December 9, 2019                 #
+#                K. Sumner                    #
+# ------------------------------------------- #
+
+#### --------- load packages ----------------- ####
+library(tidyverse)
+library(geosphere)
+
+
+#### ---------- read in the data sets ---------- ####
+
+# read in the clean ama haplotype data
+ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
+
+# read in the clean csp haplotype data
+csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+
+# read in the coordinates data set
+coordinates_data <- read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/household_coordinates/Cohort coordinates_updated July 2019.csv")
+coordinates_data$X7 <- NULL
+
+# add ama abdomen edgelist
+ama_edgelist <- read_rds("Desktop/clean_ids_haplotype_results/AMA/edgelists_no_restrictions/spat21_ama_edgelist_abdomen_no_restrictions_3DEC2019.rds")
+
+# add csp abdomen edgelist
+csp_edgelist <- read_rds("Desktop/clean_ids_haplotype_results/CSP/edgelists_no_restrictions/spat21_csp_edgelist_abdomens_no_restrictions_3DEC2019.rds")
+
+
+
+#### ------------- create a merged data set between ama and csp  --------------- ####
+
+# create a dataset that has all the ama and csp data merged into one
+
+# join the ama and csp edgelists together
+merged_data = full_join(csp_edgelist,ama_edgelist,by=c("sample_id_human","sample_id_abdomen"))
+
+# look at the colnames
+colnames(merged_data)
+
+# rename some of the colnames
+merged_data = merged_data %>%
+  rename(csp_haps_shared = haps_shared.x,ama_haps_shared = haps_shared.y,csp_list_haps_shared = list_haplotypes_shared.x,ama_list_hap_shared = list_haplotypes_shared.y)
+
+# reorder the columns
+merged_data = merged_data %>%
+  select(sample_id_human,sample_id_abdomen,csp_haps_shared,csp_list_haps_shared,ama_haps_shared,ama_list_hap_shared,human_date.x,sample_name_final.x,
+         age_cat_baseline.x,unq_memID.x,village_name.x,HH_ID_human.x,pfr364Q_std_combined.x,age_all_baseline.x,aim2_exposure.x,HH_ID_mosquito.x,
+         mosquito_date.x,total_num_mosq_in_hh.x,date_difference.x,human_date.y,sample_name_final.y,
+         age_cat_baseline.y,unq_memID.y,village_name.y,HH_ID_human.y,pfr364Q_std_combined.y,age_all_baseline.y,aim2_exposure.y,HH_ID_mosquito.y,
+         mosquito_date.y,total_num_mosq_in_hh.y,date_difference.y)
+colnames(merged_data)
+
+# write some code that merges the two columns
+# now loop through each row and move over those columns
+# check colnames
+colnames(merged_data)
+# start for loop to combine qpcr results
+for (i in 1:nrow(merged_data)){
+  if (is.na(merged_data[i,7])){
+    for (k in 1:13){   # this is for all data that is present in .y files but not in .x
+      startpoint = 6 + k
+      merged_data[i,startpoint] = merged_data[i,startpoint+13]
+      merged_data[i,startpoint+13] <- NA
+    }
+  } else if (is.na(merged_data[i,20])){
+    for (k in 1:13){ # this is for all data that is present in .x files but not in .y -> just make it NULL
+      startpoint = 6 + k
+      merged_data[i,startpoint+13] <- NA
+    }
+  } else {
+    for (k in 1:13){ # both data sets are missing -> just make it NULL at .y location
+      startpoint = 6 + k
+      merged_data[i,startpoint+13] <- NA
+    }
+  } 
+}
+# check the output
+length(which(is.na(merged_data$mosquito_date.x))) # 554 missing (remember that there were 7 Hb missing so Pf results missing but merged in)
+length(which(is.na(merged_data$mosquito_date.y))) # 5803 missing
+# remove the .y columns
+merged_data_final = merged_data[,-c(20:32)]
+merged_data_final = rename(merged_data_final,
+                           human_date = human_date.x, sample_name_final = sample_name_final.x, age_cat_baseline = age_cat_baseline.x,
+                           unq_memID = unq_memID.x, village_name = village_name.x, HH_ID_human = HH_ID_human.x, pfr364Q_std_combined = pfr364Q_std_combined.x,
+                           age_all_baseline = age_all_baseline.x, aim2_exposure = aim2_exposure.x, HH_ID_mosquito = HH_ID_mosquito.x,
+                           mosquito_date = mosquito_date.x, total_num_mosq_in_hh = total_num_mosq_in_hh.x, date_difference = date_difference.x)
+colnames(merged_data_final)
+# check the missing hap info
+length(which(is.na(merged_data_final$csp_haps_shared))) # 11369
+length(which(is.na(merged_data_final$ama_haps_shared))) # 42506
+sum(merged_data_final$csp_haps_shared, na.rm = T) # 188916
+sum(merged_data_final$ama_haps_shared, na.rm = T) # 74863
+sum(csp_edgelist$haps_shared, na.rm = T) # 188916
+sum(ama_edgelist$haps_shared, na.rm = T) # 74863
+# looks good
+
+
+#### ------------- calculate the distance between human and mosquito samples --------- ####
+
+
+# only allow 1 hh structure per hh
+length(unique(coordinates_data$HH_ID)) # 38
+coordinates_data = coordinates_data[-which(coordinates_data$hhlatitude=="0.6164038"),]
+coordinates_data = coordinates_data[-which(coordinates_data$hhlatitude=="0.5774058"),]
+length(unique(coordinates_data$HH_ID)) # 38
+
+# merge csp abdomens with household coordinates data for human samples
+coordinates_data = coordinates_data %>% rename("HH_ID_human" = "HH_ID")
+merged_data_final_v2 = left_join(merged_data_final,coordinates_data,by="HH_ID_human")
+
+# change the hh_id column name
+merged_data_final_v2 = merged_data_final_v2 %>%
+  rename(hhlatitude_human = hhlatitude,hhlongitude_human = hhlongitude)
+
+# now merge csp abdomens with household coordinates for the mosquitoes
+coordinates_data = coordinates_data %>% rename("HH_ID_mosquito" = "HH_ID_human")
+merged_data = left_join(merged_data_final_v2,coordinates_data,by="HH_ID_mosquito")
+
+# change column names
+colnames(merged_data)
+merged_data = merged_data %>%
+  rename(hhlatitude_mosquito = hhlatitude,hhlongitude_mosquito = hhlongitude) %>%
+  select(-c(hhaltitude.x,hhaltitude.y,HHID.x,HHID.y,hhaccuracy.x,hhaccuracy.y))
+
+# check missingness
+length(which(is.na(merged_data$hhlatitude_human))) # 0
+length(which(is.na(merged_data$hhlongitude_human))) # 0
+length(which(is.na(merged_data$hhlatitude_mosquito))) # 0
+length(which(is.na(merged_data$hhlongitude_mosquito))) # 0
+
+# create a variable that is the distance between each household (in meters)
+merged_data$distance = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  merged_data$distance[i] = distm(c(merged_data$hhlongitude_human[i], merged_data$hhlatitude_human[i]), c(merged_data$hhlongitude_mosquito[i], merged_data$hhlatitude_mosquito[i]), fun = distHaversine)
+}
+summary(merged_data$distance)
+
+
+#### ----------- export the data set -------- ####
+
+# export the merged data
+write_csv(merged_data,"Desktop/spat21_ama_and_csp_edgelist.csv")
+write_rds(merged_data,"Desktop/spat21_ama_and_csp_edgelist.rds")
+
+
+# read those data sets back in
+merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/spat21_ama_and_csp_edgelist.rds")
+
+
+
+#### -------- calculate the prevalence of each haplotype in the general population -------- ####
+
+## for csp
+
+# first subset the haplotype table
+csp_hap_prevalence_data = csp_haplotypes 
+csp_hap_prevalence_data = csp_hap_prevalence_data[,c(4:301)]
+
+# summarize the number of samples within each haplotype for the asymp human samples
+csp_haplotype_names = rep(1:ncol(csp_hap_prevalence_data))
+csp_haplotypes_in_samples = rep(NA,ncol(csp_hap_prevalence_data))
+csp_total_reads_in_samples = rep(NA,ncol(csp_hap_prevalence_data))
+for (k in 1:ncol(csp_hap_prevalence_data)){
+  csp_haplotypes_in_samples[k] = length(which(csp_hap_prevalence_data[,k] > 0))
+  csp_total_reads_in_samples[k] = sum(csp_hap_prevalence_data[,k],na.rm=T)
+}
+csp_hap_summary = data.frame("csp_haplotype_ids" = csp_haplotype_names, "csp_haplotypes_across_samples" = csp_haplotypes_in_samples, "csp_total_reads_across_samples" = csp_total_reads_in_samples)
+
+# add a column that is the haplotype prevalence
+csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_haplotypes_across_samples/nrow(csp_haplotypes)
+
+# add an H to every haplotype id
+csp_hap_summary$csp_haplotype_ids = paste0("H",csp_hap_summary$csp_haplotype_ids)
+
+
+## for ama
+
+# first subset the haplotype table
+ama_hap_prevalence_data = ama_haplotypes 
+ama_hap_prevalence_data = ama_hap_prevalence_data[,c(4:459)]
+
+# summarize the number of samples within each haplotype for the asymp human samples
+ama_haplotype_names = rep(1:ncol(ama_hap_prevalence_data))
+ama_haplotypes_in_samples = rep(NA,ncol(ama_hap_prevalence_data))
+ama_total_reads_in_samples = rep(NA,ncol(ama_hap_prevalence_data))
+for (k in 1:ncol(ama_hap_prevalence_data)){
+  ama_haplotypes_in_samples[k] = length(which(ama_hap_prevalence_data[,k] > 0))
+  ama_total_reads_in_samples[k] = sum(ama_hap_prevalence_data[,k],na.rm=T)
+}
+ama_hap_summary = data.frame("ama_haplotype_ids" = ama_haplotype_names, "ama_haplotypes_across_samples" = ama_haplotypes_in_samples, "ama_total_reads_across_samples" = ama_total_reads_in_samples)
+
+# add a column that is the haplotype prevalence
+ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_haplotypes_across_samples/nrow(ama_haplotypes)
+
+# add an H to every haplotype id
+ama_hap_summary$ama_haplotype_ids = paste0("H",ama_hap_summary$ama_haplotype_ids)
+
+
+#### ------- calculate haplotype probability values for ama and csp -------- ####
+
+
+# calculate the P(TE) for csp based on the number and prevalence of haplotypes
+p_te_c = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$csp_haps_shared[i] > 0 & !(is.na(merged_data$csp_haps_shared[i]))){
+    cum_prop = 1
+    split_list = str_split(merged_data$csp_list_haps_shared[i],",")[[1]]
+    for (j in 1:merged_data$csp_haps_shared[i]) {
+      for (k in 1:nrow(csp_hap_summary)){
+        if (split_list[j] == csp_hap_summary$csp_haplotype_ids[k]){
+          cum_prop = cum_prop*(1-csp_hap_summary$csp_hap_prevalence[k])
+          }
+        }
+      }
+      p_te_c[i] = 1 - cum_prop
+  } else {
+    p_te_c[i] = 0
+  }
+}
+# add the new variable to the data set
+merged_data$p_te_c = p_te_c
+
+
+
+
+# calculate the P(TE) for ama based on the number and prevalence of haplotypes
+p_te_a = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$ama_haps_shared[i] > 0 & !(is.na(merged_data$ama_haps_shared[i]))){
+    cum_prop = 1
+    split_list = str_split(merged_data$ama_list_hap_shared[i],",")[[1]]
+    for (j in 1:merged_data$ama_haps_shared[i]) {
+      for (k in 1:nrow(ama_hap_summary)){
+        if (split_list[j] == ama_hap_summary$ama_haplotype_ids[k]){
+          cum_prop = cum_prop*(1-ama_hap_summary$ama_hap_prevalence[k])
+        }
+      }
+    }
+    p_te_a[i] = 1 - cum_prop
+  } else {
+    p_te_a[i] = 0
+  }
+}
+# add the new variable to the data set
+merged_data$p_te_a = p_te_a
+
+
+# export this data set
+# write_rds(merged_data,"Desktop/spat21_merged_data_interim.rds")
+
+
+#### ------- make the probably TE curve for the distance between samples ------- ####
+
+# create a formula for the P(TE) across distance 
+# y = e^(-gamma*x)
+
+# calculate p(TE) for distance using an exponential decay formula
+summary(merged_data$distance)
+p_te_d = exp(-3*merged_data$distance)
+summary(p_te_d)
+hist(p_te_d)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

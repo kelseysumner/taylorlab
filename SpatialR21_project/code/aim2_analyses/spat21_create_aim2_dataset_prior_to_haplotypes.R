@@ -38,7 +38,7 @@ colnames(ama_edgelist)
 
 # remove the X1 column
 ama_edgelist = ama_edgelist %>%
-  dyplyr::select(-"X1")
+  dplyr::select(-"X1")
 
 # look at how many unique observations
 length(unique(ama_edgelist$from)) # 1115
