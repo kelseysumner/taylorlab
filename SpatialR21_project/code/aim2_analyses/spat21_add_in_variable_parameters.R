@@ -252,33 +252,139 @@ merged_data$p_te_a = p_te_a
 
 # export this data set
 # write_rds(merged_data,"Desktop/spat21_merged_data_interim.rds")
+# read back in the data set
+merged_data = read_rds("Desktop/spat21_merged_data_interim.rds")
+
 
 
 #### ------- make the probably TE curve for the distance between samples ------- ####
 
 # create a formula for the P(TE) across distance 
-# y = e^(-gamma*x)
+# f(x) = λ {e}^{- λ x}
+
+# look at the start values
+summary(merged_data$distance)
+str(merged_data$distance) # this is in m
+# make distance in km
+merged_data$distance_km = merged_data$distance/1000
+summary(merged_data$distance_km)
 
 # calculate p(TE) for distance using an exponential decay formula
-summary(merged_data$distance)
-p_te_d = exp(-3*merged_data$distance)
+p_te_d = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 1.7){
+    p_te_d[i] = 0.75*exp(-0.75*merged_data$distance_km[i])
+  } else {
+    p_te_d[i] = 0
+  }
+}
 summary(p_te_d)
 hist(p_te_d)
+p_te_d_no_zeroes = p_te_d[which(p_te_d != 0)]
+summary(p_te_d_no_zeroes)
+hist(p_te_d_no_zeroes)
+merged_data$p_te_d = p_te_d
+p_te_d_df = merged_data %>%
+  filter(p_te_d != 0)
+plot(p_te_d_df$distance_km,p_te_d_df$p_te_d)
+
+
+#### -------- make the probability TE curve for the time between samples ------- ####
+
+# create a formula for the P(TE) across time
+# f(x) = λ {e}^{- λ x}
+
+# set up the variables
+summary(merged_data$date_difference)
+merged_data$date_difference = as.numeric(merged_data$date_difference)
+merged_data$date_difference_flipped = merged_data$date_difference*-1
+summary(merged_data$date_difference_flipped)
+
+# calculate p(TE) for time using an exponential decay formula
+p_te_t = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$date_difference_flipped[i] >= -18 & merged_data$date_difference_flipped[i] <= 0){
+    p_te_t[i] = 0.05*exp(0.05*merged_data$date_difference_flipped[i])
+  } else {
+    p_te_t[i] = 0
+  }
+}
+summary(p_te_t)
+hist(p_te_t)
+p_te_t_no_zeroes = p_te_t[which(p_te_t != 0)]
+summary(p_te_t_no_zeroes)
+hist(p_te_t_no_zeroes)
+merged_data$p_te_t = p_te_t
+p_te_t_df = merged_data %>%
+  filter(p_te_t != 0)
+plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t)
+
+
+
+# try fitting a logistic regression model
+plot(y ~ x)
+fit <- nls(y ~ SSlogis(x, Asym, xmid, scal), data = data.frame(x, y))
+summary(fit)
 
 
 
 
+#### -------- make plots of the distributions --------- ####
+
+# make a plot of p_te_t
+p_te_t_plot = ggplot(data=p_te_t_df,aes(x=date_difference_flipped,y=p_te_t,colour=factor(aim2_exposure))) +
+  geom_point(alpha=0.7) + 
+  scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
+  labs(colour="Symptomatic status") +
+  theme_bw() + 
+  xlab("Days human sample collected before mosquito") +
+  ylab("P(TE,t)")
+p_te_t_plot
+ggsave(p_te_t_plot, filename="/Users/kelseysumner/Desktop/p_te_t_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
 
 
+# make a plot of p_te_d
+p_te_d_plot = ggplot(data=p_te_d_df,aes(x=distance_km,y=p_te_d,colour=factor(aim2_exposure))) +
+  geom_point(alpha=0.7) + 
+  scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
+  labs(colour="Symptomatic status") +
+  theme_bw() + 
+  xlab("Distance between human and mosquito samples (Km)") +
+  ylab("P(TE,d)")
+p_te_d_plot
+ggsave(p_te_d_plot, filename="/Users/kelseysumner/Desktop/p_te_d_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
 
 
+# make a plot of p_te_a
+p_te_a_df = merged_data %>%
+  filter(p_te_a != 0)
+p_te_a_plot = ggplot(data=p_te_a_df,aes(x=ama_haps_shared,y=p_te_a,colour=factor(aim2_exposure))) +
+  geom_point(alpha=0.7) + 
+  scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
+  labs(colour="Symptomatic status") +
+  theme_bw() + 
+  xlab("Number of pfama1 haplotypes shared") +
+  ylab("P(TE,a)")
+p_te_a_plot
+ggsave(p_te_a_plot, filename="/Users/kelseysumner/Desktop/p_te_a_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
 
 
-
-
-
-
-
+# make a plot of p_te_c
+p_te_c_df = merged_data %>%
+  filter(p_te_c != 0)
+p_te_c_plot = ggplot(data=p_te_c_df,aes(x=csp_haps_shared,y=p_te_c,colour=factor(aim2_exposure))) +
+  geom_point(alpha=0.7) + 
+  scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
+  labs(colour="Symptomatic status") +
+  theme_bw() + 
+  xlab("Number of pfcsp haplotypes shared") +
+  ylab("P(TE,c)")
+p_te_c_plot
+ggsave(p_te_c_plot, filename="/Users/kelseysumner/Desktop/p_te_c_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
 
 
 
