@@ -273,7 +273,7 @@ summary(merged_data$distance_km)
 p_te_d = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
   if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 1.7){
-    p_te_d[i] = 0.75*exp(-0.75*merged_data$distance_km[i])
+    p_te_d[i] = exp(-2.5*merged_data$distance_km[i])
   } else {
     p_te_d[i] = 0
   }
@@ -322,9 +322,58 @@ plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t)
 
 
 # try fitting a logistic regression model
-plot(y ~ x)
-fit <- nls(y ~ SSlogis(x, Asym, xmid, scal), data = data.frame(x, y))
-summary(fit)
+# formula Y=1/(1+e^(-(a+bX)))
+p_te_t = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$date_difference_flipped[i] >= -18 & merged_data$date_difference_flipped[i] <= 0){
+    p_te_t[i] = 1/(-exp(0.4*merged_data$date_difference_flipped[i]))
+  } else {
+    p_te_t[i] = 0
+  }
+}
+summary(p_te_t)
+hist(p_te_t)
+p_te_t_no_zeroes = p_te_t[which(p_te_t != 0)]
+summary(p_te_t_no_zeroes)
+hist(p_te_t_no_zeroes)
+merged_data$p_te_t = p_te_t
+p_te_t_df = merged_data %>%
+  filter(p_te_t != 0)
+plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t)
+# set to a range between 0 and 1 - looks like this isn't working
+merged_data$p_te_t = sort(merged_data$p_te_t)
+head(merged_data$p_te_t)
+tail(merged_data$p_te_t)
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+test = range01(merged_data$p_te_t)
+merged_data$p_te_t = test
+summary(merged_data$p_te_t)
+p_te_t_df = merged_data %>%
+  filter(p_te_t != 0)
+plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t)
+
+
+# try fitting a logistic regression model but with positive numbers
+# formula Y=1/(1+e^(-(a+bX)))
+summary(merged_data$date_difference)
+length(which(merged_data$date_difference >= 0 & merged_data$date_difference <= 18))
+p_te_t = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$date_difference[i] >= 0 & merged_data$date_difference[i] <= 18){
+    p_te_t[i] = 1/(exp(-0.6*merged_data$date_difference[i]))
+  } else {
+    p_te_t[i] = 0
+  }
+}
+summary(p_te_t)
+hist(p_te_t)
+p_te_t_no_zeroes = p_te_t[which(p_te_t != 0)]
+summary(p_te_t_no_zeroes)
+hist(p_te_t_no_zeroes)
+merged_data$p_te_t = p_te_t
+p_te_t_df = merged_data %>%
+  filter(p_te_t != 0)
+plot(p_te_t_df$date_difference,p_te_t_df$p_te_t)
 
 
 
