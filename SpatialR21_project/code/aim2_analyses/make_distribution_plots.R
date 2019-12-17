@@ -11,13 +11,14 @@
 #### -------- load packages ------------ ####
 library(tidyverse)
 require(pracma)
+library(msm)
 
 
 #### ------ make a normal distribution of the probability of transmission over time ------- ####
 
 # create a normal, gaussian distribution between -18 and 0 centered at -9
 x <- seq(-18,0, length=1000)
-hx <- dnorm(x,-9,2.5)
+hx <- dtnorm(x,-9,2.5)
 df <- data.frame(x,hx)
 
 # now plot that normal distribution
@@ -47,8 +48,8 @@ AUC = trapz(x,y) # 0.998845903386851
 #### ----- make a exponentially decaying distribution for probability of transmission over distance -------- ####
 
 # make an exponential decay function that is 1/(x^2) for the range 0-5km (0-5000m)
-x <- seq(0,5, length=1000)
-hx <- dexp(x,rate = 3.5) # set a rate of 3 and log = FALSE
+x <- seq(0,3, length=1000)
+hx <- 1-pexp(x,rate = 3) # set a rate of 3 and log = FALSE
 df = data.frame(x,hx)
 
 # now plot that normal distribution
@@ -57,6 +58,6 @@ plot(x, hx, type="l", lty=2, xlab="Distance (Km) between human infection and mos
 abline(v=0.661,col="dark red",lwd=1.5)
 
 # calculate the area under the curve
-AUC = trapz(df$x,df$hx) # 1.00002554671025
+AUC = trapz(df$x,df$hx) # 0.3333395
 
 

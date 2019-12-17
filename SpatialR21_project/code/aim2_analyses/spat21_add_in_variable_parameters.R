@@ -10,6 +10,8 @@
 #### --------- load packages ----------------- ####
 library(tidyverse)
 library(geosphere)
+library(msm)
+require(pracma)
 
 
 #### ---------- read in the data sets ---------- ####
@@ -253,7 +255,7 @@ merged_data$p_te_a = p_te_a
 # export this data set
 # write_rds(merged_data,"Desktop/spat21_merged_data_interim.rds")
 # read back in the data set
-merged_data = read_rds("Desktop/spat21_merged_data_interim.rds")
+merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/spat21_merged_data_interim.rds")
 
 
 
@@ -272,7 +274,7 @@ summary(merged_data$distance_km)
 # calculate p(TE) for distance using an exponential decay formula
 p_te_d = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
-  if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 1.7){
+  if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 5){
     p_te_d[i] = exp(-2.5*merged_data$distance_km[i])
   } else {
     p_te_d[i] = 0
@@ -289,6 +291,31 @@ p_te_d_df = merged_data %>%
 plot(p_te_d_df$distance_km,p_te_d_df$p_te_d)
 
 
+
+# another way using the exponential decay formula but over distance (what we use)
+p_te_d = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 3){
+    p_te_d[i] = 1-pexp(merged_data$distance_km[i],rate=3)
+  } else {
+    p_te_d[i] = 0
+  }
+}
+summary(p_te_d)
+hist(p_te_d)
+p_te_d_no_zeroes = p_te_d[which(p_te_d != 0)]
+summary(p_te_d_no_zeroes)
+hist(p_te_d_no_zeroes)
+merged_data$p_te_d = p_te_d
+p_te_d_df = merged_data %>%
+  filter(p_te_d != 0)
+plot(p_te_d_df$distance_km,p_te_d_df$p_te_d)
+
+# look at a summary of p_te_d_df
+summary(p_te_d_df$p_te_d)
+
+
+
 #### -------- make the probability TE curve for the time between samples ------- ####
 
 # create a formula for the P(TE) across time
@@ -299,6 +326,34 @@ summary(merged_data$date_difference)
 merged_data$date_difference = as.numeric(merged_data$date_difference)
 merged_data$date_difference_flipped = merged_data$date_difference*-1
 summary(merged_data$date_difference_flipped)
+
+
+# calculate p(TE) using the gaussian distribution formula
+s = 4
+mu = -5
+p_te_t = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$date_difference_flipped[i] >= -18 & merged_data$date_difference_flipped[i] <= 0){
+    p_te_t[i] = (1/(s * sqrt(2*pi))) * exp(-((merged_data$date_difference_flipped[i]-mu)^2)/(2*s^2))
+  } else {
+    p_te_t[i] = 0
+  }
+}
+summary(p_te_t)
+hist(p_te_t)
+p_te_t_no_zeroes = p_te_t[which(p_te_t != 0)]
+summary(p_te_t_no_zeroes)
+hist(p_te_t_no_zeroes)
+merged_data$p_te_t = p_te_t
+p_te_t_df = merged_data %>%
+  filter(p_te_t != 0)
+plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t)
+# calculate the area under the curve
+AUC = trapz(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t) # -14.74347
+sum(p_te_t_df$p_te_t) # 504.6743
+
+
+
 
 # calculate p(TE) for time using an exponential decay formula
 p_te_t = rep(NA,nrow(merged_data))
@@ -378,10 +433,80 @@ plot(p_te_t_df$date_difference,p_te_t_df$p_te_t)
 
 
 
+
+
+#### ------- make a final variable of combined P(TEall) ------- ####
+
+# first play around with a way to combine the pfcsp and pfama1 haplotypes
+p_te_a_c_combo = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$p_te_a[i] != 0 & merged_data$p_te_c[i] != 0){
+    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_a[i])*(1-merged_data$p_te_c[i])
+  } else if (merged_data$p_te_a[i] != 0 & merged_data$p_te_c[i] == 0){
+    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_a[i])
+  } else if (merged_data$p_te_a[i] == 0 & merged_data$p_te_c[i] != 0){
+    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_c[i])
+  } else{
+    p_te_a_c_combo[i] = 0
+  }
+}
+summary(p_te_a_c_combo)
+merged_data$p_te_a_c_combo = p_te_a_c_combo
+length(which(p_te_a_c_combo == 0)) # 60797
+length(which(merged_data$p_te_a == 0 & merged_data$p_te_c == 0)) # 60797
+
+
+# rescale the variables to all have to be between 0 and 1
+summary(merged_data$p_te_a_c_combo)
+summary(merged_data$p_te_d) 
+summary(merged_data$p_te_t)
+# rescale for p_te_a_c_combo
+merged_data$rescaled_p_te_a_c_combo = (merged_data$p_te_a_c_combo-min(merged_data$p_te_a_c_combo))/(max(merged_data$p_te_a_c_combo)-min(merged_data$p_te_a_c_combo))
+hist(merged_data$p_te_a_c_combo)
+hist(merged_data$rescaled_p_te_a_c_combo)
+summary(merged_data$rescaled_p_te_a_c_combo)
+# rescale for p_te_d
+merged_data$rescaled_p_te_d = (merged_data$p_te_d-min(merged_data$p_te_d))/(max(merged_data$p_te_d)-min(merged_data$p_te_d))
+hist(merged_data$p_te_d)
+hist(merged_data$rescaled_p_te_d)
+summary(merged_data$rescaled_p_te_d) # stays same
+# rescale for p_te_t
+merged_data$rescaled_p_te_t = (merged_data$p_te_t-min(merged_data$p_te_t))/(max(merged_data$p_te_t)-min(merged_data$p_te_t))
+hist(merged_data$p_te_t)
+hist(merged_data$rescaled_p_te_t)
+summary(merged_data$rescaled_p_te_t)
+
+
+# make a final variable that is P(TEall)
+# have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
+p_te_all = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$rescaled_p_te_t[i] != 0 & merged_data$rescaled_p_te_d[i] != 0 & merged_data$rescaled_p_te_a_c_combo[i] != 0){
+    p_te_all[i] = merged_data$rescaled_p_te_t[i]*merged_data$rescaled_p_te_d[i]*merged_data$rescaled_p_te_a_c_combo[i]
+  } else {
+    p_te_all[i] = 0
+  }
+}
+summary(p_te_all)
+merged_data$p_te_all = p_te_all
+length(which(p_te_all == 0)) # 167948
+length(which(p_te_all > 0)) # 2262
+length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$rescaled_p_te_a_c_combo != 0)) # 2262
+
+
+# export the data set 
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_16DEC2019.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_16DEC2019.rds")
+
+
+
+
 #### -------- make plots of the distributions --------- ####
 
 # make a plot of p_te_t
-p_te_t_plot = ggplot(data=p_te_t_df,aes(x=date_difference_flipped,y=p_te_t,colour=factor(aim2_exposure))) +
+p_te_t_df = merged_data %>%
+  filter(rescaled_p_te_t != 0)
+p_te_t_plot = ggplot(data=p_te_t_df,aes(x=date_difference_flipped,y=rescaled_p_te_t,colour=factor(aim2_exposure))) +
   geom_point(alpha=0.7) + 
   scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
   labs(colour="Symptomatic status") +
@@ -394,7 +519,9 @@ ggsave(p_te_t_plot, filename="/Users/kelseysumner/Desktop/p_te_t_plot.png", devi
 
 
 # make a plot of p_te_d
-p_te_d_plot = ggplot(data=p_te_d_df,aes(x=distance_km,y=p_te_d,colour=factor(aim2_exposure))) +
+p_te_d_df = merged_data %>%
+  filter(rescaled_p_te_d != 0)
+p_te_d_plot = ggplot(data=p_te_d_df,aes(x=distance_km,y=rescaled_p_te_d,colour=factor(aim2_exposure))) +
   geom_point(alpha=0.7) + 
   scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
   labs(colour="Symptomatic status") +
@@ -408,8 +535,8 @@ ggsave(p_te_d_plot, filename="/Users/kelseysumner/Desktop/p_te_d_plot.png", devi
 
 # make a plot of p_te_a
 p_te_a_df = merged_data %>%
-  filter(p_te_a != 0)
-p_te_a_plot = ggplot(data=p_te_a_df,aes(x=ama_haps_shared,y=p_te_a,colour=factor(aim2_exposure))) +
+  filter(rescaled_p_te_a != 0)
+p_te_a_plot = ggplot(data=p_te_a_df,aes(x=ama_haps_shared,y=rescaled_p_te_a,colour=factor(aim2_exposure))) +
   geom_point(alpha=0.7) + 
   scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
   labs(colour="Symptomatic status") +
@@ -434,6 +561,154 @@ p_te_c_plot = ggplot(data=p_te_c_df,aes(x=csp_haps_shared,y=p_te_c,colour=factor
 p_te_c_plot
 ggsave(p_te_c_plot, filename="/Users/kelseysumner/Desktop/p_te_c_plot.png", device="png",
        height=4, width=7, units="in", dpi=500)
+
+
+
+
+
+
+#### ----------- create a few final plots ------------ ####
+
+
+# make a plot of p_te_a_c_combo
+p_te_a_c_combo_df = merged_data %>%
+  filter(rescaled_p_te_a_c_combo != 0)
+p_te_a_c_combo_plot = ggplot(data=p_te_a_c_combo_df,aes(x=csp_haps_shared,y=p_te_a_c_combo,colour=factor(aim2_exposure))) +
+  geom_point(alpha=0.7) + 
+  scale_colour_manual(values=c("#ff7f00","#e31a1c")) + 
+  labs(colour="Symptomatic status") +
+  theme_bw() + 
+  xlab("Number of pfcsp haplotypes shared") +
+  ylab("P(TE,ac_combo)")
+p_te_a_c_combo_plot
+
+
+# make a plot of p_te_all 
+p_te_all_df = merged_data %>%
+  filter(p_te_all > 0)
+p_te_all_plot = ggplot(data=p_te_all_df,aes(x=p_te_all,fill=factor(aim2_exposure))) +
+  geom_density(alpha=0.6) + 
+  scale_fill_manual(values=c("#ff7f00","#e31a1c")) + 
+  labs(fill="Symptomatic status") +
+  theme_bw() + 
+  xlab("P(TE,all)")
+p_te_all_plot
+ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+
+
+# make a plot of p_te_all that's not stratified
+p_te_all_df = merged_data %>%
+  filter(p_te_all > 0)
+p_te_all_plot = ggplot(data=p_te_all_df,aes(x=p_te_all)) +
+  geom_density(alpha=0.6,fill="#e31a1c") +
+  theme_bw() + 
+  xlab("P(TE,all)")
+p_te_all_plot
+ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_unstratified.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+
+
+# make a plot of p_te_t
+# probability plot
+p_te_t_density_plot = ggplot(data=p_te_t_df,aes(x=rescaled_p_te_t)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("P(TE,t)") +
+  ggtitle("Density of P(TE,t)")
+p_te_t_density_plot
+ggsave(p_te_t_density_plot, filename="/Users/kelseysumner/Desktop/p_te_t_density_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# time plot
+p_te_t_density_plot_x = ggplot(data=p_te_t_df,aes(x=date_difference_flipped)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("Days between human infection and mosquito collection") +
+  ggtitle("Density of observations over time")
+p_te_t_density_plot_x
+ggsave(p_te_t_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_t_density_plot_x.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+
+
+
+# make a plot of p_te_d
+# probability plot
+p_te_d_density_plot = ggplot(data=p_te_d_df,aes(x=rescaled_p_te_d)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("P(TE,d)") +
+  ggtitle("Density of P(TE,d)")
+p_te_d_density_plot
+ggsave(p_te_d_density_plot, filename="/Users/kelseysumner/Desktop/p_te_d_density_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# distance plot
+p_te_d_density_plot_x = ggplot(data=p_te_d_df,aes(x=distance_km)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("Distance (Km) between human infection and mosquito collection") +
+  ggtitle("Density of observations across distance")
+p_te_d_density_plot_x
+ggsave(p_te_d_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_d_density_plot_x.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+
+
+
+# make a plot of p_te_a
+p_te_a_df = merged_data %>%
+  filter(p_te_a > 0)
+# probability plot
+p_te_a_density_plot = ggplot(data=p_te_a_df,aes(x=p_te_a)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("P(TE,a)") +
+  ggtitle("Density of P(TE,a)")
+p_te_a_density_plot
+ggsave(p_te_a_density_plot, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# moi plot
+p_te_a_density_plot_x = ggplot(data=p_te_a_df,aes(x=ama_haps_shared)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("Number of pfama1 haplotypes shared") +
+  ggtitle("Density of observations across number of pfama1 haplotypes shared")
+p_te_a_density_plot_x
+ggsave(p_te_a_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot_x.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# make prevalence plot
+
+
+# make a plot of p_te_c
+p_te_c_df = merged_data %>%
+  filter(p_te_c > 0)
+# probability plot
+p_te_c_density_plot = ggplot(data=p_te_c_df,aes(x=p_te_c)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("P(TE,c)") +
+  ggtitle("Density of P(TE,c)")
+p_te_c_density_plot
+ggsave(p_te_c_density_plot, filename="/Users/kelseysumner/Desktop/p_te_c_density_plot.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# moi plot
+p_te_c_density_plot_x = ggplot(data=p_te_c_df,aes(x=csp_haps_shared)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("Number of pfcsp haplotypes shared") +
+  ggtitle("Density of observations across number of pfcsp haplotypes shared")
+p_te_c_density_plot_x
+ggsave(p_te_c_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_c_density_plot_x.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# make prevalence plot
+
+
+
+
+
+
+
+
+
+
 
 
 
