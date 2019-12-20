@@ -21,7 +21,7 @@ library(lme4)
 
 #### ----- read in the data sets ----- ####
 
-# read in the csp data set for mosquito abdomens
+# read in the combined ama and csp data set for mosquito abdomens
 edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_16DEC2019.rds")
 
 # read in the full human data set
@@ -197,77 +197,105 @@ summary(regular_beta)
 # look at a summary of the outcome variable
 summary(edgelist_data$p_te_all)
 length(which(is.na(edgelist_data$p_te_all)))
-
-# make a binary variable for <0.05 or >= 0.05 
-edgelist_data$outcome_binary_lessthan0.05 = ifelse(edgelist_data$p_te_all < 0.05,"less than 0.05","greater than 0.05")
-table(edgelist_data$outcome_binary_lessthan0.05,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.05, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.05 = factor(edgelist_data$outcome_binary_lessthan0.05)
-levels(edgelist_data$outcome_binary_lessthan0.05)
-edgelist_data$outcome_binary_lessthan0.05 = relevel(edgelist_data$outcome_binary_lessthan0.05,ref = "less than 0.05")
-
-# make a binary variable for <0.025 or >= 0.025
-edgelist_data$outcome_binary_lessthan0.025 = ifelse(edgelist_data$p_te_all < 0.025,"less than 0.025","greater than 0.025")
-table(edgelist_data$outcome_binary_lessthan0.025,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.025, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.025 = factor(edgelist_data$outcome_binary_lessthan0.025)
-levels(edgelist_data$outcome_binary_lessthan0.025)
-edgelist_data$outcome_binary_lessthan0.025 = relevel(edgelist_data$outcome_binary_lessthan0.025,ref = "less than 0.025")
-
-# make a categorical variable for the outcome
-edgelist_data$outcome_categorical = ifelse(edgelist_data$p_te_all < 0.02,"less than 0.02",
-                                           ifelse(edgelist_data$p_te_all >= 0.02 & edgelist_data$p_te_all < 0.04,"0.02 to <0.04",
-                                                  ifelse(edgelist_data$p_te_all >= 0.04 & edgelist_data$p_te_all < 0.06, "0.04 to <0.06",
-                                                         ifelse(edgelist_data$p_te_all >= 0.06 & edgelist_data$p_te_all < 0.08, "0.06 to <0.08",
-                                                                "0.08 to 0.10"))))
-table(edgelist_data$outcome_categorical, useNA = "always")
-edgelist_data$outcome_categorical = factor(edgelist_data$outcome_categorical)
-levels(edgelist_data$outcome_categorical)
-edgelist_data$outcome_categorical = relevel(edgelist_data$outcome_categorical,"less than 0.02")
-
-# make a binary variable for <0.01 or >= 0.01
-edgelist_data$outcome_binary_lessthan0.01 = ifelse(edgelist_data$p_te_all < 0.01,"less than 0.01","greater than 0.01")
-table(edgelist_data$outcome_binary_lessthan0.01,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.01, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.01 = factor(edgelist_data$outcome_binary_lessthan0.01)
-levels(edgelist_data$outcome_binary_lessthan0.01)
-edgelist_data$outcome_binary_lessthan0.01 = relevel(edgelist_data$outcome_binary_lessthan0.01,ref = "less than 0.01")
+hist(edgelist_data$p_te_all)
 
 
-# make a binary variable for <0.015 or >= 0.015
-edgelist_data$outcome_binary_lessthan0.015 = ifelse(edgelist_data$p_te_all < 0.015,"less than 0.015","greater than 0.015")
-table(edgelist_data$outcome_binary_lessthan0.015,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.015, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.015 = factor(edgelist_data$outcome_binary_lessthan0.015)
-levels(edgelist_data$outcome_binary_lessthan0.015)
-edgelist_data$outcome_binary_lessthan0.015 = relevel(edgelist_data$outcome_binary_lessthan0.015,ref = "less than 0.015")
+# make a binary variable for <0.1 or >= 0.1
+edgelist_data$outcome_binary_lessthan0.1 = ifelse(edgelist_data$p_te_all < 0.1,"less than 0.1","greater than 0.1")
+table(edgelist_data$outcome_binary_lessthan0.1,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.1, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.1 = factor(edgelist_data$outcome_binary_lessthan0.1)
+levels(edgelist_data$outcome_binary_lessthan0.1)
+edgelist_data$outcome_binary_lessthan0.1 = relevel(edgelist_data$outcome_binary_lessthan0.1,ref = "less than 0.1")
+
+# make a binary variable for <0.2 or >= 0.2
+edgelist_data$outcome_binary_lessthan0.2 = ifelse(edgelist_data$p_te_all < 0.2,"less than 0.2","greater than 0.2")
+table(edgelist_data$outcome_binary_lessthan0.2,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.2, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.2 = factor(edgelist_data$outcome_binary_lessthan0.2)
+levels(edgelist_data$outcome_binary_lessthan0.2)
+edgelist_data$outcome_binary_lessthan0.2 = relevel(edgelist_data$outcome_binary_lessthan0.2,ref = "less than 0.2")
+
+# make a binary variable for <0.3 or >= 0.3
+edgelist_data$outcome_binary_lessthan0.3 = ifelse(edgelist_data$p_te_all < 0.3,"less than 0.3","greater than 0.3")
+table(edgelist_data$outcome_binary_lessthan0.3,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.3, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.3 = factor(edgelist_data$outcome_binary_lessthan0.3)
+levels(edgelist_data$outcome_binary_lessthan0.3)
+edgelist_data$outcome_binary_lessthan0.3 = relevel(edgelist_data$outcome_binary_lessthan0.3,ref = "less than 0.3")
+
+# make a binary variable for <0.4 or >= 0.4
+edgelist_data$outcome_binary_lessthan0.4 = ifelse(edgelist_data$p_te_all < 0.4,"less than 0.4","greater than 0.4")
+table(edgelist_data$outcome_binary_lessthan0.4,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.4, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.4 = factor(edgelist_data$outcome_binary_lessthan0.4)
+levels(edgelist_data$outcome_binary_lessthan0.4)
+edgelist_data$outcome_binary_lessthan0.4 = relevel(edgelist_data$outcome_binary_lessthan0.4,ref = "less than 0.4")
+
+# make a binary variable for <0.5 or >= 0.5
+edgelist_data$outcome_binary_lessthan0.5 = ifelse(edgelist_data$p_te_all < 0.5,"less than 0.5","greater than 0.5")
+table(edgelist_data$outcome_binary_lessthan0.5,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.5, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.5 = factor(edgelist_data$outcome_binary_lessthan0.5)
+levels(edgelist_data$outcome_binary_lessthan0.5)
+edgelist_data$outcome_binary_lessthan0.5 = relevel(edgelist_data$outcome_binary_lessthan0.5,ref = "less than 0.5")
+
+# make a binary variable for <0.6 or >= 0.6
+edgelist_data$outcome_binary_lessthan0.6 = ifelse(edgelist_data$p_te_all < 0.6,"less than 0.6","greater than 0.6")
+table(edgelist_data$outcome_binary_lessthan0.6,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.6, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.6 = factor(edgelist_data$outcome_binary_lessthan0.6)
+levels(edgelist_data$outcome_binary_lessthan0.6)
+edgelist_data$outcome_binary_lessthan0.6 = relevel(edgelist_data$outcome_binary_lessthan0.6,ref = "less than 0.6")
+
+# make a binary variable for <0.7 or >= 0.7
+edgelist_data$outcome_binary_lessthan0.7 = ifelse(edgelist_data$p_te_all < 0.7,"less than 0.7","greater than 0.7")
+table(edgelist_data$outcome_binary_lessthan0.7,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.7, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.7 = factor(edgelist_data$outcome_binary_lessthan0.7)
+levels(edgelist_data$outcome_binary_lessthan0.7)
+edgelist_data$outcome_binary_lessthan0.7 = relevel(edgelist_data$outcome_binary_lessthan0.7,ref = "less than 0.7")
+
+# make a binary variable for <0.8 or >= 0.8
+edgelist_data$outcome_binary_lessthan0.8 = ifelse(edgelist_data$p_te_all < 0.8,"less than 0.8","greater than 0.8")
+table(edgelist_data$outcome_binary_lessthan0.8,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.8, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.8 = factor(edgelist_data$outcome_binary_lessthan0.8)
+levels(edgelist_data$outcome_binary_lessthan0.8)
+edgelist_data$outcome_binary_lessthan0.8 = relevel(edgelist_data$outcome_binary_lessthan0.8,ref = "less than 0.8")
+
+# make a binary variable for <0.9 or >= 0.9
+edgelist_data$outcome_binary_lessthan0.9 = ifelse(edgelist_data$p_te_all < 0.9,"less than 0.9","greater than 0.9")
+table(edgelist_data$outcome_binary_lessthan0.9,edgelist_data$p_te_all,useNA = "always")
+table(edgelist_data$outcome_binary_lessthan0.9, useNA = "always")
+edgelist_data$outcome_binary_lessthan0.9 = factor(edgelist_data$outcome_binary_lessthan0.9)
+levels(edgelist_data$outcome_binary_lessthan0.9)
+edgelist_data$outcome_binary_lessthan0.9 = relevel(edgelist_data$outcome_binary_lessthan0.9,ref = "less than 0.9")
 
 
-# make a binary variable for <0.02 or >= 0.02
-edgelist_data$outcome_binary_lessthan0.02 = ifelse(edgelist_data$p_te_all < 0.02,"less than 0.02","greater than 0.02")
-table(edgelist_data$outcome_binary_lessthan0.02,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.02, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.02 = factor(edgelist_data$outcome_binary_lessthan0.02)
-levels(edgelist_data$outcome_binary_lessthan0.02)
-edgelist_data$outcome_binary_lessthan0.02 = relevel(edgelist_data$outcome_binary_lessthan0.02,ref = "less than 0.02")
+
+# make a categorical variable for the outcome with 5 categories
+edgelist_data$outcome_categorical_5 = ifelse(edgelist_data$p_te_all < 0.2,"less than 0.2",
+                                           ifelse(edgelist_data$p_te_all >= 0.2 & edgelist_data$p_te_all < 0.4,"0.2 to <0.4",
+                                                  ifelse(edgelist_data$p_te_all >= 0.4 & edgelist_data$p_te_all < 0.6, "0.4 to <0.6",
+                                                         ifelse(edgelist_data$p_te_all >= 0.6 & edgelist_data$p_te_all < 0.8, "0.6 to <0.8",
+                                                                "0.8 to 1.00"))))
+table(edgelist_data$outcome_categorical_5, useNA = "always")
+edgelist_data$outcome_categorical_5 = factor(edgelist_data$outcome_categorical_5)
+levels(edgelist_data$outcome_categorical_5)
+edgelist_data$outcome_categorical_5 = relevel(edgelist_data$outcome_categorical_5,"less than 0.2")
 
 
-# make a binary variable for <0.03 or >= 0.03
-edgelist_data$outcome_binary_lessthan0.03 = ifelse(edgelist_data$p_te_all < 0.03,"less than 0.03","greater than 0.03")
-table(edgelist_data$outcome_binary_lessthan0.03,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.03, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.03 = factor(edgelist_data$outcome_binary_lessthan0.03)
-levels(edgelist_data$outcome_binary_lessthan0.03)
-edgelist_data$outcome_binary_lessthan0.03 = relevel(edgelist_data$outcome_binary_lessthan0.03,ref = "less than 0.03")
+# make a categorical variable for the outcome with 4 categories
+edgelist_data$outcome_categorical_4 = ifelse(edgelist_data$p_te_all < 0.25,"less than 0.25",
+                                           ifelse(edgelist_data$p_te_all >= 0.25 & edgelist_data$p_te_all < 0.5,"0.25 to <0.5",
+                                                  ifelse(edgelist_data$p_te_all >= 0.5 & edgelist_data$p_te_all < 0.75, "0.5 to <0.75",
+                                                                "0.75 to 1.00")))
+table(edgelist_data$outcome_categorical_4, useNA = "always")
+edgelist_data$outcome_categorical_4 = factor(edgelist_data$outcome_categorical_4)
+levels(edgelist_data$outcome_categorical_4)
+edgelist_data$outcome_categorical_4 = relevel(edgelist_data$outcome_categorical_4,"less than 0.25")
 
-
-# make a binary variable for <0.035 or >= 0.035
-edgelist_data$outcome_binary_lessthan0.035 = ifelse(edgelist_data$p_te_all < 0.035,"less than 0.035","greater than 0.035")
-table(edgelist_data$outcome_binary_lessthan0.03,edgelist_data$p_te_all,useNA = "always")
-table(edgelist_data$outcome_binary_lessthan0.03, useNA = "always")
-edgelist_data$outcome_binary_lessthan0.03 = factor(edgelist_data$outcome_binary_lessthan0.03)
-levels(edgelist_data$outcome_binary_lessthan0.03)
-edgelist_data$outcome_binary_lessthan0.03 = relevel(edgelist_data$outcome_binary_lessthan0.03,ref = "less than 0.03")
 
 
 
@@ -283,19 +311,106 @@ model1 <- glmer(p_te_all~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline
 summary(model1)
 # did not work - singular fit
 
-# binary outcome <0.05 with a logistic model
-model.05 <- glmer(outcome_binary_lessthan0.05~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
-summary(model.05)
+# binary outcome <0.1 with a logistic model
+model.1 <- glmer(outcome_binary_lessthan0.1~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.1)
+exp(0.26213)
+exp(confint(model.1, devtol=c(1e-7)))
 # converged
 
-# binary outcome <0.025 with a logistic model
-model.025 <- glmer(outcome_binary_lessthan0.025~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
-summary(model.025)
+# binary outcome <0.2 with a logistic model
+model.2 <- glmer(outcome_binary_lessthan0.2~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.2)
+exp(0.19470)
+exp(confint(model.2, devtol=c(1e-7)))
 # converged
 
-# categorical outcome with a logistic model
-modelcat <- glmer(outcome_categorical~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
-summary(modelcat)
+# binary outcome <0.3 with a logistic model
+model.3 <- glmer(outcome_binary_lessthan0.3~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.3)
+exp(0.12142)
+exp(confint(model.3, devtol=c(1e-7)))
 # converged
+
+# binary outcome <0.4 with a logistic model
+model.4 <- glmer(outcome_binary_lessthan0.4~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.4)
+exp(0.3378)
+exp(confint(model.4, devtol=c(1e-7)))
+# converged
+
+# binary outcome <0.5 with a logistic model
+model.5 <- glmer(outcome_binary_lessthan0.5~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.5)
+exp(0.9646)
+exp(confint(model.5, devtol=c(1e-7)))
+# converged
+
+# binary outcome <0.6 with a logistic model
+model.6 <- glmer(outcome_binary_lessthan0.6~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.6)
+exp(0.9859)
+exp(confint(model.6, devtol=c(1e-7)))
+# converged
+
+# binary outcome <0.7 with a logistic model
+model.7 <- glmer(outcome_binary_lessthan0.7~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.7)
+exp(1.0666)
+exp(confint(model.7, devtol=c(1e-7)))
+# converged
+
+# binary outcome <0.8 with a logistic model
+model.8 <- glmer(outcome_binary_lessthan0.8~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.8)
+exp(0.9314)
+exp(confint(model.8, devtol=c(1e-6)))
+# converged
+
+# binary outcome <0.9 with a logistic model
+model.9 <- glmer(outcome_binary_lessthan0.9~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(model.9)
+# model did not converge
+
+# categorical outcome with a logistic model - 4 categories
+modelcat_4 <- glmer(outcome_categorical_4~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(modelcat_4)
+exp(0.09023)
+exp(confint(modelcat_4, devtol=c(1e-7)))
+# converged
+
+# categorical outcome with a logistic model - 5 categories
+modelcat_5 <- glmer(outcome_categorical_5~aim2_exposure+pfr364Q_std_combined_cat+age_cat_baseline + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = edgelist_data)
+summary(modelcat_5)
+exp(0.19470)
+exp(confint(modelcat_5, devtol=c(1e-7)))
+# converged
+
+# read in the model results
+model_results = read_csv("Desktop/computational_model_materials/aim2_binary_outcome_sensitivity_analysis.csv")
+
+# subset to just binary results for now
+model_results_binary = model_results[-which(model_results$binary_outcome == "4 categories" | model_results$binary_outcome == "5 categories"),]
+
+# make a plot of the results
+model_results$binary_outcome = as.factor(model_results$binary_outcome)
+model_plot = ggplot(data=model_results_binary, aes(x=binary_outcome, y=estimate)) + 
+  geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.1) +
+  geom_line() +
+  geom_point() + 
+  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12)) +
+  theme_bw() +
+  ylab("Point estimate - Odds ratio") +
+  xlab("Binary outcome coding") + 
+  coord_flip() +
+  geom_hline(yintercept=1,linetype="dashed")
+model_plot
+ggsave(model_plot, filename="/Users/kelseysumner/Desktop/model_plot.png", device="png",
+       height=7, width=8, units="in", dpi=500)
+
+
+
+
+
 
 

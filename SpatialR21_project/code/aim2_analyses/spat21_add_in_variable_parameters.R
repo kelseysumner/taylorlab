@@ -316,6 +316,34 @@ summary(p_te_d_df$p_te_d)
 
 
 
+# another way using the exponential decay formula but over distance (what we use) - this is testing out the equation
+# out actual equation is y=e^(-3x)
+p_te_d = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 3){
+    p_te_d[i] = exp(-merged_data$distance_km[i]*3)
+  } else {
+    p_te_d[i] = 0
+  }
+}
+summary(p_te_d)
+hist(p_te_d)
+p_te_d_no_zeroes = p_te_d[which(p_te_d != 0)]
+summary(p_te_d_no_zeroes)
+hist(p_te_d_no_zeroes)
+merged_data$p_te_d = p_te_d
+p_te_d_df = merged_data %>%
+  filter(p_te_d != 0)
+plot(p_te_d_df$distance_km,p_te_d_df$p_te_d)
+
+# look at a summary of p_te_d_df
+summary(p_te_d_df$p_te_d)
+
+
+
+
+
+
 #### -------- make the probability TE curve for the time between samples ------- ####
 
 # create a formula for the P(TE) across time
@@ -704,8 +732,27 @@ ggsave(p_te_c_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_c_densi
 
 
 
+#### -------- make density plot of haplotype prevalence --------- ####
 
-
+# make plots of the haplotype prevalence distributions
+# for ama
+p_te_a_density_plot_prev = ggplot(data=ama_hap_summary,aes(x=ama_hap_prevalence)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("Pfama1 haplotype prevalence") +
+  ggtitle("Density of pfama1 haplotype prevalence")
+p_te_a_density_plot_prev
+ggsave(p_te_a_density_plot_prev, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot_prev.png", device="png",
+       height=4, width=7, units="in", dpi=500)
+# for csp
+p_te_c_density_plot_prev = ggplot(data=csp_hap_summary,aes(x=csp_hap_prevalence)) +
+  geom_density(alpha=0.6,fill=c("#ff7f00")) + 
+  theme_bw() + 
+  xlab("Pfcsp haplotype prevalence") +
+  ggtitle("Density of pfcsp haplotype prevalence")
+p_te_c_density_plot_prev
+ggsave(p_te_c_density_plot_prev, filename="/Users/kelseysumner/Desktop/p_te_c_density_plot_prev.png", device="png",
+       height=4, width=7, units="in", dpi=500)
 
 
 
