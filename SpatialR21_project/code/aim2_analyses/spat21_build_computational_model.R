@@ -16,6 +16,7 @@ library(readr)
 library(tidyr)
 library(betareg)
 library(lme4)
+library(ggplot2)
 
 
 
@@ -155,20 +156,29 @@ table(edgelist_data$pfr364Q_std_combined_cat, useNA = "always")
 edgelist_data$pfr364Q_std_combined_cat = as.factor(edgelist_data$pfr364Q_std_combined_cat)
 edgelist_data$pfr364Q_std_combined_cat = relevel(edgelist_data$pfr364Q_std_combined_cat,ref="less than 100 p/uL")
 
-# subset the data set to only look at observations where the probability of transmission > 0 (P(TEall) > 0)
+# subset the data set to only look at observations where the probability of transmission > 0 based on distance and time
+# (P(TEd) > 0 and P(TEt) > 0)
 edgelist_data = edgelist_data %>%
-  filter(p_te_all > 0)
+  filter(p_te_d > 0 & p_te_t > 0)
 summary(edgelist_data$p_te_all)
+summary(edgelist_data$p_te_t)
 
 # export the data set
-# write_csv(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_17DEC2019.csv")
-# write_rds(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_17DEC2019.rds")
+# write_csv(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_7JAN2020.csv")
+# write_rds(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_7JAN2020.rds")
 
 
 #### ----- work with the regular models ------ ####
 
 # look at distribution of p_te_all
 hist(edgelist_data$p_te_all)
+p_te_all_plot = ggplot(data=edgelist_data,aes(x=p_te_all)) +
+  geom_density(alpha=0.6,fill="#e31a1c") +
+  theme_bw() + 
+  xlab("P(TE,all)")
+p_te_all_plot
+# ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_unstratified.png", device="png",
+       # height=4, width=7, units="in", dpi=500)
 # looks very right-skewed
 # could be a beta distribution
 # options for models: 1. log binomial model or 2. beta model
