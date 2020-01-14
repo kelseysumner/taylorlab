@@ -129,7 +129,12 @@ merged_data$p_te_a = p_te_a
 
 #### -------- make the probability TE curve for the time between samples ------- ####
 
+# read back in the data set
+merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/spat21_merged_data_interim.rds")
+
+
 # create a formula for the P(TE) across time
+# our actual equation is y=e^(-3x)
 
 # set up the variables
 summary(merged_data$date_difference)
@@ -138,13 +143,13 @@ merged_data$date_difference_flipped = merged_data$date_difference*-1
 summary(merged_data$date_difference_flipped)
 
 
-# calculate p(TE) using the gaussian distribution formula
-s = 4
-mu = -5
+
+# calculate p(TE) using the logistic function
+# equation: Y = 1/(1+0.6e^(-x-16)))
 p_te_t = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
   if (merged_data$date_difference_flipped[i] >= -18 & merged_data$date_difference_flipped[i] <= 0){
-    p_te_t[i] = (1/(s * sqrt(2*pi))) * exp(-((merged_data$date_difference_flipped[i]-mu)^2)/(2*s^2))
+    p_te_t[i] = 1/(1+0.6*exp(-merged_data$date_difference_flipped[i]-16))
   } else {
     p_te_t[i] = 0
   }
@@ -157,10 +162,9 @@ hist(p_te_t_no_zeroes)
 merged_data$p_te_t = p_te_t
 p_te_t_df = merged_data %>%
   filter(p_te_t != 0)
-plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t)
-# calculate the area under the curve
-AUC = trapz(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t) # -14.74347
-sum(p_te_t_df$p_te_t) # 504.6743
+plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t,xlab = "Days between human infection and mosquito collection",ylab="P(TE)")
+abline(v=-14,col="dark red",lwd=1.5)
+
 
 
 
@@ -246,7 +250,7 @@ summary(merged_data$rescaled_p_te_d) # stays same
 merged_data$rescaled_p_te_t = (merged_data$p_te_t-min(merged_data$p_te_t))/(max(merged_data$p_te_t)-min(merged_data$p_te_t))
 hist(merged_data$p_te_t)
 hist(merged_data$rescaled_p_te_t)
-summary(merged_data$rescaled_p_te_t)
+summary(merged_data$rescaled_p_te_t) # stays same
 
 
 # make a final variable that is P(TEall)
@@ -261,14 +265,14 @@ for (i in 1:nrow(merged_data)){
 }
 summary(p_te_all)
 merged_data$p_te_all = p_te_all
-length(which(p_te_all == 0)) # 167948
+length(which(p_te_all == 0)) # 168392
 length(which(p_te_all > 0)) # 2262
 length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$rescaled_p_te_a_c_combo != 0)) # 2262
 
 
 # export the data set 
-# write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_16DEC2019.csv")
-# write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_16DEC2019.rds")
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
 
 
 

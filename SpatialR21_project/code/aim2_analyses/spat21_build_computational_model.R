@@ -23,7 +23,7 @@ library(ggplot2)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_16DEC2019.rds")
+edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
 
 # read in the full human data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
@@ -164,8 +164,8 @@ summary(edgelist_data$p_te_all)
 summary(edgelist_data$p_te_t)
 
 # export the data set
-# write_csv(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_7JAN2020.csv")
-# write_rds(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_7JAN2020.rds")
+write_csv(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_14JAN2020.csv")
+write_rds(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_14JAN2020.rds")
 
 
 #### ----- work with the regular models ------ ####
@@ -177,8 +177,8 @@ p_te_all_plot = ggplot(data=edgelist_data,aes(x=p_te_all)) +
   theme_bw() + 
   xlab("P(TE,all)")
 p_te_all_plot
-# ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_unstratified.png", device="png",
-       # height=4, width=7, units="in", dpi=500)
+ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_unstratified.png", device="png",
+       height=4, width=7, units="in", dpi=500)
 # looks very right-skewed
 # could be a beta distribution
 # options for models: 1. log binomial model or 2. beta model

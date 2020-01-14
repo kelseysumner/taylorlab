@@ -35,6 +35,73 @@ csp_passed = read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_csp_haplot
 
 #### ------- clean up the ama and csp passed data sets to just the info you need -------- ####
 
+# clean up the sample IDs in the full inventory
+# now clean up the lab id for Sample Name
+table(full_inventory$`Sample ID`, useNA = "always")
+table(nchar(full_inventory$`Sample ID`), useNA = "always")
+length(which(is.na(full_inventory$`Sample ID`))) # 0 missing IDs
+# most sample names are 12 characters or 14 long but range from 10 to 15
+# clean up the Sample Names
+clean_sample_id = rep(NA,nrow(full_inventory))
+for (i in 1:nrow(full_inventory)){
+  if (full_inventory$`Sample ID`[i] == "K01- A00043"){
+    clean_sample_id[i] = "K01 A00043"
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 10 & !(is.na(full_inventory$`Sample ID`[i])) & !(str_detect(full_inventory$`Sample ID`[i],"A") | str_detect(full_inventory$`Sample ID`[i],"H"))){
+    clean_sample_id[i] = full_inventory$`Sample ID`[i]
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 10 & !(is.na(full_inventory$`Sample ID`[i])) & (str_detect(full_inventory$`Sample ID`[i],"A") | str_detect(full_inventory$`Sample ID`[i],"H")) & str_detect(full_inventory$`Sample ID`[i],"-")){
+    new_name = strsplit(full_inventory$`Sample ID`[i],"-")[[1]]
+    clean_sample_id[i] = paste0(new_name[1]," ",new_name[2])
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 10 & !(is.na(full_inventory$`Sample ID`[i])) & (str_detect(full_inventory$`Sample ID`[i],"A") | str_detect(full_inventory$`Sample ID`[i],"H")) & !(str_detect(full_inventory$`Sample ID`[i],"-"))){
+    new_name = strsplit(full_inventory$`Sample ID`[i]," ")[[1]]
+    clean_sample_id[i] = paste0(new_name[1]," ",new_name[2])
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 11 & !(is.na(full_inventory$`Sample ID`[i])) & full_inventory$`Sample ID`[i] != "K01- A00043"){
+    parts = strsplit(full_inventory$`Sample ID`[i],"-")[[1]]
+    clean_sample_id[i] = toupper(paste0(parts[1],"-","0",parts[2],"-",parts[3]))
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 12 & !(is.na(full_inventory$`Sample ID`[i]))){
+    clean_sample_id[i] = toupper(full_inventory$`Sample ID`[i])
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 13 & str_count(full_inventory$`Sample ID`[i], "-") == 2 & !(is.na(full_inventory$`Sample ID`[i]))){
+    clean_sample_id[i] = toupper(full_inventory$`Sample ID`[i])
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 14 & !(is.na(full_inventory$`Sample ID`[i]))){
+    parts = strsplit(full_inventory$`Sample ID`[i],"-")[[1]]
+    if (parts[4] != "R" & !(is.na(parts[4]))){
+      clean_sample_id[i] = toupper(paste0(parts[3],"-",parts[2],"-",parts[4],"-",parts[1]))
+    } else {
+      clean_sample_id[i] = full_inventory$`Sample ID`[i]
+    }
+  }
+  if (nchar(full_inventory$`Sample ID`[i]) == 15 & !(is.na(full_inventory$`Sample ID`[i]))){
+    parts = strsplit(full_inventory$`Sample ID`[i],"-")[[1]]
+    if (parts[4] != "R" & !(is.na(parts[4]))){
+      clean_sample_id[i] = toupper(paste0(parts[3],"-",parts[2],"-",parts[4],"-",parts[1]))
+    } else {
+      clean_sample_id[i] = full_inventory$`Sample ID`[i]
+    }
+  }
+}
+# check the recode
+table(clean_sample_id, useNA = "always")
+length(which(is.na(clean_sample_id))) # 12 missing
+table(nchar(clean_sample_id))
+# check the recoding
+recode_check = data.frame(full_inventory$`Sample ID`,clean_sample_id)
+# add the recode to the data set
+full_inventory$`Sample ID` = clean_sample_id
+
+# check for duplicates in full inventory
+length(unique(full_inventory$`Sample ID`)) # 1523 unique 
+length(which(is.na(full_inventory$`Sample ID`) == T)) # 12 missing
+count_table = table(full_inventory$`Sample ID`, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # blanks are duplicates but also some sample ids are duplicates
+dups_table
+# duplicates because sequencing pilot study twice
+
 # set up the mosquito_data data set
 mosquito_data = mosquito_data %>%
   select(sample_id_abdomen,pfr364Q_combined_a,sample_id_head,pfr364Q_combined_h)
@@ -114,12 +181,12 @@ ama_sequencing_data = ama_sequencing_data %>%
     !(is.na(pfr364Q_combined_a)),pfr364Q_combined_a,pfr364Q_combined_h
   ))) %>%
   select(-c(pfr364Q_combined_a,pfr364Q_combined_h,pfr364Q_std_combined))
-length(which(is.na(ama_sequencing_data$pfr364_all_new))) # 146 missing because some miscoded
+length(which(is.na(ama_sequencing_data$pfr364_all_new))) # 48 missing because some miscoded
 ama_sequencing_data = ama_sequencing_data %>%
   mutate(pfr364_all_final = ifelse(!(is.na(pfr364_all)),pfr364_all,ifelse(
     !(is.na(pfr364_all_new)),pfr364_all_new,NA
   )))
-length(which(is.na(ama_sequencing_data$pfr364_all_final))) # 69 missing now 
+length(which(is.na(ama_sequencing_data$pfr364_all_final))) # 30 missing now 
 ama_sequencing_data$pfr364_all <- NULL
 ama_sequencing_data$pfr364_all_new <- NULL
 
@@ -132,12 +199,12 @@ csp_sequencing_data = csp_sequencing_data %>%
     !(is.na(pfr364Q_combined_a)),pfr364Q_combined_a,pfr364Q_combined_h
   ))) %>%
   select(-c(pfr364Q_combined_a,pfr364Q_combined_h,pfr364Q_std_combined))
-length(which(is.na(csp_sequencing_data$pfr364_all_new))) # 146 missing because some miscoded
+length(which(is.na(csp_sequencing_data$pfr364_all_new))) # 48 missing because some miscoded
 csp_sequencing_data = csp_sequencing_data %>%
   mutate(pfr364_all_final = ifelse(!(is.na(pfr364_all)),pfr364_all,ifelse(
     !(is.na(pfr364_all_new)),pfr364_all_new,NA
   )))
-length(which(is.na(csp_sequencing_data$pfr364_all_final))) # 76 missing now 
+length(which(is.na(csp_sequencing_data$pfr364_all_final))) # 26 missing now 
 csp_sequencing_data$pfr364_all <- NULL
 csp_sequencing_data$pfr364_all_new <- NULL
 
@@ -150,7 +217,6 @@ table(ama_sequencing_data$pfr364_cat,ama_sequencing_data$pfr364_all_final)
 csp_sequencing_data = csp_sequencing_data %>%
   mutate(pfr364_cat = ifelse(is.na(pfr364_all_final),NA,ifelse(pfr364_all_final < 100 & pfr364_all_final > 0,"<100",">= 100")))
 table(csp_sequencing_data$pfr364_cat,csp_sequencing_data$pfr364_all_final)
-
 
 
 
@@ -169,7 +235,7 @@ table(csp_sequencing_data$run,csp_sequencing_data$passed_sequencing, useNA = "al
 table(ama_sequencing_data$pfr364_cat,ama_sequencing_data$passed_sequencing, useNA = "always")
 # for csp
 table(csp_sequencing_data$pfr364_cat,csp_sequencing_data$passed_sequencing, useNA = "always")
-# note: made notes in blue notebook for these results (January 7, 2020)
+# note: made notes in teal blue notebook for these results (January 7, 2020)
 
 
 # look at the average difference between those who failed and those who passed sequencing
@@ -195,7 +261,26 @@ wilcox.test(pfr364_all_final ~ passed_sequencing,ama_sequencing_data)
 # test the average difference in parasite density between passed and failed for csp
 wilcox.test(pfr364_all_final ~ passed_sequencing,csp_sequencing_data)
 
+# look at box plot of those that failed vs. passed for ama
+boxplot(ama_failed_data$pfr364_all_final,ama_passed_data$pfr364_all_final)
+median(ama_failed_data$pfr364_all_final,na.rm = T)
+median(ama_passed_data$pfr364_all_final,na.rm = T)
+mean(ama_failed_data$pfr364_all_final,na.rm = T)
+mean(ama_passed_data$pfr364_all_final,na.rm = T)
 
+# look at box plot of those that failed vs. passed for csp
+boxplot(csp_failed_data$pfr364_all_final,csp_passed_data$pfr364_all_final)
+median(csp_failed_data$pfr364_all_final,na.rm = T)
+median(csp_passed_data$pfr364_all_final,na.rm = T)
+mean(csp_failed_data$pfr364_all_final,na.rm = T)
+mean(csp_passed_data$pfr364_all_final,na.rm = T)
+summary(csp_failed_data$pfr364_all_final)
+summary(csp_passed_data$pfr364_all_final)
 
-
-
+# double check that no duplicates
+length(unique(ama_failed_data$MiSeq.ID))
+length(unique(ama_passed_data$MiSeq.ID))
+length(unique(csp_passed_data$MiSeq.ID))
+length(unique(csp_failed_data$MiSeq.ID))
+intersect(ama_failed_data$MiSeq.ID,ama_passed$MiSeq.ID)
+intersect(csp_failed_data$MiSeq.ID,csp_passed$MiSeq.ID)
