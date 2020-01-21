@@ -106,120 +106,22 @@ dups_table
 inventory_data = inventory_data[-which(inventory_data$`sample ID` == "Blank" | inventory_data$`sample ID` == "BLANK"),]
 # K0040A is duplicated 89 times (an entire plate) - remove this plate for now (EMB - 28B) while we sort it out, will add back in later
 inventory_data = inventory_data[-which(inventory_data$`gDNA plate ID` == "EMB - 28B"),]
-# for each of the duplicates that only appear twice, choose the first plate or instance the sample appears on to keep, the rest remove
-# G0009B
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0009B" & inventory_data$column=="3"),]
-# G0015
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0015" & inventory_data$column=="8"),]
-# G0033
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0033" & inventory_data$column=="11"),]
-# G0066C
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0066C" & inventory_data$column=="10"),]
-# G0125C
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0125C" & inventory_data$column=="2"),]
-# G0136
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0136" & inventory_data$column=="6"),]
-# G0261
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0261" & inventory_data$column=="11"),]
-# G0265A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0265A" & inventory_data$column=="10"),]
-# G0276B
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0276B" & inventory_data$column=="10"),]
-# G0293A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0293A" & inventory_data$column=="2"),]
-# G0296A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0296A" & inventory_data$`gDNA plate ID`=="EMB - 23B"),]
-# G0296B
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0296B" & inventory_data$`gDNA plate ID`=="EMB - 23B"),]
-# G0306A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0306A" & inventory_data$`gDNA plate ID`=="EMB - 23B"),]
-# G0339C
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0339C" & inventory_data$column == "5"),]
-# G0393B
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0393B" & inventory_data$column == "11"),]
-# G0397D
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0397D" & inventory_data$column == "2"),]
-# G0501
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="G0501" & inventory_data$column == "7"),]
-# GO233A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="GO233A" & inventory_data$`gDNA plate ID`=="EMB - 23B"),]
-# K0070
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0070" & inventory_data$column=="1"),]
-# K0105
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0105" & inventory_data$row=="C"),]
-# K0119C
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0119C" & inventory_data$column=="3"),]
-# K0225A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0225A" & inventory_data$column=="4"),]
-# K0226A
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0226A" & inventory_data$column=="11"),]
-# K0313
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0313" & inventory_data$column=="12"),]
-# K0321
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0321" & inventory_data$column=="10"),]
-# K0325
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0325" & inventory_data$column=="11"),]
-# K0344
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="K0344" & inventory_data$`gDNA plate ID`=="EMB - 41B"),]
-# M0024
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="M0024" & inventory_data$column=="8"),]
-# M0046E
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="M0046E" & inventory_data$column=="7"),]
-# M0214
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="M0214" & inventory_data$column=="11"),]
-# M0322
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="M0322" & inventory_data$column=="8"),]
-# N0020
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="N0020" & inventory_data$column=="1"),]
-# N0048H
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="N0048H" & inventory_data$column=="9"),]
-# N0069
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="N0069" & inventory_data$column=="3"),]
-# N0084
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="N0084" & inventory_data$column=="2"),]
-# P0033
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="P0033" & inventory_data$column=="4"),]
-# P0059
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="P0059" & inventory_data$column=="11"),]
-# P0156
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="P0156" & inventory_data$column=="5"),]
-# S0024B
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="S0024B" & inventory_data$column=="8"),]
-# S0037
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="S0037" & inventory_data$column=="5"),]
-# S0145
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="S0145" & inventory_data$column=="6"),]
-# S0233C
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="S0233C" & inventory_data$column=="10"),]
-# T0117
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0117" & inventory_data$row=="F"),]
-# T0315
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0315" & inventory_data$column=="8"),]
-# T0316
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0316" & inventory_data$column=="2"),]
-# T0317
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0317" & inventory_data$column=="11"),]
-# T0318
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0318" & inventory_data$column=="7"),]
-# T0319
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0319" & inventory_data$column=="6"),]
-# T0320
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0320" & inventory_data$column=="10"),]
-# T0764
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T0764" & inventory_data$row=="F"),]
-# T1152
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T1152" & inventory_data$column=="9"),]
-# T1494
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T1494" & inventory_data$column=="6"),]
-# T1503
-inventory_data = inventory_data[-which(inventory_data$`sample ID`=="T1503" & inventory_data$column=="12"),]
-# check again for duplicates
+# for each of the duplicates that only appear twice, remove and put in a separate list
 length(unique(inventory_data$`sample ID`)) # 5732 unique 
 length(which(is.na(inventory_data$`sample ID`) == T)) # 0 missing
 count_table = table(inventory_data$`sample ID`, useNA = "always")
-dups_table = count_table[which(count_table > 1)] # no more duplicates
+dups_table = count_table[which(count_table > 1)] # more duplicates
 dups_table
-
+names(dups_table)
+inventory_data = inventory_data[-which(inventory_data$`sample ID` %in% names(dups_table)),]
+ids_to_remove = names(dups_table)
+# 5785 - 106 = 5679 (correct)
+# check one more time for duplicates
+length(unique(inventory_data$`sample ID`)) # 5679 unique 
+length(which(is.na(inventory_data$`sample ID`) == T)) # 0 missing
+count_table = table(inventory_data$`sample ID`, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # more duplicates
+dups_table
 
 # check for duplicates in the qpcr data
 length(unique(qpcr_data$`Sample Name`)) # 1587 unique 
@@ -227,37 +129,13 @@ length(which(is.na(qpcr_data$`Sample Name`) == T)) # 0 missing
 count_table = table(qpcr_data$`Sample Name`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # 14 duplicates
 dups_table
-# choose the first instance of these samples as well, discard second instance
-# G0015
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="G0015" & qpcr_data$`Well Position`=="O7"),]
-# G0033
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="G0033" & qpcr_data$`Well Position`=="F21"),]
-# G0125C
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="G0125C" & qpcr_data$`Well Position`=="C23"),]
-# K0070
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="K0070" & qpcr_data$`Well Position`=="J3"),]
-# K0105
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="K0105" & qpcr_data$`Well Position`=="K5"),]
-# P0033
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="P0033" & qpcr_data$`Well Position`=="E9"),]
-# T0117
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0117" & qpcr_data$`Well Position`=="F23"),]
-# T0315
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0315" & qpcr_data$`Well Position`=="C15"),]
-# T0316
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0316" & qpcr_data$`Well Position`=="C3"),]
-# T0317
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0317" & qpcr_data$`Well Position`=="C21"),]
-# T0318
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0318" & qpcr_data$`Well Position`=="C13"),]
-# T0319
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0319" & qpcr_data$`Well Position`=="C11"),]
-# T0320
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0320" & qpcr_data$`Well Position`=="C19"),]
-# T0764
-qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name`=="T0764" & qpcr_data$`Well Position`=="F15"),]
+# write out qpcr info for duplicates
+qpcr_dup_df = qpcr_data[which(qpcr_data$`Sample Name` %in% ids_to_remove),]
+write_csv(qpcr_dup_df,"Desktop/turkana_qpcr_duplicates_21JAN2020.csv")
+# remove those duplicates from the full qpcr data set
+qpcr_data = qpcr_data[-which(qpcr_data$`Sample Name` %in% ids_to_remove),]
 # check one more time for duplicates 
-length(unique(qpcr_data$`Sample Name`)) # 1587 unique 
+length(unique(qpcr_data$`Sample Name`)) # 1565 unique 
 length(which(is.na(qpcr_data$`Sample Name`) == T)) # 0 missing
 count_table = table(qpcr_data$`Sample Name`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # no more duplicates
@@ -277,11 +155,12 @@ merged_data = left_join(inventory_data,qpcr_data,by="sample ID")
 merged_data %>%
   filter(is.na(`Well Position`)) %>%
   View()
-# 4,415 empty (5732-1587 = 4145, so looks like all merged in)
-
+length(which(is.na(merged_data$`Well Position`))) # 5679-1565=4114, good 
+setdiff(qpcr_data$`sample ID`,inventory_data$`sample ID`)
+# looks good
 
 # check for duplicates in the merged data just in case
-length(unique(merged_data$`sample ID`)) # 5732 unique 
+length(unique(merged_data$`sample ID`)) # 5679 unique 
 length(which(is.na(merged_data$`sample ID`) == T)) # 0 missing
 count_table = table(merged_data$`sample ID`, useNA = "always")
 dups_table = count_table[which(count_table > 1)] # no more duplicates
@@ -431,8 +310,8 @@ colnames(merged_data)
 #### --------- export the new data set --------- ####
 
 # export the data set as CSV and RDS files
-write_csv(merged_data, "Desktop/EMBATALK_inventory_with_qpcr_9JAN2020.csv")
-write_rds(merged_data, "Desktop/EMBATALK_inventory_with_qpcr_9JAN2020.RDS")
+write_csv(merged_data, "Desktop/EMBATALK_inventory_with_qpcr_21JAN2020.csv")
+write_rds(merged_data, "Desktop/EMBATALK_inventory_with_qpcr_21JAN2020.RDS")
 
 
 # pull out the positive samples for Betsy

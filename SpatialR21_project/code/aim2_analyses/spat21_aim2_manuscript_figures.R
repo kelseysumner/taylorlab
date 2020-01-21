@@ -1,10 +1,9 @@
-# ----------------------------------------- #
-#  Create aim 2 visualizations for astmh    #
-#             Mozzie Phase 1                #
-#                CSP data                   #
-#            October 31, 2019               #
-#                K. Sumner                  #
-# ----------------------------------------- #
+# --------------------------------------------- #
+#  Create aim 2 visualizations for manuscript   #
+#             Mozzie Phase 1                    #
+#            January 17, 2020                   #
+#                K. Sumner                      #
+# --------------------------------------------- #
 
 # color pallete: http://colorbrewer2.org/#type=qualitative&scheme=Set1&n=5
 # symptomatic (red): #b2182b
@@ -84,6 +83,26 @@ mosquito_plot_infected
 # mosquitoes (blue): #2166ac
 # no infection (grey): #A9A9A9
 
+# make an additional df for plot
+mosquito_df_for_plot = mosquito_data_infected %>%
+  mutate(symp_status = ifelse(pf_pcr_infection_status_sample_level_a == "positive","infection","no infection")) %>%
+  mutate(new_date = paste0(month(month_date),"-",year(month_date)))
+mosquito_df_for_plot$symp_status = as.factor(mosquito_df_for_plot$symp_status)
+mosquito_df_for_plot$symp_status = relevel(mosquito_df_for_plot$symp_status,ref="no infection")
+
+# make an additional plot of the mosquitoes infection status but using ggplot
+month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
+mosquito_df_for_plot <- within(mosquito_df_for_plot, new_date <- factor(new_date, levels=month_order))
+plot1 = ggplot(data = mosquito_df_for_plot,aes(x=new_date,y=n,fill=symp_status)) +
+  geom_bar(stat="identity",colour="black")+
+  scale_fill_manual(values=c("#A9A9A9","#2166ac")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of mosquitoes")+
+  labs(fill="Infection status")
+plot1
+# ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
+       # height=5.25, width=11, units="in", dpi=500)
 
 #### -------- make visualization 2 --------- ####
 
@@ -276,7 +295,7 @@ plot_human_data_symp <- within(plot_human_data_symp, month <- factor(month, leve
 
 # make a stacked bar plot of the symptomatic infections tested over time
 plot4 = ggplot(data = plot_human_data_symp,aes(x=month,y=n,fill=symp_infection)) +
-  geom_bar(stat="identity")+
+  geom_bar(stat="identity",colour="black")+
   scale_fill_manual(values=c("#A9A9A9","#b2182b")) +
   theme_bw() +
   xlab("Month")+
