@@ -339,7 +339,7 @@ logLik(model5)
 #### -------- clean up the model data set to just the variables of interest ------ ####
 
 model_data = model_data %>%
-  dplyr::select(-c(pfr364Q_std_combined_cat,pfr364Q_std_combined_rescaled_quad,pfr364Q_std_combined_rescaled_cubic,pfr364Q_std_combined_ln,pfr364_std_quartiles,
+  dplyr::select(-c(pfr364Q_std_combined_rescaled_quad,pfr364Q_std_combined_rescaled_cubic,pfr364Q_std_combined_ln,pfr364_std_quartiles,
             age_quad,age_rescaled,age_cubic,age_ln,mosquito_week_count_rescaled,mosquito_week_count_ln,mosquito_week_count_rescaled_quad,mosquito_week_count_rescaled_cubic))
 colnames(model_data)
 model_data = model_data %>%
