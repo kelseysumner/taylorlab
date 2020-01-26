@@ -54,15 +54,14 @@ summary(model_data$pfr364Q_std_combined)
 model_data$pfr364Q_std_combined_cubic = model_data$pfr364Q_std_combined_rescaled*model_data$pfr364Q_std_combined_rescaled*model_data$pfr364Q_std_combined_rescaled
 summary(model_data$pfr364Q_std_combined_cubic)
 
-# create a variable for parasite density ln transformed
-model_data$pfr364Q_std_combined_ln = log(model_data$pfr364Q_std_combined)
-skewness(model_data$pfr364Q_std_combined_ln)
-kurtosis(model_data$pfr364Q_std_combined_ln)
-# fixed high skew and kurtosis but still has scaling problems
-model_data$pfr364Q_std_combined_ln = scale(model_data$pfr364Q_std_combined_ln)
-summary(model_data$pfr364Q_std_combined_ln)
-skewness(model_data$pfr364Q_std_combined_ln)
-kurtosis(model_data$pfr364Q_std_combined_ln)
+# make a variable for the rescaled, centered cubic form of the mosquitoe week counts
+model_data$mosquito_week_count_rescaled = scale(model_data$mosquito_week_count)
+model_data$mosquito_week_count_cubic_rescaled = model_data$mosquito_week_count_rescaled*model_data$mosquito_week_count_rescaled*model_data$mosquito_week_count_rescaled
+summary(model_data$mosquito_week_count_cubic_rescaled)
+hist(model_data$mosquito_week_count_cubic_rescaled)
+model_data$mosquito_week_count_quad_rescaled = model_data$mosquito_week_count_rescaled*model_data$mosquito_week_count_rescaled
+summary(model_data$mosquito_week_count_quad_rescaled)
+summary(model_data$mosquito_week_count_rescaled)
 
 
 
@@ -127,14 +126,13 @@ anova(modeltest,modeltest_2)
 #### ------ run the final models and do model selection ------- ####
 
 # run the original multi-level model with all covariates and interaction term
-model1 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+age_cat_baseline*aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model1 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+age_cat_baseline*aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model1)
-# model had some trouble converging
-exp(0.16055)
-exp(-0.65805)
+exp(0.04892)
+exp(-0.56744)
 
 # run the model with all covariates but interaction removed
-model2 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model2 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model2)
 # model had some trouble converging
 anova(model1,model2) # model 2 is better - no interaction between main exposure and age
@@ -167,15 +165,15 @@ aa.fixef <- t(sapply(aa.OK,fixef))
 aa.fixef.m <- melt(aa.fixef)
 summary(unlist(daply(aa.fixef.m,"Var2",summarise,sd(value)/abs(mean(value))))) # some variability in the coefficients
 # now try rerunning the model with one of the optimizers that worked
-model2 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model2 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model2)
-exp(1.016267)
+exp(1.020794)
 anova(model1,model2)
 
 # now run the model removing village
-model3 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), control = glmerControl(optimizer="bobyqa"), data = model_data)
+model3 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), control = glmerControl(optimizer="bobyqa"), data = model_data)
 summary(model3)
-exp(1.07790)
+exp(1.070915)
 anova(model2,model3)
 # model 2 is better
 # check gradient calculations
@@ -184,19 +182,19 @@ sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1)) # 0.02283682, this is small but still larger than typical tolerance of 0.001
 
 # now run the model removing parasite density but adding back in village
-model4 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model4 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model4)
 anova(model2,model4) 
-exp(1.0189)
+exp(1.02764)
 # check gradient calculations
 derivs1 <- model4@optinfo$derivs
 sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1)) # 0.3823 so having convergence problems because > 0.001 tolerance
 
 # now run the model removing parasite density and village
-model5 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model5 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model5)
-exp(1.0756)
+exp(1.07393)
 anova(model2,model5) # model 2 is better
 anova(model4,model5) # model 4 is better
 # model 2 is better but this one didn't have convergence issues
@@ -206,9 +204,9 @@ sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1)) # 1.242775e-05 so smaller than typical tolerance of 0.001, which is good
 
 # now run the model removing parasite density and village and age
-model6 <- glmer(p_te_all~aim2_exposure+mosquito_week_count_cat+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model6 <- glmer(p_te_all~aim2_exposure+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model6)
-exp(1.0579)
+exp(1.06053)
 anova(model2,model6) # model 2 is better
 # model 2 is better but this one didn't have convergence issues
 # check gradient calculations
@@ -219,6 +217,7 @@ max(abs(sc_grad1)) # 3.497157e-05 so smaller than typical tolerance of 0.001, wh
 # now run the model removing parasite density and village and mosquito_week_count
 model7 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model7)
+exp(1.1219)
 anova(model2,model7) # model 2 is better
 # model 2 is better but this one didn't have convergence issues
 
@@ -253,11 +252,11 @@ anova(model5,model8) # model 5 better
 
 # create a data frame of model 5 output
 summary(model2)
-estimates = c(exp(1.016267),exp(-0.776090),exp(-0.687479),exp(0.220296),exp(-1.477334),exp(-0.002337),exp(-0.526726),exp(-1.113527))
+estimates = c(exp(1.020794),exp(-0.753119),exp(-0.620012),exp(0.433450),exp(-0.062791),exp(-0.245694),exp(-0.005897),exp(-0.574214),exp(-0.992125))
 exp(confint.merMod(model2,method="Wald"))
-lower_ci = c(1.8799560,0.2823813,0.3100777,0.9953401,0.0897681,0.8705264,0.3718746,0.1552902)
-upper_ci = c(4.0604196,0.7499986,0.8154418,1.5608992,0.5803393,1.1433747,0.9377678,0.6944786)
-names = c("Asymptomatic infection","Age 5-15 years","Age >15 years","50-99 mosquitoes","100-147 mosquitoes","Parasite density","Village: Kinesamo","Village: Sitabicha")
+lower_ci = c(1.89365195,0.29531746,0.33975430,1.25435101,0.77865729,0.69388285,0.86679524,0.35066985,0.17503869)
+upper_ci = c(4.0677134,0.7508620,0.8517249,1.8970147,1.1326989,0.8816714,1.1401483,0.9043688,0.7854480)
+names = c("Asymptomatic infection","Age 5-15 years","Age >15 years","Linear term for mosquitoes","Quadratic term for mosquitoes","Cubic term for mosquitoes","Asexual parasite density","Village: Kinesamo","Village: Sitabicha")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
 forest_plot_df$names = as.factor(forest_plot_df$names)
 
@@ -372,63 +371,63 @@ levels(model_data$outcome_binary_lessthan0.9)
 model_data$outcome_binary_lessthan0.9 = relevel(model_data$outcome_binary_lessthan0.9,ref = "less than 0.9")
 
 # binary outcome <0.1 with a logistic model
-model.1 <- glmer(outcome_binary_lessthan0.1~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.1 <- glmer(outcome_binary_lessthan0.1~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.1)
-exp(0.56121)
+exp(0.70501)
 exp(confint(model.1,method="Wald"))
 # converged
 
 # binary outcome <0.2 with a logistic model
-model.2 <- glmer(outcome_binary_lessthan0.2~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.2 <- glmer(outcome_binary_lessthan0.2~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.2)
-exp(0.69727)
+exp(0.85383)
 exp(confint(model.2, method="Wald"))
 # converged
 
 # binary outcome <0.3 with a logistic model
-model.3 <- glmer(outcome_binary_lessthan0.3~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.3 <- glmer(outcome_binary_lessthan0.3~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.3)
-exp(0.64544)
+exp(0.81303)
 exp(confint(model.3, method="Wald"))
 # converged
 
 # binary outcome <0.4 with a logistic model
-model.4 <- glmer(outcome_binary_lessthan0.4~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.4 <- glmer(outcome_binary_lessthan0.4~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.4)
-exp(1.07765)
+exp(1.15609)
 exp(confint(model.4, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.5 with a logistic model
-model.5 <- glmer(outcome_binary_lessthan0.5~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.5 <- glmer(outcome_binary_lessthan0.5~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.5)
-exp(1.18379)
+exp(1.17866)
 exp(confint(model.5, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.6 with a logistic model
-model.6 <- glmer(outcome_binary_lessthan0.6~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.6 <- glmer(outcome_binary_lessthan0.6~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.6)
-exp(1.19655)
+exp(1.17184)
 exp(confint(model.6, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.7 with a logistic model
-model.7 <- glmer(outcome_binary_lessthan0.7~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.7 <- glmer(outcome_binary_lessthan0.7~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.7)
-exp(1.39538)
+exp(1.4612)
 exp(confint(model.7, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.8 with a logistic model
-model.8 <- glmer(outcome_binary_lessthan0.8~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.8 <- glmer(outcome_binary_lessthan0.8~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.8)
 exp(0.7480)
 exp(confint(model.8, method="Wald")) # can't compute confidence interval
 # model not very identifiable
 
 # binary outcome <0.9 with a logistic model
-model.9 <- glmer(outcome_binary_lessthan0.9~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.9 <- glmer(outcome_binary_lessthan0.9~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.9)
 # model did not work
 

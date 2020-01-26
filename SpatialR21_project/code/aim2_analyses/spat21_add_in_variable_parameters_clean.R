@@ -17,7 +17,7 @@ require(pracma)
 #### ---------- read in the data sets ---------- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_16DEC2019.rds")
+edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
 
 # read in the clean ama haplotype data
 ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
