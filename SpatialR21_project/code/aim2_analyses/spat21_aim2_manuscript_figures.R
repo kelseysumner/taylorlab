@@ -223,6 +223,41 @@ csp_month_plot
       # height=35, width=11.2, units="in", dpi=500)
 
 
+#### -------- make a streamgraph plot of asymptomatic and symptomatic infections over time ------ ####
+
+# subset the dataframe to infections of interest
+colnames(final_data)
+human_data = final_data %>%
+  dplyr::select(visit_type,sample_id_date,sample_name_final,sample_name_dbs,age_cat_baseline,unq_memID,village_name,HH_ID,main_exposure_primary_case_def,main_outcome_primary_case_def,pfr364Q_std_combined,age_all_baseline) %>%
+  mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def))) %>%
+  mutate(infection_status = ifelse(is.na(aim2_exposure),"no infection",aim2_exposure))
+table(human_data$infection_status, useNA = "always")
+table(human_data$aim2_exposure, useNA = "always")
+
+# set up the data to have months correct
+human_data_infected = human_data %>%
+  select(sample_id_date,infection_status) %>%
+  mutate(value=rep(1,length(!(is.na(infection_status)))), month_date = floor_date(sample_id_date, "month")) %>%
+  group_by(month_date,infection_status) %>%
+  tally(wt=value)
+human_data_infected$infection_status = as.factor(human_data_infected$infection_status)
+
+# relevel the data
+human_data_infected$infection_status = relevel(human_data_infected$infection_status,"symptomatic infection")
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
+
+# make the plot
+human_plot_infected = human_data_infected %>%
+  streamgraph("infection_status","n","month_date", offset="zero", interactive = F) %>%
+  sg_fill_manual(values = c("#E1AF00","#D3DDDC","#3B9AB2"))
+human_plot_infected  
+
+
+
 #### ------ now make figure 3 - the alluvial plot ------- ####
 
 # make a plot of how malaria infection status changes over time (from having an asymptomatic or symptomatic infection to having no infection during that month)
@@ -594,20 +629,43 @@ ggsave(dot_plot_ama_haps_shared, filename="/Users/kelseysumner/Desktop/figure7_d
 # make separate data sets for humans and mosquitoes
 human_haps = ama_haplotypes %>%
   filter(sample_type=="Human")
-human_haps = human_haps[,c(4:459)]
 abdomen_haps = ama_haplotypes %>%
   filter(sample_type=="Abdomen")
 abdomen_haps = abdomen_haps[,c(4:459)]
 
-# summarize the number of samples within each haplotype for the human samples
-haplotype.names = rep(1:ncol(human_haps))
-haplotypes_in_samples = rep(NA,ncol(human_haps))
-total_reads_in_samples = rep(NA,ncol(human_haps))
-for (k in 1:ncol(human_haps)){
-  haplotypes_in_samples[k] = length(which(human_haps[,k] > 0))
-  total_reads_in_samples[k] = sum(human_haps[,k],na.rm=T)
+# merge the final_data info for symptomatic status with the human haps
+cut_data = final_data %>%
+  filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
+  select(sample_name_dbs,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
+  mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def)))
+table(cut_data$aim2_exposure, useNA = "always")
+human_haps = left_join(human_haps,cut_data,by="sample_name_dbs")
+table(human_haps$aim2_exposure, useNA = "always")
+colnames(human_haps)
+asymp_human_haps = human_haps %>% filter(aim2_exposure == "asymptomatic infection")
+symp_human_haps = human_haps %>% filter(aim2_exposure == "symptomatic infection")
+asymp_human_haps = asymp_human_haps[,c(4:459)]
+symp_human_haps = symp_human_haps[,c(4:459)]
+
+# summarize the number of samples within each haplotype for the asymp human samples
+haplotype.names = rep(1:ncol(asymp_human_haps))
+haplotypes_in_samples = rep(NA,ncol(asymp_human_haps))
+total_reads_in_samples = rep(NA,ncol(asymp_human_haps))
+for (k in 1:ncol(asymp_human_haps)){
+  haplotypes_in_samples[k] = length(which(asymp_human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(asymp_human_haps[,k],na.rm=T)
 }
-human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+asymp_human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# summarize the number of samples within each haplotype for the symp human samples
+haplotype.names = rep(1:ncol(symp_human_haps))
+haplotypes_in_samples = rep(NA,ncol(symp_human_haps))
+total_reads_in_samples = rep(NA,ncol(symp_human_haps))
+for (k in 1:ncol(symp_human_haps)){
+  haplotypes_in_samples[k] = length(which(symp_human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(symp_human_haps[,k],na.rm=T)
+}
+symp_human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
 
 # summarize the number of samples within each haplotype for the mosquito abdomen samples
 haplotype.names = rep(1:ncol(abdomen_haps))
@@ -619,17 +677,44 @@ for (k in 1:ncol(abdomen_haps)){
 }
 abdomen_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
 
-hap_order = order(-human_hap_summary$haplotypes_across_samples)
-human_hap_summary = human_hap_summary[hap_order,]
+# set the haplotype order
+hap_order = order(-asymp_human_hap_summary$haplotypes_across_samples)
+asymp_human_hap_summary = asymp_human_hap_summary[hap_order,]
+symp_human_hap_summary = symp_human_hap_summary[hap_order,]
 abdomen_hap_summary = abdomen_hap_summary[hap_order,]
-human_hap_summary$haplotype_ids = factor(human_hap_summary$haplotype_ids, levels=human_hap_summary$haplotype_ids[order(-human_hap_summary$haplotypes_across_samples)])
-abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-human_hap_summary$haplotypes_across_samples)])
+asymp_human_hap_summary$haplotype_ids = factor(asymp_human_hap_summary$haplotype_ids, levels=asymp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_ids, levels=symp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 
 # make a data frame of both df combined
-human_hap_summary$type = rep("Study participant",nrow(human_hap_summary))
+asymp_human_hap_summary$type = rep("Asymptomatic participant",nrow(asymp_human_hap_summary))
+symp_human_hap_summary$type = rep("Symptomatic participant",nrow(symp_human_hap_summary))
 abdomen_hap_summary$type = rep("Mosquito abdomen",nrow(abdomen_hap_summary))
+original_combined_hap_summary = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
+# now subset the data set to just the haplotypes found in >0 samples across all sample types
+total_haps = original_combined_hap_summary %>%
+  group_by(haplotype_ids) %>%
+  summarize(total_samples = sum(haplotypes_across_samples)) %>%
+  filter(total_samples > 0) # 348
+# now subset the data set to just the haplotypes found in >10 samples across all sample types
+total_haps_10 = original_combined_hap_summary %>%
+  group_by(haplotype_ids) %>%
+  summarize(total_samples = sum(haplotypes_across_samples)) %>%
+  filter(total_samples > 10) # 55
+# go back to making full combined df with haplotypes found in >0 samples
 abdomen_hap_summary$haplotypes_across_samples = -1*abdomen_hap_summary$haplotypes_across_samples
-combined_hap_summary = rbind(human_hap_summary,abdomen_hap_summary)
+summary(abdomen_hap_summary$haplotypes_across_samples)
+combined_hap_summary_subset_0 = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
+combined_hap_summary_subset_0 = combined_hap_summary_subset_0 %>%
+  filter(combined_hap_summary_subset_0$haplotype_ids %in% total_haps$haplotype_ids)
+length(unique(combined_hap_summary_subset_0$haplotype_ids)) # 348, correct
+# make combined df with haplotypes found in >10 samples
+summary(abdomen_hap_summary$haplotypes_across_samples)
+combined_hap_summary_subset_10 = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
+combined_hap_summary_subset_10 = combined_hap_summary_subset_10 %>%
+  filter(combined_hap_summary_subset_10$haplotype_ids %in% total_haps_10$haplotype_ids)
+length(unique(combined_hap_summary_subset_10$haplotype_ids)) # 55, correct
+
 
 # symptomatic (blue): #3B9AB2
 # asymptomatic (yellow): #E1AF00
@@ -637,22 +722,47 @@ combined_hap_summary = rbind(human_hap_summary,abdomen_hap_summary)
 # no infection (light grey): #D3DDDC
 
 # now try to make a pyramid plot
-pyramid_plot_ama = ggplot(combined_hap_summary, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
-  geom_bar(stat = "identity", width = .8,color="black") +   # draw the bars
+pyramid_plot_ama = ggplot(combined_hap_summary_subset_0, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
+  geom_bar(stat = "identity", width = .6,color="black") +   # draw the bars
   coord_flip() +  # Flip axes
-  scale_fill_manual(values=c("#F21A00","#3B9AB2")) +
+  scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
   theme_bw() +
   scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
   labs(title=expression(paste(italic("pfama1: "),"Haplotypes shared across samples")), fill = "Sample type") +
   xlab("Haplotype ID") +
   ylab("Number of samples with haplotype") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
-        axis.ticks.y = element_blank()) 
+        axis.ticks.y = element_blank(), legend.position = c(1,1),legend.justification = c(1,1),legend.box.background = element_rect(colour = "black"))  +
+  geom_vline(xintercept = 0,color="black",size=1.5)
 pyramid_plot_ama
 
-# export the figure
+# export the figure with all the haplotypes
 ggsave(pyramid_plot_ama, filename="/Users/kelseysumner/Desktop/pyramid_plot_ama.png", device="png",
-       height=15, width=12, units="in", dpi=400)
+       height=20, width=12, units="in", dpi=400)
+
+
+
+
+# now try to make a pyramid plot subset to those haplotypes found in >10 samples
+pyramid_plot_ama_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
+  geom_bar(stat = "identity", width = .6,color="black") +   # draw the bars
+  coord_flip() +  # Flip axes
+  scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
+  theme_bw() +
+  scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
+  labs(title=expression(paste(italic("pfama1: "),"Haplotypes shared across samples")), fill = "Sample type") +
+  xlab("Haplotype ID") +
+  ylab("Number of samples with haplotype") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
+        axis.ticks.y = element_blank(), legend.position = c(0.84, 0.87),legend.box.background = element_rect(colour = "black"))  +
+  geom_vline(xintercept = 0,color="black",size=1.5)
+pyramid_plot_ama_10
+
+# export the figure with all the haplotypes
+ggsave(pyramid_plot_ama_10, filename="/Users/kelseysumner/Desktop/pyramid_plot_ama_inatleast10samples.png", device="png",
+       height=9, width=14, units="in", dpi=400)
+
+
 
 
 
@@ -662,20 +772,43 @@ ggsave(pyramid_plot_ama, filename="/Users/kelseysumner/Desktop/pyramid_plot_ama.
 # make separate data sets for humans and mosquitoes
 human_haps = csp_haplotypes %>%
   filter(sample_type=="Human")
-human_haps = human_haps[,c(4:301)]
 abdomen_haps = csp_haplotypes %>%
   filter(sample_type=="Abdomen")
 abdomen_haps = abdomen_haps[,c(4:301)]
 
-# summarize the number of samples within each haplotype for the human samples
-haplotype.names = rep(1:ncol(human_haps))
-haplotypes_in_samples = rep(NA,ncol(human_haps))
-total_reads_in_samples = rep(NA,ncol(human_haps))
-for (k in 1:ncol(human_haps)){
-  haplotypes_in_samples[k] = length(which(human_haps[,k] > 0))
-  total_reads_in_samples[k] = sum(human_haps[,k],na.rm=T)
+# merge the final_data info for symptomatic status with the human haps
+cut_data = final_data %>%
+  filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection") %>%
+  select(sample_name_dbs,main_exposure_primary_case_def,main_outcome_primary_case_def) %>%
+  mutate(aim2_exposure = ifelse(is.na(main_exposure_primary_case_def),as.character(main_outcome_primary_case_def),as.character(main_exposure_primary_case_def)))
+table(cut_data$aim2_exposure, useNA = "always")
+human_haps = left_join(human_haps,cut_data,by="sample_name_dbs")
+table(human_haps$aim2_exposure, useNA = "always")
+colnames(human_haps)
+asymp_human_haps = human_haps %>% filter(aim2_exposure == "asymptomatic infection")
+symp_human_haps = human_haps %>% filter(aim2_exposure == "symptomatic infection")
+asymp_human_haps = asymp_human_haps[,c(4:301)]
+symp_human_haps = symp_human_haps[,c(4:301)]
+
+# summarize the number of samples within each haplotype for the asymp human samples
+haplotype.names = rep(1:ncol(asymp_human_haps))
+haplotypes_in_samples = rep(NA,ncol(asymp_human_haps))
+total_reads_in_samples = rep(NA,ncol(asymp_human_haps))
+for (k in 1:ncol(asymp_human_haps)){
+  haplotypes_in_samples[k] = length(which(asymp_human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(asymp_human_haps[,k],na.rm=T)
 }
-human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+asymp_human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+
+# summarize the number of samples within each haplotype for the symp human samples
+haplotype.names = rep(1:ncol(symp_human_haps))
+haplotypes_in_samples = rep(NA,ncol(symp_human_haps))
+total_reads_in_samples = rep(NA,ncol(symp_human_haps))
+for (k in 1:ncol(symp_human_haps)){
+  haplotypes_in_samples[k] = length(which(symp_human_haps[,k] > 0))
+  total_reads_in_samples[k] = sum(symp_human_haps[,k],na.rm=T)
+}
+symp_human_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
 
 # summarize the number of samples within each haplotype for the mosquito abdomen samples
 haplotype.names = rep(1:ncol(abdomen_haps))
@@ -687,17 +820,44 @@ for (k in 1:ncol(abdomen_haps)){
 }
 abdomen_hap_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
 
-hap_order = order(-human_hap_summary$haplotypes_across_samples)
-human_hap_summary = human_hap_summary[hap_order,]
+# set the haplotype order
+hap_order = order(-asymp_human_hap_summary$haplotypes_across_samples)
+asymp_human_hap_summary = asymp_human_hap_summary[hap_order,]
+symp_human_hap_summary = symp_human_hap_summary[hap_order,]
 abdomen_hap_summary = abdomen_hap_summary[hap_order,]
-human_hap_summary$haplotype_ids = factor(human_hap_summary$haplotype_ids, levels=human_hap_summary$haplotype_ids[order(-human_hap_summary$haplotypes_across_samples)])
-abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-human_hap_summary$haplotypes_across_samples)])
+asymp_human_hap_summary$haplotype_ids = factor(asymp_human_hap_summary$haplotype_ids, levels=asymp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_ids, levels=symp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
+abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 
 # make a data frame of both df combined
-human_hap_summary$type = rep("Study participant",nrow(human_hap_summary))
+asymp_human_hap_summary$type = rep("Asymptomatic participant",nrow(asymp_human_hap_summary))
+symp_human_hap_summary$type = rep("Symptomatic participant",nrow(symp_human_hap_summary))
 abdomen_hap_summary$type = rep("Mosquito abdomen",nrow(abdomen_hap_summary))
+original_combined_hap_summary = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
+# now subset the data set to just the haplotypes found in >0 samples across all sample types
+total_haps = original_combined_hap_summary %>%
+  group_by(haplotype_ids) %>%
+  summarize(total_samples = sum(haplotypes_across_samples)) %>%
+  filter(total_samples > 0) # 229
+# now subset the data set to just the haplotypes found in >10 samples across all sample types
+total_haps_10 = original_combined_hap_summary %>%
+  group_by(haplotype_ids) %>%
+  summarize(total_samples = sum(haplotypes_across_samples)) %>%
+  filter(total_samples > 10) # 39
+# go back to making full combined df with haplotypes found in >0 samples
 abdomen_hap_summary$haplotypes_across_samples = -1*abdomen_hap_summary$haplotypes_across_samples
-combined_hap_summary = rbind(human_hap_summary,abdomen_hap_summary)
+summary(abdomen_hap_summary$haplotypes_across_samples)
+combined_hap_summary_subset_0 = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
+combined_hap_summary_subset_0 = combined_hap_summary_subset_0 %>%
+  filter(combined_hap_summary_subset_0$haplotype_ids %in% total_haps$haplotype_ids)
+length(unique(combined_hap_summary_subset_0$haplotype_ids)) # 229, correct
+# make combined df with haplotypes found in >10 samples
+summary(abdomen_hap_summary$haplotypes_across_samples)
+combined_hap_summary_subset_10 = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
+combined_hap_summary_subset_10 = combined_hap_summary_subset_10 %>%
+  filter(combined_hap_summary_subset_10$haplotype_ids %in% total_haps_10$haplotype_ids)
+length(unique(combined_hap_summary_subset_10$haplotype_ids)) # 39, correct
+
 
 # symptomatic (blue): #3B9AB2
 # asymptomatic (yellow): #E1AF00
@@ -705,22 +865,47 @@ combined_hap_summary = rbind(human_hap_summary,abdomen_hap_summary)
 # no infection (light grey): #D3DDDC
 
 # now try to make a pyramid plot
-pyramid_plot_csp = ggplot(combined_hap_summary, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
-  geom_bar(stat = "identity", width = .8,color="black") +   # draw the bars
+pyramid_plot_csp = ggplot(combined_hap_summary_subset_0, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
+  geom_bar(stat = "identity", width = .6,color="black") +   # draw the bars
   coord_flip() +  # Flip axes
-  scale_fill_manual(values=c("#F21A00","#3B9AB2")) +
+  scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
   theme_bw() +
   scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
   labs(title=expression(paste(italic("pfcsp: "),"Haplotypes shared across samples")), fill = "Sample type") +
   xlab("Haplotype ID") +
   ylab("Number of samples with haplotype") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
-        axis.ticks.y = element_blank()) 
+        axis.ticks.y = element_blank(), legend.position = c(1,1),legend.justification = c(1,1),legend.box.background = element_rect(colour = "black"))  +
+  geom_vline(xintercept = 0,color="black",size=1.5)
 pyramid_plot_csp
 
-# export the figure
+# export the figure with all the haplotypes
 ggsave(pyramid_plot_csp, filename="/Users/kelseysumner/Desktop/pyramid_plot_csp.png", device="png",
-       height=15, width=12, units="in", dpi=400)
+       height=20, width=12, units="in", dpi=400)
+
+
+
+
+# now try to make a pyramid plot subset to those haplotypes found in >10 samples
+pyramid_plot_csp_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
+  geom_bar(stat = "identity", width = .6,color="black") +   # draw the bars
+  coord_flip() +  # Flip axes
+  scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
+  theme_bw() +
+  scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
+  labs(title=expression(paste(italic("pfcsp1: "),"Haplotypes shared across samples")), fill = "Sample type") +
+  xlab("Haplotype ID") +
+  ylab("Number of samples with haplotype") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
+        axis.ticks.y = element_blank(), legend.position = c(0.84, 0.87),legend.box.background = element_rect(colour = "black"))  +
+  geom_vline(xintercept = 0,color="black",size=1.5)
+pyramid_plot_csp_10
+
+# export the figure with all the haplotypes
+ggsave(pyramid_plot_csp_10, filename="/Users/kelseysumner/Desktop/pyramid_plot_csp_inatleast10samples.png", device="png",
+       height=9, width=14, units="in", dpi=400)
+
+
 
 
 
