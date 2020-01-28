@@ -440,12 +440,35 @@ csp_abdomen_plot = ggplot() +
   theme(plot.title = element_text(size = 22, face = "bold", hjust = 0.5), text = element_text(size=20))
 csp_abdomen_plot
 
+# try making a faceted plot of all three of these
+csp_human_df_asymp$type = rep("Asymptomatic infection",nrow(csp_human_df_asymp))
+csp_human_df_symp$type = rep("Symptomatic infection",nrow(csp_human_df_symp))
+csp_abdomen_df$type = rep("Mosquito abdomen",nrow(csp_abdomen_df))
+csp_moi_df = rbind(csp_human_df_asymp,csp_human_df_symp,csp_abdomen_df)
+csp_moi_df$type = as.factor(csp_moi_df$type)
+csp_moi_df$type = relevel(csp_moi_df$type,ref="Symptomatic infection")
+csp_moi_df$type = relevel(csp_moi_df$type,ref="Mosquito abdomen")
+levels(csp_moi_df$type)
+# make the combined plot
+csp_title <- expression(italic("pfcsp"))
+csp_moi_combo_plot = ggplot(data=csp_moi_df,aes(x=haplotype_number,y=n)) + 
+  geom_bar(aes(fill=type),alpha=0.95,stat="identity",color="black",width=0.8) +
+  labs(x="Multiplicity of infection", y="Number of samples", title= csp_title, pch=16) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 22, face = "bold", hjust = 0.5), text = element_text(size=20), legend.position = "none") +
+  facet_wrap(~type,scales="fixed") +
+  scale_fill_manual(values=c("#F21A00","#3B9AB2","#E1AF00")) 
+csp_moi_combo_plot
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
 # put both csp moi plots on same grid
-figure2_csp_subset_moi = gridExtra::grid.arrange(csp_human_plot_asymp,csp_human_plot_symp,csp_abdomen_plot,ncol=3)
 
 # export the figure
-ggsave(figure2_csp_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
-       height=10.5, width=17, units="in", dpi=400)
+ggsave(csp_moi_combo_plot, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
+       height=7, width=10, units="in", dpi=400)
 
 # calculate median values
 # for csp
@@ -543,12 +566,37 @@ ama_abdomen_plot = ggplot() +
   theme(plot.title = element_text(size = 22, face = "bold", hjust = 0.5), text = element_text(size=20))
 ama_abdomen_plot
 
+
+# try making a faceted plot of all three of these
+ama_human_df_asymp$type = rep("Asymptomatic infection",nrow(ama_human_df_asymp))
+ama_human_df_symp$type = rep("Symptomatic infection",nrow(ama_human_df_symp))
+ama_abdomen_df$type = rep("Mosquito abdomen",nrow(ama_abdomen_df))
+ama_moi_df = rbind(ama_human_df_asymp,ama_human_df_symp,ama_abdomen_df)
+ama_moi_df$type = as.factor(ama_moi_df$type)
+ama_moi_df$type = relevel(ama_moi_df$type,ref="Symptomatic infection")
+ama_moi_df$type = relevel(ama_moi_df$type,ref="Mosquito abdomen")
+levels(ama_moi_df$type)
+# make the combined plot
+ama_title <- expression(italic("pfama1"))
+ama_moi_combo_plot = ggplot(data=ama_moi_df,aes(x=haplotype_number,y=n)) + 
+  geom_bar(aes(fill=type),alpha=0.95,stat="identity",color="black",width=0.8) +
+  labs(x="Multiplicity of infection", y="Number of samples", title= ama_title, pch=16) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 22, face = "bold", hjust = 0.5), text = element_text(size=20), legend.position = "none") +
+  facet_wrap(~type,scales="fixed") +
+  scale_fill_manual(values=c("#F21A00","#3B9AB2","#E1AF00")) 
+ama_moi_combo_plot
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
 # put both ama moi plots on same grid
-figure2_ama_subset_moi = gridExtra::grid.arrange(ama_human_plot_asymp,ama_human_plot_symp,ama_abdomen_plot,ncol=3)
+
 
 # export the figure
-ggsave(figure2_ama_subset_moi, filename="/Users/kelseysumner/Desktop/figure2_ama_subset_moi.png", device="png",
-       height=10.5, width=17, units="in", dpi=400)
+ggsave(ama_moi_combo_plot, filename="/Users/kelseysumner/Desktop/figure2_ama_subset_moi.png", device="png",
+       height=7, width=10, units="in", dpi=400)
 
 # calculate median values
 # for ama
@@ -750,7 +798,7 @@ pyramid_plot_ama_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_i
   scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
   theme_bw() +
   scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
-  labs(title=expression(paste(italic("pfama1: "),"Haplotypes shared across samples")), fill = "Sample type") +
+  labs(title=expression(italic("pfama1")), fill = "Sample type") +
   xlab("Haplotype ID") +
   ylab("Number of samples with haplotype") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
@@ -893,7 +941,7 @@ pyramid_plot_csp_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_i
   scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
   theme_bw() +
   scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
-  labs(title=expression(paste(italic("pfcsp1: "),"Haplotypes shared across samples")), fill = "Sample type") +
+  labs(title=expression(italic("pfcsp1")), fill = "Sample type") +
   xlab("Haplotype ID") +
   ylab("Number of samples with haplotype") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),

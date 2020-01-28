@@ -278,16 +278,37 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuo
 
 #### ------- make a plot of p_te_all stratified -------- ####
 
-# make a plot of p_te_all 
-p_te_all_plot = ggplot(data=model_data,aes(x=p_te_all,fill=relevel(aim2_exposure,ref="asymptomatic infection"))) +
+# make a density plot of p_te_all 
+p_te_all_plot = ggplot(data=model_data,aes(x=p_te_all,fill=aim2_exposure)) +
   geom_density(alpha=0.6) + 
-  scale_fill_manual(values=c("#ff7f00","#e31a1c")) + 
+  scale_fill_manual(values=c("#E1AF00","#3B9AB2")) + 
   labs(fill="Symptomatic status") +
   theme_bw() + 
-  xlab("P(TE,all)")
+  xlab("Probability of transmission across all variables") +
+  ylab("Density") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25), legend.position = c(0.84, 0.87),legend.box.background = element_rect(colour = "black"))
 p_te_all_plot
-ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot.png", device="png",
-       height=4, width=7, units="in", dpi=500)
+ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_density.png", device="png",
+       height=8, width=14, units="in", dpi=500)
+
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+
+
+# make a violin plot of p_te_all stratified by participant's symptomatic status
+p_te_all_plot = ggplot(data=model_data,aes(x=aim2_exposure,y=p_te_all,fill=aim2_exposure)) +
+  geom_violin(alpha=0.8) + 
+  scale_fill_manual(values=c("#E1AF00","#3B9AB2")) + 
+  theme_bw() + 
+  theme(legend.position = "none") +
+  xlab("") +
+  ylab("Probability of transmission across all variables") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+p_te_all_plot
+ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_violin.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
 
 
 #### ------ make a plot of the odds ratios of p_te_all coded binary -------- ####

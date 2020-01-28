@@ -271,8 +271,100 @@ length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0
 
 
 # export the data set 
-write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.csv")
-write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
+# write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.csv")
+# write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
+
+
+
+#### ------- make some plots of the output -------- ####
+
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
+
+
+# make a plot of p_te_t
+# time plot
+merged_data_time_plot = merged_data %>%
+  filter(date_difference_flipped <= 0)
+p_te_t_density_plot_x = ggplot(data=merged_data_time_plot,aes(x=date_difference_flipped)) +
+  geom_density(alpha=0.6,fill=c("#c2a5cf")) + 
+  theme_bw() + 
+  xlab("Days between human infection and mosquito collection") +
+  ylab("Density") +
+  ggtitle("Density of observations over time")
+p_te_t_density_plot_x
+dpb <- ggplot_build(p_te_t_density_plot_x)
+x1 <- min(which(dpb$data[[1]]$x >=-18))
+x2 <- max(which(dpb$data[[1]]$x <=0))
+p_te_t_density_plot_x = p_te_t_density_plot_x +
+  geom_area(data=data.frame(x=dpb$data[[1]]$x[x1:x2],
+                            y=dpb$data[[1]]$y[x1:x2]),
+            aes(x=x, y=y), fill="#762a83", colour = "black") +
+  scale_x_continuous(breaks=c(0,-18,-100,-200,-300,-400)) +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+ggsave(p_te_t_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_t_density_plot_x.png", device="png",
+       height=8, width=14, units="in", dpi=500)
+
+
+
+# make a plot of p_te_d
+p_te_d_density_plot_x = ggplot(data=merged_data,aes(x=distance_km)) +
+  geom_density(alpha=0.6,fill=c("#fdae6b")) + 
+  theme_bw() + 
+  xlab("Distance (Km) between human infection and mosquito collection") +
+  ylab("Density") +
+  ggtitle("Density of observations over distance")
+p_te_d_density_plot_x
+dpb <- ggplot_build(p_te_d_density_plot_x)
+x1 <- min(which(dpb$data[[1]]$x >=0))
+x2 <- max(which(dpb$data[[1]]$x <=3))
+p_te_d_density_plot_x = p_te_d_density_plot_x +
+  geom_area(data=data.frame(x=dpb$data[[1]]$x[x1:x2],
+                            y=dpb$data[[1]]$y[x1:x2]),
+            aes(x=x, y=y), fill="#f16913", colour = "black") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25)) +
+  scale_x_continuous(breaks=c(0,3,6,9,12),limits=c(0,12))
+ggsave(p_te_d_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_d_density_plot_x.png", device="png",
+       height=8, width=14, units="in", dpi=500)
+
+
+
+
+# make a plot of the ama and csp haplotype probability values
+# set up the data frame
+p_te_a_df = merged_data %>%
+  filter(p_te_a > 0) %>%
+  select(p_te_a,ama_haps_shared)
+p_te_a_df$type = rep("pfama1",nrow(p_te_a_df))
+p_te_c_df = merged_data %>%
+  filter(p_te_c > 0) %>%
+  select(p_te_c,csp_haps_shared)
+p_te_c_df$type = rep("pfcsp",nrow(p_te_c_df))
+p_te_a_df$x_axis = as.factor(p_te_a_df$ama_haps_shared)
+p_te_c_df$x_axis = as.factor(p_te_c_df$csp_haps_shared)
+p_te_a_df$ama_haps_shared <- NULL
+p_te_c_df$csp_haps_shared <- NULL
+colnames(p_te_a_df)
+colnames(p_te_c_df)
+p_te_a_df = rename(p_te_a_df,"probability"=p_te_a)
+p_te_c_df = rename(p_te_c_df,"probability"=p_te_c)
+p_te_a_c_combo_df = rbind(p_te_a_df,p_te_c_df)
+colnames(p_te_a_c_combo_df)
+# make the plot
+p_te_a_c_combo = ggplot() +
+  geom_boxplot(data=p_te_a_c_combo_df,aes(x=factor(x_axis),y=probability,fill=type),alpha=0.8) + 
+  theme_bw() + 
+  ylab("Probability of transmission") +
+  xlab("Number of haplotypes shared") +
+  scale_fill_manual(values=c("#33a02c","#fb9a99")) +
+  labs(fill = "Sequencing target") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25), legend.position = c(0.86,0.12), legend.box.background = element_rect(colour = "black"))
+p_te_a_c_combo
+ggsave(p_te_a_c_combo, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot_x.png", device="png",
+       height=8, width=14, units="in", dpi=500)
 
 
 
