@@ -359,13 +359,11 @@ p_te_a_c_combo = ggplot() +
   theme_bw() + 
   ylab("Probability of transmission") +
   xlab("Number of haplotypes shared") +
-  scale_fill_manual(values=c("#33a02c","#fb9a99")) +
+  scale_fill_manual(values=c("#081d58","#fb9a99")) +
   labs(fill = "Sequencing target") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25), legend.position = c(0.86,0.12), legend.box.background = element_rect(colour = "black"))
 p_te_a_c_combo
 ggsave(p_te_a_c_combo, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot_x.png", device="png",
        height=8, width=14, units="in", dpi=500)
-
-
 
 
