@@ -25,7 +25,7 @@ library(ggsci)
 #### ---------- read in the data sets ---------- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_21JAN2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_aim2_computational_model_subset_data_6FEB2020.rds")
 
 # read in the merged anopheles mosquito data set
 anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
@@ -718,13 +718,13 @@ csp_abdomen_plot = ggplot() +
 csp_abdomen_plot
 
 # try making a faceted plot of all three of these
-csp_human_df_asymp$type = rep("Asymptomatic infection",nrow(csp_human_df_asymp))
-csp_human_df_symp$type = rep("Symptomatic infection",nrow(csp_human_df_symp))
-csp_abdomen_df$type = rep("Mosquito abdomen",nrow(csp_abdomen_df))
+csp_human_df_asymp$type = rep("Asymptomatic infected participants",nrow(csp_human_df_asymp))
+csp_human_df_symp$type = rep("Symptomatic infected participants",nrow(csp_human_df_symp))
+csp_abdomen_df$type = rep("Infected mosquitoes",nrow(csp_abdomen_df))
 csp_moi_df = rbind(csp_human_df_asymp,csp_human_df_symp,csp_abdomen_df)
 csp_moi_df$type = as.factor(csp_moi_df$type)
-csp_moi_df$type = relevel(csp_moi_df$type,ref="Symptomatic infection")
-csp_moi_df$type = relevel(csp_moi_df$type,ref="Mosquito abdomen")
+csp_moi_df$type = relevel(csp_moi_df$type,ref="Symptomatic infected participants")
+csp_moi_df$type = relevel(csp_moi_df$type,ref="Infected mosquitoes")
 levels(csp_moi_df$type)
 # make the combined plot
 csp_title <- expression(italic("pfcsp"))
@@ -745,7 +745,7 @@ csp_moi_combo_plot
 
 # export the figure
 ggsave(csp_moi_combo_plot, filename="/Users/kelseysumner/Desktop/figure2_csp_subset_moi.png", device="png",
-       height=7, width=10, units="in", dpi=400)
+       height=7, width=12, units="in", dpi=400)
 
 # calculate median values
 # for csp
@@ -845,13 +845,13 @@ ama_abdomen_plot
 
 
 # try making a faceted plot of all three of these
-ama_human_df_asymp$type = rep("Asymptomatic infection",nrow(ama_human_df_asymp))
-ama_human_df_symp$type = rep("Symptomatic infection",nrow(ama_human_df_symp))
-ama_abdomen_df$type = rep("Mosquito abdomen",nrow(ama_abdomen_df))
+ama_human_df_asymp$type = rep("Asymptomatic infected participants",nrow(ama_human_df_asymp))
+ama_human_df_symp$type = rep("Symptomatic infected participants",nrow(ama_human_df_symp))
+ama_abdomen_df$type = rep("Infected mosquitoes",nrow(ama_abdomen_df))
 ama_moi_df = rbind(ama_human_df_asymp,ama_human_df_symp,ama_abdomen_df)
 ama_moi_df$type = as.factor(ama_moi_df$type)
-ama_moi_df$type = relevel(ama_moi_df$type,ref="Symptomatic infection")
-ama_moi_df$type = relevel(ama_moi_df$type,ref="Mosquito abdomen")
+ama_moi_df$type = relevel(ama_moi_df$type,ref="Symptomatic infected participants")
+ama_moi_df$type = relevel(ama_moi_df$type,ref="Infected mosquitoes")
 levels(ama_moi_df$type)
 # make the combined plot
 ama_title <- expression(italic("pfama1"))
@@ -873,7 +873,7 @@ ama_moi_combo_plot
 
 # export the figure
 ggsave(ama_moi_combo_plot, filename="/Users/kelseysumner/Desktop/figure2_ama_subset_moi.png", device="png",
-       height=7, width=10, units="in", dpi=400)
+       height=7, width=12, units="in", dpi=400)
 
 # calculate median values
 # for ama
@@ -1012,9 +1012,9 @@ symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_i
 abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 
 # make a data frame of both df combined
-asymp_human_hap_summary$type = rep("Asymptomatic participant",nrow(asymp_human_hap_summary))
-symp_human_hap_summary$type = rep("Symptomatic participant",nrow(symp_human_hap_summary))
-abdomen_hap_summary$type = rep("Mosquito abdomen",nrow(abdomen_hap_summary))
+asymp_human_hap_summary$type = rep("Asymptomatic infected participants",nrow(asymp_human_hap_summary))
+symp_human_hap_summary$type = rep("Symptomatic infected participants",nrow(symp_human_hap_summary))
+abdomen_hap_summary$type = rep("Infected mosquitoes",nrow(abdomen_hap_summary))
 original_combined_hap_summary = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
 # now subset the data set to just the haplotypes found in >0 samples across all sample types
 total_haps = original_combined_hap_summary %>%
@@ -1079,7 +1079,7 @@ pyramid_plot_ama_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_i
   xlab("Unique haplotypes") +
   ylab("Number of samples with haplotype") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
-        axis.ticks.y = element_blank(), legend.position = c(0.84, 0.87),legend.box.background = element_rect(colour = "black"))  +
+        axis.ticks.y = element_blank(), legend.position = c(0.7, 0.8),legend.box.background = element_rect(colour = "black"), legend.text = element_text(size=30), legend.title = element_text(size=30))  +
   geom_vline(xintercept = 0,color="black",size=1.5)
 pyramid_plot_ama_10
 
@@ -1155,9 +1155,9 @@ symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_i
 abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 
 # make a data frame of both df combined
-asymp_human_hap_summary$type = rep("Asymptomatic participant",nrow(asymp_human_hap_summary))
-symp_human_hap_summary$type = rep("Symptomatic participant",nrow(symp_human_hap_summary))
-abdomen_hap_summary$type = rep("Mosquito abdomen",nrow(abdomen_hap_summary))
+asymp_human_hap_summary$type = rep("Asymptomatic infected participants",nrow(asymp_human_hap_summary))
+symp_human_hap_summary$type = rep("Symptomatic infected participants",nrow(symp_human_hap_summary))
+abdomen_hap_summary$type = rep("Infected mosquitoes",nrow(abdomen_hap_summary))
 original_combined_hap_summary = rbind(asymp_human_hap_summary,symp_human_hap_summary,abdomen_hap_summary)
 # now subset the data set to just the haplotypes found in >0 samples across all sample types
 total_haps = original_combined_hap_summary %>%
@@ -1222,7 +1222,7 @@ pyramid_plot_csp_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_i
   xlab("Unique haplotypes") +
   ylab("Number of samples with haplotype") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
-        axis.ticks.y = element_blank(), legend.position = c(0.84, 0.87),legend.box.background = element_rect(colour = "black"))  +
+        axis.ticks.y = element_blank(), legend.position = c(0.7, 0.8),legend.box.background = element_rect(colour = "black"),legend.text = element_text(size=30), legend.title = element_text(size=30))  +
   geom_vline(xintercept = 0,color="black",size=1.5)
 pyramid_plot_csp_10
 

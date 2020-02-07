@@ -23,12 +23,19 @@ library(ggplot2)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
+edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
 
 # read in the full human data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
 
+# read in the mosquito demographic data
+mosquito_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 
+# read in the clean ama haplotype data
+ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
+
+# read in the clean csp haplotype data
+csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
 
 
@@ -156,6 +163,65 @@ table(edgelist_data$pfr364Q_std_combined_cat, useNA = "always")
 edgelist_data$pfr364Q_std_combined_cat = as.factor(edgelist_data$pfr364Q_std_combined_cat)
 edgelist_data$pfr364Q_std_combined_cat = relevel(edgelist_data$pfr364Q_std_combined_cat,ref="less than 100 p/uL")
 
+# add in mosquito week count here! - maybe merge in using data set you already created with full edgelist over the weekend
+# read in the full edgelist of mosquito week count into
+mosquito_week_count_df = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/time sensitivity analysis data sets/spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
+colnames(mosquito_week_count_df)
+mosquito_week_count_df = mosquito_week_count_df %>%
+  select(sample_id_human,sample_id_abdomen,mosquito_week_count)
+test_data = left_join(edgelist_data,mosquito_week_count_df,by=c("sample_id_human","sample_id_abdomen"))
+colnames(test_data)
+length(which(is.na(test_data$mosquito_week_count)))
+summary(test_data$mosquito_week_count)
+edgelist_data = test_data
+
+# also add in moi for csp and ama
+# subset the csp_haplotypes data set to sample id and moi
+csp_haplotypes = csp_haplotypes %>% 
+  select(sample_name_dbs,haplotype_number) %>%
+  rename("sample_id_human" = "sample_name_dbs","csp_moi"="haplotype_number")
+# subset the ama_haplotypes data set to sample id and moi
+ama_haplotypes = ama_haplotypes %>% 
+  select(sample_name_dbs,haplotype_number) %>%
+  rename("sample_id_human" = "sample_name_dbs","ama_moi"="haplotype_number")
+# merge the data sets to get moi
+edgelist_data = left_join(edgelist_data,csp_haplotypes,by="sample_id_human")
+length(which(is.na(edgelist_data$csp_moi)))
+length(which(is.na(edgelist_data$csp_haps_shared)))
+str(edgelist_data$csp_moi)
+edgelist_data = left_join(edgelist_data,ama_haplotypes,by="sample_id_human")
+length(which(is.na(edgelist_data$ama_moi)))
+length(which(is.na(edgelist_data$ama_haps_shared)))
+str(edgelist_data$ama_moi)
+colnames(edgelist_data)
+
+# create a variable for mean moi, averaging ama and csp participant moi
+edgelist_data$mean_moi = rep(NA,nrow(edgelist_data))
+for (i in 1:nrow(edgelist_data)){
+  if (!(is.na(edgelist_data$ama_moi[i])) & !(is.na(edgelist_data$csp_moi[i]))){
+    edgelist_data$mean_moi[i] = (edgelist_data$ama_moi[i] + edgelist_data$csp_moi[i])/2
+  } else if (is.na(edgelist_data$ama_moi[i]) & !(is.na(edgelist_data$csp_moi[i]))){
+    edgelist_data$mean_moi[i] = edgelist_data$csp_moi[i]
+  } else {
+    edgelist_data$mean_moi[i] = edgelist_data$ama_moi[i]
+  }
+}
+summary(edgelist_data$mean_moi)
+summary(edgelist_data$csp_moi)
+summary(edgelist_data$ama_moi)
+edgelist_data$ama_moi[1]
+edgelist_data$csp_moi[1]
+edgelist_data$mean_moi[1]
+edgelist_data$ama_moi[2]
+edgelist_data$csp_moi[2]
+edgelist_data$mean_moi[2]
+edgelist_data$ama_moi[100]
+edgelist_data$csp_moi[100]
+edgelist_data$mean_moi[100]
+edgelist_data$ama_moi[1000]
+edgelist_data$csp_moi[1000]
+edgelist_data$mean_moi[1000]
+
 # subset the data set to only look at observations where the probability of transmission > 0 based on distance and time
 # (P(TEd) > 0 and P(TEt) > 0)
 edgelist_data = edgelist_data %>%
@@ -164,8 +230,115 @@ summary(edgelist_data$p_te_all)
 summary(edgelist_data$p_te_t)
 
 # export the data set
-write_csv(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_14JAN2020.csv")
-write_rds(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_14JAN2020.rds")
+write_csv(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_6FEB2020.csv")
+write_rds(edgelist_data,"Desktop/spat21_aim2_computational_model_subset_data_6FEB2020.rds")
+
+
+
+#### ------ look at those that did and did not match prior to p_te_t and p_te_d subsetting ------- ####
+
+# first make mosquito week count categorical
+summary(edgelist_data$mosquito_week_count)
+edgelist_data$mosquito_week_count_cat = ifelse(edgelist_data$mosquito_week_count < 50,"<50 mosquitoes ",
+                                            ifelse(edgelist_data$mosquito_week_count >= 50 & edgelist_data$mosquito_week_count < 100,"50-99 mosquitoes","100-147 mosquitoes"))
+table(edgelist_data$mosquito_week_count_cat, useNA = "always")
+
+# create data sets of each category
+edgelist_data$paired = ifelse(edgelist_data$p_te_d > 0 & edgelist_data$p_te_t > 0,"yes","no")
+table(edgelist_data$paired,useNA = "always")
+asymp_paired = edgelist_data %>%
+  filter(aim2_exposure == "asymptomatic infection" & paired == "yes")
+symp_paired = edgelist_data %>%
+  filter(aim2_exposure == "symptomatic infection" & paired == "yes")
+asymp_unpaired = edgelist_data %>%
+  filter(aim2_exposure == "asymptomatic infection" & paired == "no")
+symp_unpaired = edgelist_data %>%
+  filter(aim2_exposure == "symptomatic infection" & paired == "no")
+
+# look at the pairings across each variable
+# p_te_all
+mean(asymp_paired$p_te_all) ; sd(asymp_paired$p_te_all)
+mean(symp_paired$p_te_all) ; sd(symp_paired$p_te_all)
+mean(asymp_unpaired$p_te_all) ; sd(asymp_unpaired$p_te_all)
+mean(symp_unpaired$p_te_all) ; sd(symp_unpaired$p_te_all)
+# pfama1 moi
+mean(asymp_paired$ama_moi, na.rm=T) ; sd(asymp_paired$ama_moi, na.rm=T)
+mean(symp_paired$ama_moi, na.rm=T) ; sd(symp_paired$ama_moi, na.rm=T)
+mean(asymp_unpaired$ama_moi, na.rm=T) ; sd(asymp_unpaired$ama_moi, na.rm=T)
+mean(symp_unpaired$ama_moi, na.rm=T) ; sd(symp_unpaired$ama_moi, na.rm=T)
+# pfcsp moi
+mean(asymp_paired$csp_moi, na.rm=T) ; sd(asymp_paired$csp_moi, na.rm=T)
+mean(symp_paired$csp_moi, na.rm=T) ; sd(symp_paired$csp_moi, na.rm=T)
+mean(asymp_unpaired$csp_moi, na.rm=T) ; sd(asymp_unpaired$csp_moi, na.rm=T)
+mean(symp_unpaired$csp_moi, na.rm=T) ; sd(symp_unpaired$csp_moi, na.rm=T)
+# parasite density
+mean(asymp_paired$pfr364Q_std_combined, na.rm=T) ; sd(asymp_paired$pfr364Q_std_combined, na.rm=T)
+mean(symp_paired$pfr364Q_std_combined, na.rm=T) ; sd(symp_paired$pfr364Q_std_combined, na.rm=T)
+mean(asymp_unpaired$pfr364Q_std_combined, na.rm=T) ; sd(asymp_unpaired$pfr364Q_std_combined, na.rm=T)
+mean(symp_unpaired$pfr364Q_std_combined, na.rm=T) ; sd(symp_unpaired$pfr364Q_std_combined, na.rm=T)
+# pfama1 haplotypes shared
+mean(asymp_paired$ama_haps_shared, na.rm=T) ; sd(asymp_paired$ama_haps_shared, na.rm=T)
+mean(symp_paired$ama_haps_shared, na.rm=T) ; sd(symp_paired$ama_haps_shared, na.rm=T)
+mean(asymp_unpaired$ama_haps_shared, na.rm=T) ; sd(asymp_unpaired$ama_haps_shared, na.rm=T)
+mean(symp_unpaired$ama_haps_shared, na.rm=T) ; sd(symp_unpaired$ama_haps_shared, na.rm=T)
+# pfcsp haplotypes shared
+mean(asymp_paired$csp_haps_shared, na.rm=T) ; sd(asymp_paired$csp_haps_shared, na.rm=T)
+mean(symp_paired$csp_haps_shared, na.rm=T) ; sd(symp_paired$csp_haps_shared, na.rm=T)
+mean(asymp_unpaired$csp_haps_shared, na.rm=T) ; sd(asymp_unpaired$csp_haps_shared, na.rm=T)
+mean(symp_unpaired$csp_haps_shared, na.rm=T) ; sd(symp_unpaired$csp_haps_shared, na.rm=T)
+# age 
+table(asymp_paired$age_cat_baseline, useNA = "always")
+table(symp_paired$age_cat_baseline, useNA = "always")
+table(asymp_unpaired$age_cat_baseline, useNA = "always")
+table(symp_unpaired$age_cat_baseline, useNA = "always")
+# mosquito week count
+table(asymp_paired$mosquito_week_count_cat, useNA = "always")
+table(symp_paired$mosquito_week_count_cat, useNA = "always")
+table(asymp_unpaired$mosquito_week_count_cat, useNA = "always")
+table(symp_unpaired$mosquito_week_count_cat, useNA = "always")
+# village
+table(asymp_paired$village_name, useNA = "always")
+table(symp_paired$village_name, useNA = "always")
+table(asymp_unpaired$village_name, useNA = "always")
+table(symp_unpaired$village_name, useNA = "always")
+# mean moi
+mean(asymp_paired$mean_moi, na.rm=T) ; sd(asymp_paired$mean_moi, na.rm=T)
+mean(symp_paired$mean_moi, na.rm=T) ; sd(symp_paired$mean_moi, na.rm=T)
+mean(asymp_unpaired$mean_moi, na.rm=T) ; sd(asymp_unpaired$mean_moi, na.rm=T)
+mean(symp_unpaired$mean_moi, na.rm=T) ; sd(symp_unpaired$mean_moi, na.rm=T)
+# p_te_t
+mean(asymp_paired$p_te_t, na.rm=T) ; sd(asymp_paired$p_te_t, na.rm=T)
+mean(symp_paired$p_te_t, na.rm=T) ; sd(symp_paired$p_te_t, na.rm=T)
+mean(asymp_unpaired$p_te_t, na.rm=T) ; sd(asymp_unpaired$p_te_t, na.rm=T)
+mean(symp_unpaired$p_te_t, na.rm=T) ; sd(symp_unpaired$p_te_t, na.rm=T)
+# p_te_d
+mean(asymp_paired$p_te_d, na.rm=T) ; sd(asymp_paired$p_te_d, na.rm=T)
+mean(symp_paired$p_te_d, na.rm=T) ; sd(symp_paired$p_te_d, na.rm=T)
+mean(asymp_unpaired$p_te_d, na.rm=T) ; sd(asymp_unpaired$p_te_d, na.rm=T)
+mean(symp_unpaired$p_te_d, na.rm=T) ; sd(symp_unpaired$p_te_d, na.rm=T)
+# p_te_a
+mean(asymp_paired$p_te_a, na.rm=T) ; sd(asymp_paired$p_te_a, na.rm=T)
+mean(symp_paired$p_te_a, na.rm=T) ; sd(symp_paired$p_te_a, na.rm=T)
+mean(asymp_unpaired$p_te_a, na.rm=T) ; sd(asymp_unpaired$p_te_a, na.rm=T)
+mean(symp_unpaired$p_te_a, na.rm=T) ; sd(symp_unpaired$p_te_a, na.rm=T)
+# p_te_c
+mean(asymp_paired$p_te_c, na.rm=T) ; sd(asymp_paired$p_te_c, na.rm=T)
+mean(symp_paired$p_te_c, na.rm=T) ; sd(symp_paired$p_te_c, na.rm=T)
+mean(asymp_unpaired$p_te_c, na.rm=T) ; sd(asymp_unpaired$p_te_c, na.rm=T)
+mean(symp_unpaired$p_te_c, na.rm=T) ; sd(symp_unpaired$p_te_c, na.rm=T)
+
+
+
+
+# calculate porportion of mosquitoes that had an asymptomatic infection with pairings
+nrow(asymp_paired)/(nrow(asymp_paired) + nrow(asymp_unpaired))
+nrow(asymp_paired)
+(nrow(asymp_paired) + nrow(asymp_unpaired))
+
+# calculate porportion of mosquitoes that had an symptomatic infection with pairings
+nrow(symp_paired)/(nrow(symp_paired) + nrow(symp_unpaired))
+nrow(symp_paired)
+(nrow(symp_paired) + nrow(symp_unpaired))
 
 
 #### ----- work with the regular models ------ ####

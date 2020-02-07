@@ -28,7 +28,7 @@ library(moments)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_aim2_computational_model_subset_data_14JAN2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_aim2_computational_model_subset_data_6FEB2020.rds")
 
 # read in the mosquito demographic data
 mosquito_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
@@ -55,7 +55,7 @@ summary(model_data$mosquito_week_count)
 
 # write out the data set
 # write_csv(model_data,"spat21_model_data_21JAN2020.csv")
-model_data = read_csv("Desktop/spat21_model_data_21JAN2020.csv")
+
 
 #### ----- look at descriptive statistics for descriptive variables ------ ####
 
@@ -78,6 +78,11 @@ summary(model_data$mosquito_week_count)
 sd(model_data$mosquito_week_count)
 skewness(model_data$mosquito_week_count)
 kurtosis(model_data$mosquito_week_count)
+# mean_moi
+summary(model_data$mean_moi)
+sd(model_data$mean_moi)
+skewness(model_data$mean_moi)
+kurtosis(model_data$mean_moi)
 # village_name
 table(model_data$village_name, useNA = "always")
 

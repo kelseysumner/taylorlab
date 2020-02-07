@@ -134,7 +134,6 @@ merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/
 
 
 # create a formula for the P(TE) across time
-# our actual equation is y=e^(-3x)
 
 # set up the variables
 summary(merged_data$date_difference)
@@ -144,12 +143,11 @@ summary(merged_data$date_difference_flipped)
 
 
 
-# calculate p(TE) using the logistic function
-# equation: Y = 1/(1+0.6e^(-x-16)))
+# calculate p(TE) 
 p_te_t = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
-  if (merged_data$date_difference_flipped[i] >= -18 & merged_data$date_difference_flipped[i] <= 0){
-    p_te_t[i] = 1/(1+0.6*exp(-merged_data$date_difference_flipped[i]-16))
+  if (merged_data$date_difference_flipped[i] >= -14 & merged_data$date_difference_flipped[i] <= 7){
+    p_te_t[i] = 1
   } else {
     p_te_t[i] = 0
   }
@@ -163,8 +161,19 @@ merged_data$p_te_t = p_te_t
 p_te_t_df = merged_data %>%
   filter(p_te_t != 0)
 plot(p_te_t_df$date_difference_flipped,p_te_t_df$p_te_t,xlab = "Days between human infection and mosquito collection",ylab="P(TE)")
-abline(v=-14,col="dark red",lwd=1.5)
-
+time_plot = ggplot(data=p_te_t_df) +
+  geom_line(aes(x=date_difference_flipped,y=p_te_t),linetype = "dashed") +
+  xlab("Days between human infection and mosquito collection") +
+  ylab("Probability of tranmission for time") +
+  geom_vline(xintercept = -14,color="dark red") + 
+  geom_vline(xintercept = 7,color="dark red") +
+  theme_bw() +
+  theme(text = element_text(size=25)) +
+  scale_x_continuous(limits=c(-14,7),breaks=c(-14,-7,0,7)) +
+  scale_y_continuous(limits=c(0,1))
+time_plot
+ggsave(time_plot, filename="/Users/kelseysumner/Desktop/theoretical_time_distribution_plot.png", device="png",
+       height=8, width=12, units="in", dpi=500)
 
 
 
@@ -246,11 +255,9 @@ merged_data$rescaled_p_te_d = (merged_data$p_te_d-min(merged_data$p_te_d))/(max(
 hist(merged_data$p_te_d)
 hist(merged_data$rescaled_p_te_d)
 summary(merged_data$rescaled_p_te_d) # stays same
-# rescale for p_te_t
-merged_data$rescaled_p_te_t = (merged_data$p_te_t-min(merged_data$p_te_t))/(max(merged_data$p_te_t)-min(merged_data$p_te_t))
-hist(merged_data$p_te_t)
-hist(merged_data$rescaled_p_te_t)
-summary(merged_data$rescaled_p_te_t) # stays same
+# rename p_te_t but don't rescale
+merged_data$rescaled_p_te_t = merged_data$p_te_t
+
 
 
 # make a final variable that is P(TEall)
@@ -265,14 +272,14 @@ for (i in 1:nrow(merged_data)){
 }
 summary(p_te_all)
 merged_data$p_te_all = p_te_all
-length(which(p_te_all == 0)) # 168392
-length(which(p_te_all > 0)) # 2262
-length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$rescaled_p_te_a_c_combo != 0)) # 2262
+length(which(p_te_all == 0)) # 167938
+length(which(p_te_all > 0)) # 2716
+length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$rescaled_p_te_a_c_combo != 0)) # 2716
 
 
 # export the data set 
-# write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.csv")
-# write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_4FEB2020.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
 
 
 
@@ -287,9 +294,7 @@ length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0
 
 # make a plot of p_te_t
 # time plot
-merged_data_time_plot = merged_data %>%
-  filter(date_difference_flipped <= 0)
-p_te_t_density_plot_x = ggplot(data=merged_data_time_plot,aes(x=date_difference_flipped)) +
+p_te_t_density_plot_x = ggplot(data=merged_data,aes(x=date_difference_flipped)) +
   geom_density(alpha=0.6,fill=c("#c2a5cf")) + 
   theme_bw() + 
   xlab("Days between human infection and mosquito collection") +
@@ -297,13 +302,13 @@ p_te_t_density_plot_x = ggplot(data=merged_data_time_plot,aes(x=date_difference_
   ggtitle("Density of observations over time")
 p_te_t_density_plot_x
 dpb <- ggplot_build(p_te_t_density_plot_x)
-x1 <- min(which(dpb$data[[1]]$x >=-18))
-x2 <- max(which(dpb$data[[1]]$x <=0))
+x1 <- min(which(dpb$data[[1]]$x >=-14))
+x2 <- max(which(dpb$data[[1]]$x <=7))
 p_te_t_density_plot_x = p_te_t_density_plot_x +
   geom_area(data=data.frame(x=dpb$data[[1]]$x[x1:x2],
                             y=dpb$data[[1]]$y[x1:x2]),
             aes(x=x, y=y), fill="#762a83", colour = "black") +
-  scale_x_continuous(breaks=c(0,-18,-100,-200,-300,-400)) +
+  scale_x_continuous(breaks=c(400,300,200,100,7,-14,-100,-200,-300,-400)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 ggsave(p_te_t_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_t_density_plot_x.png", device="png",
        height=8, width=14, units="in", dpi=500)
@@ -363,7 +368,88 @@ p_te_a_c_combo = ggplot() +
   labs(fill = "Sequencing target") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25), legend.position = c(0.86,0.12), legend.box.background = element_rect(colour = "black"))
 p_te_a_c_combo
+# another way
+p_te_a_c_combo = ggplot() +
+  geom_jitter(data=p_te_a_c_combo_df,aes(x=factor(x_axis),y=probability,colour=type),alpha=0.6,width=0.2) + 
+  geom_boxplot(data=p_te_a_c_combo_df,aes(x=factor(x_axis),y=probability,fill=type),alpha=0.05) + 
+  theme_bw() + 
+  ylab("Probability of transmission") +
+  xlab("Number of haplotypes shared") +
+  scale_colour_manual(values=c("#081d58","#fb9a99")) +
+  labs(colour = "Sequencing target",fill="Sequencing target") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25), legend.position = c(0.86,0.12), legend.box.background = element_rect(colour = "black"))
+p_te_a_c_combo
 ggsave(p_te_a_c_combo, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot_x.png", device="png",
        height=8, width=14, units="in", dpi=500)
+
+
+
+# make a plot of p_te_all by village
+p_te_all_subset = merged_data %>%
+  filter(p_te_t > 0 & p_te_d > 0)
+p_te_all_village = ggplot(data=p_te_all_subset) +
+  geom_boxplot(aes(x=factor(village_name),y=p_te_all,fill=village_name), alpha=0.8) +
+  theme_bw()+
+  xlab("Village")+
+  ylab("Probability of transmission across all variables") +
+  theme(legend.position = "none", text = element_text(size=25))
+p_te_all_village
+ggsave(p_te_all_village, filename="/Users/kelseysumner/Desktop/p_te_all_village.png", device="png",
+       height=8, width=14, units="in", dpi=500)
+
+
+
+# make a plot of p_te_all by symptomatic status
+p_te_all_exposure = ggplot(data=p_te_all_subset) +
+  geom_boxplot(aes(x=factor(aim2_exposure),y=p_te_all,fill=aim2_exposure), alpha=0.8) +
+  theme_bw()+
+  xlab("Symptomatic status")+
+  scale_fill_manual(values=c("#E1AF00","#3B9AB2")) +
+  ylab("Probability of transmission across all variables") +
+  theme(legend.position = "none",text = element_text(size=25))
+p_te_all_exposure
+ggsave(p_te_all_exposure, filename="/Users/kelseysumner/Desktop/p_te_all_exposure.png", device="png",
+       height=8, width=14, units="in", dpi=500)
+
+
+
+# make a plot of p_te_all by mosquito week count
+p_te_all_mosquito_collection_df = p_te_all_subset %>%
+  group_by(mosquito_date) %>%
+  summarize(mean_p_te_all = mean(p_te_all))
+p_te_all_mosquito_collection = ggplot(data=p_te_all_mosquito_collection_df) +
+  geom_bar(aes(x=mosquito_date,y=mean_p_te_all), stat="identity") +
+  theme_bw()+
+  xlab("Week of mosquito collection")+
+  ylab("Probability of transmission across all variables") +
+  scale_x_date(date_breaks = "1 week") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p_te_all_mosquito_collection
+ggsave(p_te_all_mosquito_collection, filename="/Users/kelseysumner/Desktop/p_te_all_mosquito_collection.png", device="png",
+       height=8, width=16, units="in", dpi=500)
+
+# make a plot of p_te_all by mosquito week count colored by village
+p_te_all_mosquito_collection_df = p_te_all_subset %>%
+  group_by(mosquito_date,village_name) %>%
+  summarize(mean_p_te_all = mean(p_te_all))
+p_te_all_mosquito_collection = ggplot(data=p_te_all_mosquito_collection_df) +
+  geom_bar(aes(x=mosquito_date,y=mean_p_te_all,fill=village_name), stat="identity") +
+  theme_bw()+
+  xlab("Date of mosquito collection")+
+  ylab("Mean daily probability of transmission across all variables") +
+  scale_x_date(date_breaks = "1 week") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(fill="Village")
+p_te_all_mosquito_collection
+ggsave(p_te_all_mosquito_collection, filename="/Users/kelseysumner/Desktop/p_te_all_mosquito_collection.png", device="png",
+       height=8, width=16, units="in", dpi=500)
+
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
+
+
 
 

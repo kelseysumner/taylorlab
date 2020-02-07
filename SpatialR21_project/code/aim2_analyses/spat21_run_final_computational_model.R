@@ -632,5 +632,3 @@ ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plo
        height=7, width=8, units="in", dpi=500)
 
 
-
-
