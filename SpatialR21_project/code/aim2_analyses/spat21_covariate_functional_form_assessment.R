@@ -30,31 +30,6 @@ library(moments)
 # read in the combined ama and csp data set for mosquito abdomens
 model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_aim2_computational_model_subset_data_6FEB2020.rds")
 
-# read in the mosquito demographic data
-mosquito_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
-
-
-
-#### --- create a variable of the total number of female Anopheles mosquitoes collected within week following participant infection ------ ####
-
-# first create a count of whether or not mosquitoes collected within 7 days of the human sample
-mosquito_week_count = rep(NA,nrow(model_data))
-for (i in 1:nrow(model_data)){
-  count = 0
-  for (j in 1:nrow(mosquito_data)){
-    if ((mosquito_data$collection_date[j]-model_data$human_date[i] <= 7) & (mosquito_data$collection_date[j]-model_data$human_date[i] >= 0)){
-      count = count + 1
-    }
-  }
-  mosquito_week_count[i] = count
-}
-# add the new variable to the data set
-model_data$mosquito_week_count = mosquito_week_count
-summary(model_data$mosquito_week_count)
-# remember: this variable looks at all mosquitoes collected across all three villages within that week
-
-# write out the data set
-# write_csv(model_data,"spat21_model_data_21JAN2020.csv")
 
 
 #### ----- look at descriptive statistics for descriptive variables ------ ####
@@ -105,7 +80,7 @@ plot_loess
 model1=glmer(p_te_all~pfr364Q_std_combined_rescaled + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model1) 
 # exponentiate coefficient
-exp(-0.12176)
+exp(-0.30653)
 # pull out log likelihood test value
 logLik(model1) 
 # plot the linear model fit
@@ -135,9 +110,6 @@ model_data$pfr364Q_std_combined_rescaled_cubic = model_data$pfr364Q_std_combined
 # then run the model
 model3=glmer(p_te_all~pfr364Q_std_combined_rescaled+pfr364Q_std_combined_rescaled_quad+pfr364Q_std_combined_rescaled_cubic + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model3) 
-exp(-1.82296)
-exp(0.46664)
-exp(-0.02876)
 # pull out log likelihood test value
 logLik(model3) 
 
@@ -148,9 +120,9 @@ summary(model4)
 
 # now look at categorical coding (quartiles)
 summary(model_data$pfr364Q_std_combined)
-model_data$pfr364_std_quartiles = ifelse(model_data$pfr364Q_std_combined < 2.37, "quartile 1",
-                                         ifelse(model_data$pfr364Q_std_combined >= 2.37 & model_data$pfr364Q_std_combined < 66.13, "quartile 2",
-                                                ifelse(model_data$pfr364Q_std_combined >= 66.13 & model_data$pfr364Q_std_combined < 996.65,"quartile 3","quartile 4")))
+model_data$pfr364_std_quartiles = ifelse(model_data$pfr364Q_std_combined < 1.93, "quartile 1",
+                                         ifelse(model_data$pfr364Q_std_combined >= 1.93 & model_data$pfr364Q_std_combined < 51.64, "quartile 2",
+                                                ifelse(model_data$pfr364Q_std_combined >= 51.64 & model_data$pfr364Q_std_combined < 773.53,"quartile 3","quartile 4")))
 table(model_data$pfr364_std_quartiles, useNA = "always")
 model5=glmer(p_te_all~pfr364_std_quartiles + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model5)
@@ -169,9 +141,12 @@ summary(model_data$pfr364Q_std_combined_ln)
 # first look at age
 table(model_data$age_all_baseline, useNA = "always")
 # change 9mos to 1 year because aged in
-model_data$age_all_baseline[which(is.na(model_data$age_all_baseline))] = 1
 table(model_data$age_cat_baseline, useNA = "always")
 is.numeric(model_data$age_all_baseline)
+model_data$age_all_baseline = as.numeric(model_data$age_all_baseline)
+model_data$age_all_baseline[which(is.na(model_data$age_all_baseline))] = 1
+table(model_data$age_cat_baseline, useNA = "always")
+
 
 # first make a rescaled variable of parasite density (rescaled to a mean of 0)
 model_data$age_rescaled = scale(model_data$age_all_baseline)
@@ -188,7 +163,7 @@ plot_loess
 model1=glmer(p_te_all~age_rescaled + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model1) 
 # exponentiate coefficient
-exp(0.07581)
+exp(0.04460)
 # pull out log likelihood test value
 logLik(model1) 
 # plot the linear model fit
@@ -207,8 +182,8 @@ model_data$age_quad = model_data$age_rescaled*model_data$age_rescaled
 model2=glmer(p_te_all~age_rescaled+age_quad + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model2) 
 # exponentiate coefficient
-exp(-0.05541)
-exp(0.08231)
+exp(-0.02421)
+exp(0.04455)
 # pull out log likelihood test value
 logLik(model2) 
 # plot the quadratic model fit
@@ -227,9 +202,9 @@ model_data$age_cubic = model_data$age_rescaled*model_data$age_rescaled*model_dat
 model3=glmer(p_te_all~age_rescaled+age_quad+age_cubic + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model3) 
 # exponentiate coefficient
-exp(0.09580)
-exp(0.46434)
-exp(-0.15419)
+exp(0.06282)
+exp(0.38255)
+exp(-0.12689)
 # pull out log likelihood test value
 logLik(model3) 
 # plot the cubic model fit
@@ -247,8 +222,8 @@ cubic_plot
 model4=glmer(p_te_all~age_cat_baseline + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model4) 
 # exponentiate coefficient
-exp(-0.3561)
-exp(-0.5632)
+exp(-0.3192)
+exp(-0.3933)
 # pull out log likelihood test value
 logLik(model4) 
 
@@ -257,7 +232,7 @@ model_data$age_ln = log(model_data$age_all_baseline)
 model5=glmer(p_te_all~age_ln + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model5) 
 # exponentiate coefficient
-exp(-0.007367)
+exp(-0.01179)
 # pull out log likelihood test value
 logLik(model5) 
 
@@ -282,7 +257,7 @@ plot_loess
 model1=glmer(p_te_all~mosquito_week_count_rescaled + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model1) 
 # exponentiate coefficient
-exp(0.03108)
+exp(-0.01211)
 # pull out log likelihood test value
 logLik(model1) 
 # plot the linear model fit
@@ -301,8 +276,8 @@ model_data$mosquito_week_count_rescaled_quad = model_data$mosquito_week_count_re
 model2=glmer(p_te_all~mosquito_week_count_rescaled+mosquito_week_count_rescaled_quad + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model2) 
 # exponentiate coefficient
-exp(0.08149)
-exp(0.11909)
+exp(-0.008373)
+exp(0.020855)
 # pull out log likelihood test value
 logLik(model2) 
 
@@ -311,22 +286,26 @@ model_data$mosquito_week_count_rescaled_cubic = model_data$mosquito_week_count_r
 model3=glmer(p_te_all~mosquito_week_count_rescaled+mosquito_week_count_rescaled_quad+mosquito_week_count_rescaled_cubic + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model3) 
 # exponentiate coefficient
-exp(0.12984)
-exp(0.51466)
-exp(-0.09533)
+exp(0.06282)
+exp(0.38255)
+exp(-0.12689)
 # pull out log likelihood test value
 logLik(model3) 
 
 # look at the categorical coding
 summary(model_data$mosquito_week_count)
-model_data$mosquito_week_count_cat = ifelse(model_data$mosquito_week_count < 50,"group1",
-                                            ifelse(model_data$mosquito_week_count >= 50 & model_data$mosquito_week_count < 100,"group2","group3"))
 table(model_data$mosquito_week_count_cat, useNA = "always")
-model4=glmer(p_te_all~mosquito_week_count_cat + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
+model4=glmer(p_te_all~mosquito_week_count_cat + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model4) 
+# this model doesn't converge so try a different categorical coding based on where the curve seems to change and that cuts data in half
+model_data$mosquito_week_count_cat = ifelse(model_data$mosquito_week_count < 75, "<75 mosquitoes","75-147 mosquitoes")
+table(model_data$mosquito_week_count_cat, useNA = "always")
+model_data$mosquito_week_count_cat = as.factor(model_data$mosquito_week_count_cat)
+# rerun the model
+model4=glmer(p_te_all~mosquito_week_count_cat + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
 summary(model4) 
 # exponentiate coefficient
-exp(0.16808)
-exp(-1.61841)
+exp(0.08478)
 # pull out log likelihood test value
 logLik(model4) 
 
@@ -335,9 +314,77 @@ model_data$mosquito_week_count_ln = log(model_data$mosquito_week_count)
 model5=glmer(p_te_all~mosquito_week_count_ln + (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data) 
 summary(model5) 
 # exponentiate coefficient
-exp(-0.01565)
+exp(-0.04766)
+exp(0.04939)
 # pull out log likelihood test value
 logLik(model5) 
+
+
+#### ------- do the functional form assessment of mean_moi ------- ####
+
+# look at the variable
+summary(model_data$mean_moi)
+
+# first make a rescaled variable of parasite density (rescaled to a mean of 0)
+model_data$mean_moi_rescaled = scale(model_data$mean_moi)
+summary(model_data$mean_moi)
+summary(model_data$mean_moi_rescaled)
+
+# plot the lowess graph 
+plot_loess = ggplot(data=model_data) +
+  geom_point(aes(x=mean_moi,y=p_te_all)) +
+  geom_smooth(aes(x=mean_moi,y=p_te_all),method="loess")
+plot_loess
+
+# look at the linear coding
+model1=glmer(p_te_all~mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model1) 
+# model did not converge
+
+# look at the quadratic coding
+model_data$mean_moi_quad = model_data$mean_moi_rescaled*model_data$mean_moi_rescaled
+model2=glmer(p_te_all~mean_moi_rescaled+mean_moi_quad+(1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model2) 
+# model had singular fit
+
+# look at the cubic coding
+model_data$mean_moi_cubic = model_data$mean_moi_rescaled*model_data$mean_moi_rescaled*model_data$mean_moi_rescaled
+model3=glmer(p_te_all~mean_moi_rescaled+mean_moi_quad+mean_moi_cubic+ (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model3) 
+# did not converge
+
+# look at the binary coding
+summary(model_data$mean_moi)
+model_data$mean_moi_binary = ifelse(model_data$mean_moi > 2, ">2 mean MOI","1-2 mean MOI")
+table(model_data$mean_moi_binary, useNA = "always")
+table(model_data$mean_moi_binary,model_data$mean_moi)
+model_data$mean_moi_binary = as.factor(model_data$mean_moi_binary)
+model_data$mean_moi_binary = relevel(model_data$mean_moi_binary,ref="1-2 mean MOI")
+model4=glmer(p_te_all~mean_moi_binary+ (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model4) 
+# exponentiate the coefficient
+exp(2.1037)
+
+# look at the categorical coding
+summary(model_data$mean_moi)
+model_data$mean_moi_category = ifelse(model_data$mean_moi <= 2, "1-2 mean MOI",ifelse(model_data$mean_moi > 2 & model_data$mean_moi <= 6,"2.5-6 mean MOI","6.5-15.5 mean MOI"))
+table(model_data$mean_moi_category, useNA = "always")
+table(model_data$mean_moi_category,model_data$mean_moi)
+model_data$mean_moi_category = as.factor(model_data$mean_moi_category)
+model_data$mean_moi_category = relevel(model_data$mean_moi_category,ref="1-2 mean MOI")
+model5=glmer(p_te_all~mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model5) 
+# exponentiate the coefficient
+exp(1.7251)
+exp(2.4965)
+
+# look at the natural log
+summary(model_data$mean_moi)
+model_data$mean_moi_ln = log(model_data$mean_moi)
+table(model_data$mean_moi_ln, useNA = "always")
+model6=glmer(p_te_all~mean_moi_ln+ (1|HH_ID_human/unq_memID),family=binomial(link = "log"),data=model_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model6) 
+# model did not converge
 
 
 
@@ -345,14 +392,13 @@ logLik(model5)
 
 model_data = model_data %>%
   dplyr::select(-c(pfr364Q_std_combined_rescaled_quad,pfr364Q_std_combined_rescaled_cubic,pfr364Q_std_combined_ln,pfr364_std_quartiles,
-            age_quad,age_rescaled,age_cubic,age_ln,mosquito_week_count_rescaled,mosquito_week_count_ln,mosquito_week_count_rescaled_quad,mosquito_week_count_rescaled_cubic))
+            age_quad,age_rescaled,age_cubic,age_ln,mosquito_week_count_rescaled,mosquito_week_count_ln,mosquito_week_count_rescaled_quad
+            ,mean_moi_quad,mean_moi_cubic,mean_moi_ln))
 colnames(model_data)
-model_data = model_data %>%
-  dplyr::select(-c(mosquio_week_count_rescaled_quad))
 
 # write out the data set
-write_csv(model_data,"Desktop/spat21_final_model_data_set_21JAN2020.csv")
-write_rds(model_data,"Desktop/spat21_final_model_data_set_21JAN2020.rds")
+write_csv(model_data,"Desktop/spat21_final_model_data_set_11FEB2020.csv")
+write_rds(model_data,"Desktop/spat21_final_model_data_set_11FEB2020.rds")
 
 
 

@@ -17,7 +17,7 @@ require(pracma)
 #### ---------- read in the data sets ---------- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_14JAN2020.rds")
+merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
 
 # read in the clean ama haplotype data
 ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
@@ -124,6 +124,127 @@ for (i in 1:nrow(merged_data)){
 }
 # add the new variable to the data set
 merged_data$p_te_a = p_te_a
+
+
+
+#### ------- ALTERNATE METHOD PENALIZING HIGH MOI: calculate haplotype probability values for ama and csp -------- ####
+
+# read in the model data set (already subset to P(TEt)>0 and P(TEd)>0)
+merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
+
+
+# calculate the P(TE) for csp based on the number and prevalence of haplotypes
+p_te_c_alt = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$csp_haps_shared[i] > 0 & !(is.na(merged_data$csp_haps_shared[i]))){
+    cum_prop = 1
+    split_list = str_split(merged_data$csp_list_haps_shared[i],",")[[1]]
+    for (j in 1:merged_data$csp_haps_shared[i]) {
+      for (k in 1:nrow(csp_hap_summary)){
+        if (split_list[j] == csp_hap_summary$csp_haplotype_ids[k]){
+          cum_prop = cum_prop*(1-csp_hap_summary$csp_hap_prevalence[k])
+        }
+      }
+    }
+    p_te_c_alt[i] = (1 - cum_prop)*(merged_data$csp_haps_shared[i]/merged_data$csp_moi[i])
+  } else {
+    p_te_c_alt[i] = 0
+  }
+}
+# add the new variable to the data set
+merged_data$p_te_c_alt = p_te_c_alt
+
+
+
+
+# calculate the P(TE) for ama based on the number and prevalence of haplotypes
+p_te_a_alt = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$ama_haps_shared[i] > 0 & !(is.na(merged_data$ama_haps_shared[i]))){
+    cum_prop = 1
+    split_list = str_split(merged_data$ama_list_hap_shared[i],",")[[1]]
+    for (j in 1:merged_data$ama_haps_shared[i]) {
+      for (k in 1:nrow(ama_hap_summary)){
+        if (split_list[j] == ama_hap_summary$ama_haplotype_ids[k]){
+          cum_prop = cum_prop*(1-ama_hap_summary$ama_hap_prevalence[k])
+        }
+      }
+    }
+    p_te_a_alt[i] = (1 - cum_prop)*(merged_data$ama_haps_shared[i]/merged_data$ama_moi[i])
+  } else {
+    p_te_a_alt[i] = 0
+  }
+}
+# add the new variable to the data set
+merged_data$p_te_a_alt = p_te_a_alt
+
+
+# make p_te_a_c_combo
+# first combine the pfcsp and pfama1 haplotypes
+p_te_a_c_combo_alt = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$p_te_a_alt[i] != 0 & merged_data$p_te_c_alt[i] != 0){
+    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt[i])*(1-merged_data$p_te_c_alt[i])
+  } else if (merged_data$p_te_a_alt[i] != 0 & merged_data$p_te_c_alt[i] == 0){
+    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt[i])
+  } else if (merged_data$p_te_a_alt[i] == 0 & merged_data$p_te_c_alt[i] != 0){
+    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_c_alt[i])
+  } else{
+    p_te_a_c_combo_alt[i] = 0
+  }
+}
+summary(p_te_a_c_combo_alt)
+merged_data$p_te_a_c_combo_alt = p_te_a_c_combo_alt
+length(which(p_te_a_c_combo_alt == 0)) # 1336
+length(which(merged_data$p_te_a_alt == 0 & merged_data$p_te_c_alt == 0)) # 1336
+
+
+# now make a plot of the change in p_te_a_c_combo over moi
+merged_data$p_te_a_c_combo_change = merged_data$p_te_a_c_combo_alt-merged_data$p_te_a_c_combo
+hap_coding_change_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo_change)) +
+  geom_point() +
+  geom_smooth(method="loess") +
+  xlab("Mean participant MOI") +
+  ylab("Change in P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_change_plot
+plot(merged_data$p_te_a_alt,merged_data$p_te_a)
+plot(merged_data$p_te_c_alt,merged_data$p_te_c)
+summary(merged_data$p_te_a)
+summary(merged_data$p_te_a_alt)
+summary(merged_data$p_te_c)
+summary(merged_data$p_te_c_alt)
+summary(merged_data$p_te_a_c_combo)
+summary(merged_data$p_te_a_c_combo_alt)
+ggsave(hap_coding_change_plot, filename="/Users/kelseysumner/Desktop/hap_coding_change_plot.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
+# look at plot of new haplotypes measure over moi
+hap_coding_alt_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo_alt)) +
+  geom_point() +
+  geom_smooth(method="loess",col="orange") +
+  xlab("Mean participant MOI") +
+  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_alt_plot
+ggsave(hap_coding_alt_plot, filename="/Users/kelseysumner/Desktop/hap_coding_alt_plot.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
+
+# look at plot of old haplotypes measure over moi
+hap_coding_old_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo)) +
+  geom_point() +
+  geom_smooth(method="loess",col="purple") +
+  xlab("Mean participant MOI") +
+  ylab("Old formula for P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_old_plot
+ggsave(hap_coding_old_plot, filename="/Users/kelseysumner/Desktop/hap_coding_old_plot.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
 
 
 
