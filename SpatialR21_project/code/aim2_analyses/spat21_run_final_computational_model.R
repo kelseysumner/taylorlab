@@ -22,11 +22,10 @@ library(lme4)
 library(ggplot2)
 
 
-
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_14FEB2020.rds")
 
 
 
@@ -110,16 +109,40 @@ exp(confint(modeltest_2,devtol=1e-5))
 anova(modeltest,modeltest_2)
 
 
+#### --------- try a zero inflated binomial model ------- ####
+
+# load packages
+library("glmmTMB") 
+library("bbmle")
+
+# check for zero inflation
+100*sum(model_data$p_te_all_alt == 0)/nrow(model_data) # 33.7% of data zeroes - quite a lot
+
+# try fitting a crude version fo the zero inflated binomial model
+model_zero <- glmmTMB(p_te_all_alt~aim2_exposure+(1|HH_ID_human/unq_memID),ziformula=~1,family=binomial(link = "logit"), data = model_data)
+summary(model_zero)
+
+# try the model we want with all confounders
+model_zero_2 <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),ziformula=~1,family=binomial(link = "logit"), data = model_data)
+summary(model_zero_2)
+
+# also try a zero-inflated beta distribution
+library(gamlss)
+model_beta = gamlss(p_te_all_alt~aim2_exposure+re(random=~1|HH_ID_human/unq_memID),family=BEINFO,data=na.omit(model_data))
+summary(model_beta)
+# not really sure what this is doing
+
+
 #### ------ run the final models and do model selection ------- ####
 
 # run the original multi-level model with all covariates and interaction term
-model1 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_category +pfr364Q_std_combined_rescaled+village_name+age_cat_baseline*aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model1 <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+age_cat_baseline*aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model1)
-exp(0.16557)
-exp(0.18609)
+exp(-0.097120)
+exp(-0.235954)
 
 # run the model with all covariates but interaction removed
-model2 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_category +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model2 <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model2)
 # model had some trouble converging
 anova(model1,model2) # model 2 is better - no interaction between main exposure and age
@@ -152,16 +175,17 @@ aa.fixef <- t(sapply(aa.OK,fixef))
 aa.fixef.m <- melt(aa.fixef)
 summary(unlist(daply(aa.fixef.m,"Var2",summarise,sd(value)/abs(mean(value))))) # some variability in the coefficients
 # now try rerunning the model with one of the optimizers that worked
-model2 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_category +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model2 <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model2)
-exp(0.79024)
+exp(0.64476)
 anova(model1,model2)
 
 # now run the model removing village
-model3 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_category +pfr364Q_std_combined_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), control = glmerControl(optimizer="bobyqa"), data = model_data)
+model3 <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), control = glmerControl(optimizer="bobyqa"), data = model_data)
 summary(model3)
-exp(0.84789)
+exp(0.72747)
 anova(model2,model3)
+anova(model3,model1)
 # model 2 is better
 # check gradient calculations
 derivs1 <- model3@optinfo$derivs
@@ -169,20 +193,24 @@ sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1)) # very small
 
 # now run the model removing parasite density but adding back in village
-model4 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_category + village_name +(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model4 <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled + village_name +(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model4)
 anova(model2,model4) 
-exp(0.6369)
+anova(model3,model4)
+anova(model1,model4)
+exp(0.58842)
 # check gradient calculations
 derivs1 <- model4@optinfo$derivs
 sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1)) 
 
 # now run the model removing mean moi
-model5 <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ pfr364Q_std_combined_rescaled + village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model5 <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ pfr364Q_std_combined_rescaled + village_name + (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model5)
 exp(1.12549)
 anova(model2,model5) # model 2 is better
+anova(model5,model3)
+anova(model5,model4)
 # model 2 is better but this one didn't have convergence issues
 # check gradient calculations
 derivs1 <- model5@optinfo$derivs
@@ -190,7 +218,7 @@ sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1)) 
 
 # now run the model removing age
-model6 <- glmer(p_te_all~aim2_exposure+mean_moi_category+mosquito_week_count_cat+ pfr364Q_std_combined_rescaled + village_name +(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model6 <- glmer(p_te_all_alt~aim2_exposure+mean_moi_rescaled+mosquito_week_count_cat+ pfr364Q_std_combined_rescaled + village_name +(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model6)
 exp(1.06053)
 anova(model2,model6) # model 6 is better
@@ -201,18 +229,18 @@ sc_grad1 <- with(derivs1,solve(Hessian,gradient))
 max(abs(sc_grad1))
 
 # now run the model removing mosquito_week_count
-model7 <- glmer(p_te_all~aim2_exposure+mean_moi_category+ pfr364Q_std_combined_rescaled + age_cat_baseline + village_name +(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model7 <- glmer(p_te_all_alt~aim2_exposure+mean_moi_rescaled+ pfr364Q_std_combined_rescaled + age_cat_baseline + village_name +(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model7)
 exp(0.78294)
 anova(model2,model7) # model 2 is better
 
 # now run the crude model with no covariates
-model8 <- glmer(p_te_all~aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model8 <- glmer(p_te_all_alt~aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model8)
 exp(1.2122)
 anova(model2,model8) # model 2 is better
 # model 2 is better but this one didn't have convergence issues
-
+ 
 # a few more model comparisons
 anova(model4,model5) # model 4 better than 5
 anova(model3,model5)
@@ -259,7 +287,7 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuo
 #### ------- make a plot of p_te_all stratified -------- ####
 
 # make a density plot of p_te_all 
-p_te_all_plot = ggplot(data=model_data,aes(x=p_te_all,fill=aim2_exposure)) +
+p_te_all_plot = ggplot(data=model_data,aes(x=p_te_all_alt,fill=aim2_exposure)) +
   geom_density(alpha=0.6) + 
   scale_fill_manual(values=c("#E1AF00","#3B9AB2")) + 
   labs(fill="Symptomatic status") +
@@ -277,7 +305,7 @@ ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_densit
 
 
 # make a violin plot of p_te_all stratified by participant's symptomatic status
-p_te_all_plot = ggplot(data=model_data,aes(x=aim2_exposure,y=p_te_all,fill=aim2_exposure)) +
+p_te_all_plot = ggplot(data=model_data,aes(x=aim2_exposure,y=p_te_all_alt,fill=aim2_exposure)) +
   geom_violin(alpha=0.8) + 
   scale_fill_manual(values=c("#E1AF00","#3B9AB2")) + 
   theme_bw() + 
@@ -294,293 +322,274 @@ ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_violin
 #### ------ make a plot of the odds ratios of p_te_all coded binary -------- ####
 
 # look at a summary of the outcome variable
-summary(model_data$p_te_all)
-length(which(is.na(model_data$p_te_all)))
-hist(model_data$p_te_all)
+summary(model_data$p_te_all_alt)
+length(which(is.na(model_data$p_te_all_alt)))
+hist(model_data$p_te_all_alt)
 
 # make a binary variable for 0 or >0
-model_data$outcome_binary_lessthan0 = ifelse(model_data$p_te_all > 0,"greater than 0.00","equal to 0.00")
-table(model_data$outcome_binary_lessthan0,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0 = ifelse(model_data$p_te_all_alt > 0,"greater than 0.00","equal to 0.00")
+table(model_data$outcome_binary_lessthan0,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0, useNA = "always")
 model_data$outcome_binary_lessthan0 = factor(model_data$outcome_binary_lessthan0)
 levels(model_data$outcome_binary_lessthan0)
 model_data$outcome_binary_lessthan0 = relevel(model_data$outcome_binary_lessthan0,ref = "equal to 0.00")
 
 # make a binary variable for <0.05 or >= 0.05
-model_data$outcome_binary_lessthan0.05 = ifelse(model_data$p_te_all < 0.05,"less than 0.05","greater than 0.05")
-table(model_data$outcome_binary_lessthan0.05,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.05 = ifelse(model_data$p_te_all_alt < 0.05,"less than 0.05","greater than 0.05")
+table(model_data$outcome_binary_lessthan0.05,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.05, useNA = "always")
 model_data$outcome_binary_lessthan0.05 = factor(model_data$outcome_binary_lessthan0.05)
 levels(model_data$outcome_binary_lessthan0.05)
 model_data$outcome_binary_lessthan0.05 = relevel(model_data$outcome_binary_lessthan0.05,ref = "less than 0.05")
 
 # make a binary variable for <0.1 or >= 0.1
-model_data$outcome_binary_lessthan0.1 = ifelse(model_data$p_te_all < 0.1,"less than 0.1","greater than 0.1")
-table(model_data$outcome_binary_lessthan0.1,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.1 = ifelse(model_data$p_te_all_alt < 0.1,"less than 0.1","greater than 0.1")
+table(model_data$outcome_binary_lessthan0.1,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.1, useNA = "always")
 model_data$outcome_binary_lessthan0.1 = factor(model_data$outcome_binary_lessthan0.1)
 levels(model_data$outcome_binary_lessthan0.1)
 model_data$outcome_binary_lessthan0.1 = relevel(model_data$outcome_binary_lessthan0.1,ref = "less than 0.1")
 
 # make a binary variable for <0.15 or >= 0.15
-model_data$outcome_binary_lessthan0.15 = ifelse(model_data$p_te_all < 0.15,"less than 0.15","greater than 0.15")
-table(model_data$outcome_binary_lessthan0.15,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.15 = ifelse(model_data$p_te_all_alt < 0.15,"less than 0.15","greater than 0.15")
+table(model_data$outcome_binary_lessthan0.15,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.15, useNA = "always")
 model_data$outcome_binary_lessthan0.15 = factor(model_data$outcome_binary_lessthan0.15)
 levels(model_data$outcome_binary_lessthan0.15)
 model_data$outcome_binary_lessthan0.15 = relevel(model_data$outcome_binary_lessthan0.15,ref = "less than 0.15")
 
 # make a binary variable for <0.2 or >= 0.2
-model_data$outcome_binary_lessthan0.2 = ifelse(model_data$p_te_all < 0.2,"less than 0.2","greater than 0.2")
-table(model_data$outcome_binary_lessthan0.2,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.2 = ifelse(model_data$p_te_all_alt < 0.2,"less than 0.2","greater than 0.2")
+table(model_data$outcome_binary_lessthan0.2,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.2, useNA = "always")
 model_data$outcome_binary_lessthan0.2 = factor(model_data$outcome_binary_lessthan0.2)
 levels(model_data$outcome_binary_lessthan0.2)
 model_data$outcome_binary_lessthan0.2 = relevel(model_data$outcome_binary_lessthan0.2,ref = "less than 0.2")
 
 # make a binary variable for <0.25 or >= 0.25
-model_data$outcome_binary_lessthan0.25 = ifelse(model_data$p_te_all < 0.25,"less than 0.25","greater than 0.25")
-table(model_data$outcome_binary_lessthan0.25,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.25 = ifelse(model_data$p_te_all_alt < 0.25,"less than 0.25","greater than 0.25")
+table(model_data$outcome_binary_lessthan0.25,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.25, useNA = "always")
 model_data$outcome_binary_lessthan0.25 = factor(model_data$outcome_binary_lessthan0.25)
 levels(model_data$outcome_binary_lessthan0.25)
 model_data$outcome_binary_lessthan0.25 = relevel(model_data$outcome_binary_lessthan0.25,ref = "less than 0.25")
 
 # make a binary variable for <0.3 or >= 0.3
-model_data$outcome_binary_lessthan0.3 = ifelse(model_data$p_te_all < 0.3,"less than 0.3","greater than 0.3")
-table(model_data$outcome_binary_lessthan0.3,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.3 = ifelse(model_data$p_te_all_alt < 0.3,"less than 0.3","greater than 0.3")
+table(model_data$outcome_binary_lessthan0.3,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.3, useNA = "always")
 model_data$outcome_binary_lessthan0.3 = factor(model_data$outcome_binary_lessthan0.3)
 levels(model_data$outcome_binary_lessthan0.3)
 model_data$outcome_binary_lessthan0.3 = relevel(model_data$outcome_binary_lessthan0.3,ref = "less than 0.3")
 
 # make a binary variable for <0.35 or >= 0.35
-model_data$outcome_binary_lessthan0.35 = ifelse(model_data$p_te_all < 0.35,"less than 0.35","greater than 0.35")
-table(model_data$outcome_binary_lessthan0.35,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.35 = ifelse(model_data$p_te_all_alt < 0.35,"less than 0.35","greater than 0.35")
+table(model_data$outcome_binary_lessthan0.35,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.35, useNA = "always")
 model_data$outcome_binary_lessthan0.35 = factor(model_data$outcome_binary_lessthan0.35)
 levels(model_data$outcome_binary_lessthan0.35)
 model_data$outcome_binary_lessthan0.35 = relevel(model_data$outcome_binary_lessthan0.35,ref = "less than 0.35")
 
 # make a binary variable for <0.4 or >= 0.4
-model_data$outcome_binary_lessthan0.4 = ifelse(model_data$p_te_all < 0.4,"less than 0.4","greater than 0.4")
-table(model_data$outcome_binary_lessthan0.4,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.4 = ifelse(model_data$p_te_all_alt < 0.4,"less than 0.4","greater than 0.4")
+table(model_data$outcome_binary_lessthan0.4,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.4, useNA = "always")
 model_data$outcome_binary_lessthan0.4 = factor(model_data$outcome_binary_lessthan0.4)
 levels(model_data$outcome_binary_lessthan0.4)
 model_data$outcome_binary_lessthan0.4 = relevel(model_data$outcome_binary_lessthan0.4,ref = "less than 0.4")
 
 # make a binary variable for <0.45 or >= 0.45
-model_data$outcome_binary_lessthan0.45 = ifelse(model_data$p_te_all < 0.45,"less than 0.45","greater than 0.45")
-table(model_data$outcome_binary_lessthan0.45,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.45 = ifelse(model_data$p_te_all_alt < 0.45,"less than 0.45","greater than 0.45")
+table(model_data$outcome_binary_lessthan0.45,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.45, useNA = "always")
 model_data$outcome_binary_lessthan0.45 = factor(model_data$outcome_binary_lessthan0.45)
 levels(model_data$outcome_binary_lessthan0.45)
 model_data$outcome_binary_lessthan0.45 = relevel(model_data$outcome_binary_lessthan0.45,ref = "less than 0.45")
 
 # make a binary variable for <0.5 or >= 0.5
-model_data$outcome_binary_lessthan0.5 = ifelse(model_data$p_te_all < 0.5,"less than 0.5","greater than 0.5")
-table(model_data$outcome_binary_lessthan0.5,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.5 = ifelse(model_data$p_te_all_alt < 0.5,"less than 0.5","greater than 0.5")
+table(model_data$outcome_binary_lessthan0.5,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.5, useNA = "always")
 model_data$outcome_binary_lessthan0.5 = factor(model_data$outcome_binary_lessthan0.5)
 levels(model_data$outcome_binary_lessthan0.5)
 model_data$outcome_binary_lessthan0.5 = relevel(model_data$outcome_binary_lessthan0.5,ref = "less than 0.5")
 
 # make a binary variable for <0.55 or >= 0.55
-model_data$outcome_binary_lessthan0.55 = ifelse(model_data$p_te_all < 0.55,"less than 0.55","greater than 0.55")
-table(model_data$outcome_binary_lessthan0.55,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.55 = ifelse(model_data$p_te_all_alt < 0.55,"less than 0.55","greater than 0.55")
+table(model_data$outcome_binary_lessthan0.55,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.55, useNA = "always")
 model_data$outcome_binary_lessthan0.55 = factor(model_data$outcome_binary_lessthan0.55)
 levels(model_data$outcome_binary_lessthan0.55)
 model_data$outcome_binary_lessthan0.55 = relevel(model_data$outcome_binary_lessthan0.55,ref = "less than 0.55")
 
 # make a binary variable for <0.6 or >= 0.6
-model_data$outcome_binary_lessthan0.6 = ifelse(model_data$p_te_all < 0.6,"less than 0.6","greater than 0.6")
-table(model_data$outcome_binary_lessthan0.6,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.6 = ifelse(model_data$p_te_all_alt < 0.6,"less than 0.6","greater than 0.6")
+table(model_data$outcome_binary_lessthan0.6,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.6, useNA = "always")
 model_data$outcome_binary_lessthan0.6 = factor(model_data$outcome_binary_lessthan0.6)
 levels(model_data$outcome_binary_lessthan0.6)
 model_data$outcome_binary_lessthan0.6 = relevel(model_data$outcome_binary_lessthan0.6,ref = "less than 0.6")
 
 # make a binary variable for <0.65 or >= 0.65
-model_data$outcome_binary_lessthan0.65 = ifelse(model_data$p_te_all < 0.65,"less than 0.65","greater than 0.65")
-table(model_data$outcome_binary_lessthan0.65,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.65 = ifelse(model_data$p_te_all_alt < 0.65,"less than 0.65","greater than 0.65")
+table(model_data$outcome_binary_lessthan0.65,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.65, useNA = "always")
 model_data$outcome_binary_lessthan0.65 = factor(model_data$outcome_binary_lessthan0.65)
 levels(model_data$outcome_binary_lessthan0.65)
 model_data$outcome_binary_lessthan0.65 = relevel(model_data$outcome_binary_lessthan0.65,ref = "less than 0.65")
 
 # make a binary variable for <0.7 or >= 0.7
-model_data$outcome_binary_lessthan0.7 = ifelse(model_data$p_te_all < 0.7,"less than 0.7","greater than 0.7")
-table(model_data$outcome_binary_lessthan0.7,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.7 = ifelse(model_data$p_te_all_alt < 0.7,"less than 0.7","greater than 0.7")
+table(model_data$outcome_binary_lessthan0.7,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.7, useNA = "always")
 model_data$outcome_binary_lessthan0.7 = factor(model_data$outcome_binary_lessthan0.7)
 levels(model_data$outcome_binary_lessthan0.7)
 model_data$outcome_binary_lessthan0.7 = relevel(model_data$outcome_binary_lessthan0.7,ref = "less than 0.7")
 
 # make a binary variable for <0.75 or >= 0.75
-model_data$outcome_binary_lessthan0.75 = ifelse(model_data$p_te_all < 0.75,"less than 0.75","greater than 0.75")
-table(model_data$outcome_binary_lessthan0.75,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.75 = ifelse(model_data$p_te_all_alt < 0.75,"less than 0.75","greater than 0.75")
+table(model_data$outcome_binary_lessthan0.75,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.75, useNA = "always")
 model_data$outcome_binary_lessthan0.75 = factor(model_data$outcome_binary_lessthan0.75)
 levels(model_data$outcome_binary_lessthan0.75)
 model_data$outcome_binary_lessthan0.75 = relevel(model_data$outcome_binary_lessthan0.75,ref = "less than 0.75")
 
 # make a binary variable for <0.8 or >= 0.8
-model_data$outcome_binary_lessthan0.8 = ifelse(model_data$p_te_all < 0.8,"less than 0.8","greater than 0.8")
-table(model_data$outcome_binary_lessthan0.8,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.8 = ifelse(model_data$p_te_all_alt < 0.8,"less than 0.8","greater than 0.8")
+table(model_data$outcome_binary_lessthan0.8,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.8, useNA = "always")
 model_data$outcome_binary_lessthan0.8 = factor(model_data$outcome_binary_lessthan0.8)
 levels(model_data$outcome_binary_lessthan0.8)
 model_data$outcome_binary_lessthan0.8 = relevel(model_data$outcome_binary_lessthan0.8,ref = "less than 0.8")
 
 # make a binary variable for <0.85 or >= 0.85
-model_data$outcome_binary_lessthan0.85 = ifelse(model_data$p_te_all < 0.85,"less than 0.85","greater than 0.85")
-table(model_data$outcome_binary_lessthan0.85,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.85 = ifelse(model_data$p_te_all_alt < 0.85,"less than 0.85","greater than 0.85")
+table(model_data$outcome_binary_lessthan0.85,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.85, useNA = "always")
 model_data$outcome_binary_lessthan0.85 = factor(model_data$outcome_binary_lessthan0.85)
 levels(model_data$outcome_binary_lessthan0.85)
 model_data$outcome_binary_lessthan0.85 = relevel(model_data$outcome_binary_lessthan0.85,ref = "less than 0.85")
 
 # make a binary variable for <0.9 or >= 0.9
-model_data$outcome_binary_lessthan0.9 = ifelse(model_data$p_te_all < 0.9,"less than 0.9","greater than 0.9")
-table(model_data$outcome_binary_lessthan0.9,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.9 = ifelse(model_data$p_te_all_alt < 0.9,"less than 0.9","greater than 0.9")
+table(model_data$outcome_binary_lessthan0.9,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.9, useNA = "always")
 model_data$outcome_binary_lessthan0.9 = factor(model_data$outcome_binary_lessthan0.9)
 levels(model_data$outcome_binary_lessthan0.9)
 model_data$outcome_binary_lessthan0.9 = relevel(model_data$outcome_binary_lessthan0.9,ref = "less than 0.9")
 
 # make a binary variable for <0.95 or >= 0.95
-model_data$outcome_binary_lessthan0.95 = ifelse(model_data$p_te_all < 0.95,"less than 0.95","greater than 0.95")
-table(model_data$outcome_binary_lessthan0.95,model_data$p_te_all,useNA = "always")
+model_data$outcome_binary_lessthan0.95 = ifelse(model_data$p_te_all_alt < 0.95,"less than 0.95","greater than 0.95")
+table(model_data$outcome_binary_lessthan0.95,model_data$p_te_all_alt,useNA = "always")
 table(model_data$outcome_binary_lessthan0.95, useNA = "always")
 model_data$outcome_binary_lessthan0.95 = factor(model_data$outcome_binary_lessthan0.95)
 levels(model_data$outcome_binary_lessthan0.95)
 model_data$outcome_binary_lessthan0.95 = relevel(model_data$outcome_binary_lessthan0.95,ref = "less than 0.95")
 
-# binary outcome 0 with a logistic model
-model0 <- glmer(outcome_binary_lessthan0~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+# binary outcome 0 with a logistic model - this is basically a hurdle model
+model0 <- glmer(outcome_binary_lessthan0~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model0)
-exp(0.270672)
 exp(confint(model0,method="Wald"))
-# converged
+# singular
 
 # binary outcome <0.05 with a logistic model
-model.05 <- glmer(outcome_binary_lessthan0.05~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.05 <- glmer(outcome_binary_lessthan0.05~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.05)
-exp(0.32211)
+exp(0.211405)
 exp(confint(model.05,method="Wald"))
 # converged
 
 # binary outcome <0.1 with a logistic model
-model.1 <- glmer(outcome_binary_lessthan0.1~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.1 <- glmer(outcome_binary_lessthan0.1~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.1)
-exp(0.40640)
+exp(0.30025)
 exp(confint(model.1,method="Wald"))
 # converged
 
 # binary outcome <0.15 with a logistic model
-model.15 <- glmer(outcome_binary_lessthan0.15~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.15 <- glmer(outcome_binary_lessthan0.15~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.15)
-exp(0.523585)
+exp(0.18703)
 exp(confint(model.15,method="Wald"))
 # converged
 
 # binary outcome <0.2 with a logistic model
-model.2 <- glmer(outcome_binary_lessthan0.2~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.2 <- glmer(outcome_binary_lessthan0.2~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.2)
-exp(0.55732)
+exp(0.26484)
 exp(confint(model.2, method="Wald"))
 # converged
 
 # binary outcome <0.25 with a logistic model
-model.25 <- glmer(outcome_binary_lessthan0.25~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.25 <- glmer(outcome_binary_lessthan0.25~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.25)
-exp(0.43462)
+exp(0.31428)
 exp(confint(model.25, method="Wald"))
 # converged
 
 # binary outcome <0.3 with a logistic model
-model.3 <- glmer(outcome_binary_lessthan0.3~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.3 <- glmer(outcome_binary_lessthan0.3~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.3)
-exp(0.81303)
+exp(0.38542)
 exp(confint(model.3, method="Wald"))
 # converged
 
 # binary outcome <0.35 with a logistic model
-model.35 <- glmer(outcome_binary_lessthan0.35~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.35 <- glmer(outcome_binary_lessthan0.35~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.35)
-exp(1.01783)
+exp(0.570961)
 exp(confint(model.35, method="Wald"))
 # converged
 
 # binary outcome <0.4 with a logistic model
-model.4 <- glmer(outcome_binary_lessthan0.4~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.4 <- glmer(outcome_binary_lessthan0.4~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.4)
-exp(1.15609)
+exp(0.57531)
 exp(confint(model.4, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.45 with a logistic model
-model.45 <- glmer(outcome_binary_lessthan0.45~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.45 <- glmer(outcome_binary_lessthan0.45~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.45)
-exp(1.3793739)
+exp(0.45738)
 exp(confint(model.45, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.5 with a logistic model
-model.5 <- glmer(outcome_binary_lessthan0.5~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.5 <- glmer(outcome_binary_lessthan0.5~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.5)
-exp(1.17866)
+exp(0.80277)
 exp(confint(model.5, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.55 with a logistic model
-model.55 <- glmer(outcome_binary_lessthan0.55~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.55 <- glmer(outcome_binary_lessthan0.55~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.55)
-exp(1.33878)
+exp(0.93852)
 exp(confint(model.55, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.6 with a logistic model
-model.6 <- glmer(outcome_binary_lessthan0.6~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.6 <- glmer(outcome_binary_lessthan0.6~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.6)
-exp(1.17184)
+exp(1.1002)
 exp(confint(model.6, method="Wald")) # can't compute confidence interval
 # converged
 
 # binary outcome <0.65 with a logistic model
-model.65 <- glmer(outcome_binary_lessthan0.65~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.65 <- glmer(outcome_binary_lessthan0.65~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.65)
-exp(0.8499)
-exp(confint(model.65, method="Wald")) # can't compute confidence interval
-# converged
+# model did not converge
 
 # binary outcome <0.7 with a logistic model
-model.7 <- glmer(outcome_binary_lessthan0.7~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.7 <- glmer(outcome_binary_lessthan0.7~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.7)
-exp(1.4612)
-exp(confint(model.7, method="Wald")) # can't compute confidence interval
-# converged
+# converged but small sample sizes
 
 # binary outcome <0.75 with a logistic model
-model.75 <- glmer(outcome_binary_lessthan0.75~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model.75 <- glmer(outcome_binary_lessthan0.75~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_rescaled+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
 summary(model.75)
-exp(1.38649)
-exp(confint(model.75, method="Wald")) # can't compute confidence interval
-# converged
-
-# binary outcome <0.8 with a logistic model
-model.8 <- glmer(outcome_binary_lessthan0.8~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
-summary(model.8)
-exp(0.7480)
-exp(confint(model.8, method="Wald")) # can't compute confidence interval
-# model not very identifiable
-
-# binary outcome <0.9 with a logistic model
-model.9 <- glmer(outcome_binary_lessthan0.9~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name+mean_moi_category+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
-summary(model.9)
-# model did not work
+# converged but small sample sizes
 
 # read in the model results
 model_results = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/computational_model_materials/aim2_binary_outcome_final.csv")
@@ -591,7 +600,7 @@ model_plot = ggplot(data=model_results, aes(x=binary_outcome, y=estimate)) +
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.1) +
   geom_line() +
   geom_point() + 
-  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12),trans="log10") +
+  scale_y_continuous(breaks=c(0,1,2,3,4),trans="log10") +
   theme_bw() +
   ylab("Point estimate - Odds ratio (95% CI)") +
   xlab("Binary outcome coding") + 
@@ -604,7 +613,7 @@ model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),
   theme_bw() +
   xlab("Binary outcome coding") + 
   ylab("Point estimate - Odds ratio (95% CI)") + 
-  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12),trans="log10") +
+  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7),trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip()
 model_plot
@@ -614,7 +623,7 @@ model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),
   theme_bw() +
   xlab("Binary outcome coding") +
   ylab("Odds ratio (95% CI)") + 
-  scale_y_continuous(breaks=c(0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0),trans="log10") +
+  scale_y_continuous(breaks=c(0.0,1.0,2.0,3.0,4.0),trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip() +
   theme(text = element_text(size=25)) 

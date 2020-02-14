@@ -16,8 +16,11 @@ require(pracma)
 
 #### ---------- read in the data sets ---------- ####
 
-# read in the combined ama and csp data set for mosquito abdomens
-merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
+# read in the combined ama and csp data set for mosquito abdomens - old data set used to originally create these variables
+# merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
+
+# read in the model data set (already subset to P(TEt)>0 and P(TEd)>0) - new data set with some of these variables already in
+merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
 
 # read in the clean ama haplotype data
 ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
@@ -33,10 +36,16 @@ csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_h
 
 # first subset the haplotype table
 csp_hap_prevalence_data = csp_haplotypes 
+csp_ids = unique(merged_data$sample_id_human)
+csp_ids_2 = unique(merged_data$sample_id_abdomen)
+csp_ids = c(csp_ids,csp_ids_2)
+csp_hap_prevalence_data = csp_hap_prevalence_data %>%
+  filter(sample_name_dbs %in% csp_ids) # 1046 correct
+table(csp_hap_prevalence_data$sample_type, useNA = "always") # correct
 csp_hap_prevalence_data = csp_hap_prevalence_data[,c(4:301)]
 
 # summarize the number of samples within each haplotype for the asymp human samples
-csp_haplotype_names = rep(1:ncol(csp_hap_prevalence_data))
+csp_haplotype_names = colnames(csp_hap_prevalence_data)
 csp_haplotypes_in_samples = rep(NA,ncol(csp_hap_prevalence_data))
 csp_total_reads_in_samples = rep(NA,ncol(csp_hap_prevalence_data))
 for (k in 1:ncol(csp_hap_prevalence_data)){
@@ -45,21 +54,31 @@ for (k in 1:ncol(csp_hap_prevalence_data)){
 }
 csp_hap_summary = data.frame("csp_haplotype_ids" = csp_haplotype_names, "csp_haplotypes_across_samples" = csp_haplotypes_in_samples, "csp_total_reads_across_samples" = csp_total_reads_in_samples)
 
-# add a column that is the haplotype prevalence
-csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_haplotypes_across_samples/nrow(csp_haplotypes)
+# now delete the haplotypes not present in these samples (should have 229 left)
+csp_hap_summary = csp_hap_summary %>%
+  filter(csp_total_reads_across_samples > 0) # 229 correct
 
-# add an H to every haplotype id
-csp_hap_summary$csp_haplotype_ids = paste0("H",csp_hap_summary$csp_haplotype_ids)
+# add a column that is the haplotype prevalence
+csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_haplotypes_across_samples/nrow(csp_hap_prevalence_data)
+
+# write out the haplotype prevalence table
+# write_csv(csp_hap_summary,"Desktop/csp_hap_prevalence_summary.csv")
 
 
 ## for ama
 
 # first subset the haplotype table
 ama_hap_prevalence_data = ama_haplotypes 
+ama_ids = unique(merged_data$sample_id_human)
+ama_ids_2 = unique(merged_data$sample_id_abdomen)
+ama_ids = c(ama_ids,ama_ids_2)
+ama_hap_prevalence_data = ama_hap_prevalence_data %>%
+  filter(sample_name_dbs %in% ama_ids) # 901 correct
+table(ama_hap_prevalence_data$sample_type, useNA = "always") # correct
 ama_hap_prevalence_data = ama_hap_prevalence_data[,c(4:459)]
 
 # summarize the number of samples within each haplotype for the asymp human samples
-ama_haplotype_names = rep(1:ncol(ama_hap_prevalence_data))
+ama_haplotype_names = colnames(ama_hap_prevalence_data)
 ama_haplotypes_in_samples = rep(NA,ncol(ama_hap_prevalence_data))
 ama_total_reads_in_samples = rep(NA,ncol(ama_hap_prevalence_data))
 for (k in 1:ncol(ama_hap_prevalence_data)){
@@ -68,12 +87,15 @@ for (k in 1:ncol(ama_hap_prevalence_data)){
 }
 ama_hap_summary = data.frame("ama_haplotype_ids" = ama_haplotype_names, "ama_haplotypes_across_samples" = ama_haplotypes_in_samples, "ama_total_reads_across_samples" = ama_total_reads_in_samples)
 
+# now delete the haplotypes not present in these samples (should have 229 left)
+ama_hap_summary = ama_hap_summary %>%
+  filter(ama_total_reads_across_samples > 0) # 348 correct
+
 # add a column that is the haplotype prevalence
-ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_haplotypes_across_samples/nrow(ama_haplotypes)
+ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_haplotypes_across_samples/nrow(ama_hap_prevalence_data)
 
-# add an H to every haplotype id
-ama_hap_summary$ama_haplotype_ids = paste0("H",ama_hap_summary$ama_haplotype_ids)
-
+# write out the haplotype prevalence table
+# write_csv(ama_hap_summary,"Desktop/ama_hap_prevalence_summary.csv")
 
 
 
@@ -130,7 +152,7 @@ merged_data$p_te_a = p_te_a
 #### ------- ALTERNATE METHOD PENALIZING HIGH MOI: calculate haplotype probability values for ama and csp -------- ####
 
 # read in the model data set (already subset to P(TEt)>0 and P(TEd)>0)
-merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
+# merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
 
 
 # calculate the P(TE) for csp based on the number and prevalence of haplotypes
@@ -178,17 +200,20 @@ for (i in 1:nrow(merged_data)){
 # add the new variable to the data set
 merged_data$p_te_a_alt = p_te_a_alt
 
+# rescale the p_te_a and p_te_c variables
+merged_data$p_te_a_alt_rescaled = (merged_data$p_te_a_alt-min(merged_data$p_te_a_alt))/(max(merged_data$p_te_a_alt)-min(merged_data$p_te_a_alt))
+merged_data$p_te_c_alt_rescaled = (merged_data$p_te_c_alt-min(merged_data$p_te_c_alt))/(max(merged_data$p_te_c_alt)-min(merged_data$p_te_c_alt))
 
 # make p_te_a_c_combo
 # first combine the pfcsp and pfama1 haplotypes
 p_te_a_c_combo_alt = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
-  if (merged_data$p_te_a_alt[i] != 0 & merged_data$p_te_c_alt[i] != 0){
-    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt[i])*(1-merged_data$p_te_c_alt[i])
-  } else if (merged_data$p_te_a_alt[i] != 0 & merged_data$p_te_c_alt[i] == 0){
-    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt[i])
-  } else if (merged_data$p_te_a_alt[i] == 0 & merged_data$p_te_c_alt[i] != 0){
-    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_c_alt[i])
+  if (merged_data$p_te_a_alt_rescaled[i] != 0 & merged_data$p_te_c_alt_rescaled[i] != 0){
+    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt_rescaled[i])*(1-merged_data$p_te_c_alt_rescaled[i])
+  } else if (merged_data$p_te_a_alt_rescaled[i] != 0 & merged_data$p_te_c_alt_rescaled[i] == 0){
+    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt_rescaled[i])
+  } else if (merged_data$p_te_a_alt_rescaled[i] == 0 & merged_data$p_te_c_alt_rescaled[i] != 0){
+    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_c_alt_rescaled[i])
   } else{
     p_te_a_c_combo_alt[i] = 0
   }
@@ -197,6 +222,23 @@ summary(p_te_a_c_combo_alt)
 merged_data$p_te_a_c_combo_alt = p_te_a_c_combo_alt
 length(which(p_te_a_c_combo_alt == 0)) # 1336
 length(which(merged_data$p_te_a_alt == 0 & merged_data$p_te_c_alt == 0)) # 1336
+
+# make a new p_te_all_alt
+# have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
+p_te_all_alt = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$rescaled_p_te_t[i] != 0 & merged_data$rescaled_p_te_d[i] != 0 & merged_data$p_te_a_c_combo_alt[i] != 0){
+    p_te_all_alt[i] = merged_data$rescaled_p_te_t[i]*merged_data$rescaled_p_te_d[i]*merged_data$p_te_a_c_combo_alt[i]
+  } else {
+    p_te_all_alt[i] = 0
+  }
+}
+summary(p_te_all_alt)
+merged_data$p_te_all_alt = p_te_all_alt
+length(which(p_te_all_alt == 0)) # 1336
+length(which(p_te_all_alt > 0)) # 2634
+length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$p_te_a_c_combo_alt != 0)) # 2634
+
 
 
 # now make a plot of the change in p_te_a_c_combo over moi
@@ -246,12 +288,57 @@ ggsave(hap_coding_old_plot, filename="/Users/kelseysumner/Desktop/hap_coding_old
        height=10, width=14, units="in", dpi=500)
 
 
+# look at plot of new haplotypes measure over pfcsp haplotypes shared
+hap_coding_alt_plot_csphaps = ggplot(data=merged_data,aes(x=csp_haps_shared,y=p_te_a_c_combo_alt)) +
+  geom_point() +
+  geom_smooth(method="loess",col="orange") +
+  xlab("pfcsp haplotypes shared") +
+  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_alt_plot_csphaps
+ggsave(hap_coding_alt_plot_csphaps, filename="/Users/kelseysumner/Desktop/hap_coding_alt_plot_csphaps.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
+# look at plot of new haplotypes measure over pfcsp haplotypes shared
+hap_coding_alt_plot_amahaps = ggplot(data=merged_data,aes(x=ama_haps_shared,y=p_te_a_c_combo_alt)) +
+  geom_point() +
+  geom_smooth(method="loess",col="purple") +
+  xlab("pfama1 haplotypes shared") +
+  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_alt_plot_amahaps
+ggsave(hap_coding_alt_plot_amahaps, filename="/Users/kelseysumner/Desktop/hap_coding_alt_plot_amahaps.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
+# make density plots of old terms for p_te_a_c_combo
+hap_coding_old_plot_density = ggplot(data=merged_data,aes(x=p_te_a_c_combo)) +
+  geom_density(fill="purple") +
+  ylab("Old formula for P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_old_plot_density
+ggsave(hap_coding_old_plot_density, filename="/Users/kelseysumner/Desktop/hap_coding_old_plot_density.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
+# make density plots of new terms for p_te_a_c_combo_alt
+hap_coding_new_plot_density = ggplot(data=merged_data,aes(x=p_te_a_c_combo_alt)) +
+  geom_density(fill="orange") +
+  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+hap_coding_new_plot_density
+ggsave(hap_coding_new_plot_density, filename="/Users/kelseysumner/Desktop/hap_coding_new_plot_density.png", device="png",
+       height=10, width=14, units="in", dpi=500)
+
+
 
 
 #### -------- make the probability TE curve for the time between samples ------- ####
 
 # read back in the data set
-merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/spat21_merged_data_interim.rds")
+# merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/spat21_merged_data_interim.rds")
 
 
 # create a formula for the P(TE) across time
@@ -343,64 +430,56 @@ summary(p_te_d_df$p_te_d)
 
 #### ------- make a final variable of combined P(TEall) ------- ####
 
+# rescale p_te_a and p_te_c
+merged_data$rescaled_p_te_a = (merged_data$p_te_a-min(merged_data$p_te_a))/(max(merged_data$p_te_a)-min(merged_data$p_te_a))
+merged_data$rescaled_p_te_c = (merged_data$p_te_c-min(merged_data$p_te_c))/(max(merged_data$p_te_c)-min(merged_data$p_te_c))
+
 # first combine the pfcsp and pfama1 haplotypes
 p_te_a_c_combo = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
-  if (merged_data$p_te_a[i] != 0 & merged_data$p_te_c[i] != 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_a[i])*(1-merged_data$p_te_c[i])
-  } else if (merged_data$p_te_a[i] != 0 & merged_data$p_te_c[i] == 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_a[i])
-  } else if (merged_data$p_te_a[i] == 0 & merged_data$p_te_c[i] != 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_c[i])
+  if (merged_data$rescaled_p_te_a[i] != 0 & merged_data$rescaled_p_te_c[i] != 0){
+    p_te_a_c_combo[i] = 1-(1-merged_data$rescaled_p_te_a[i])*(1-merged_data$rescaled_p_te_c[i])
+  } else if (merged_data$rescaled_p_te_a[i] != 0 & merged_data$rescaled_p_te_c[i] == 0){
+    p_te_a_c_combo[i] = 1-(1-merged_data$rescaled_p_te_a[i])
+  } else if (merged_data$rescaled_p_te_a[i] == 0 & merged_data$rescaled_p_te_c[i] != 0){
+    p_te_a_c_combo[i] = 1-(1-merged_data$rescaled_p_te_c[i])
   } else{
     p_te_a_c_combo[i] = 0
   }
 }
 summary(p_te_a_c_combo)
 merged_data$p_te_a_c_combo = p_te_a_c_combo
-length(which(p_te_a_c_combo == 0)) # 60797
-length(which(merged_data$p_te_a == 0 & merged_data$p_te_c == 0)) # 60797
+length(which(p_te_a_c_combo == 0)) # 1336
+length(which(merged_data$p_te_a == 0 & merged_data$p_te_c == 0)) # 1336
 
 
 # rescale the variables to all have to be between 0 and 1
 summary(merged_data$p_te_a_c_combo)
 summary(merged_data$p_te_d) 
 summary(merged_data$p_te_t)
-# rescale for p_te_a_c_combo
-merged_data$rescaled_p_te_a_c_combo = (merged_data$p_te_a_c_combo-min(merged_data$p_te_a_c_combo))/(max(merged_data$p_te_a_c_combo)-min(merged_data$p_te_a_c_combo))
-hist(merged_data$p_te_a_c_combo)
-hist(merged_data$rescaled_p_te_a_c_combo)
-summary(merged_data$rescaled_p_te_a_c_combo)
-# rescale for p_te_d
-merged_data$rescaled_p_te_d = (merged_data$p_te_d-min(merged_data$p_te_d))/(max(merged_data$p_te_d)-min(merged_data$p_te_d))
-hist(merged_data$p_te_d)
-hist(merged_data$rescaled_p_te_d)
-summary(merged_data$rescaled_p_te_d) # stays same
-# rename p_te_t but don't rescale
-merged_data$rescaled_p_te_t = merged_data$p_te_t
-
+# no longer need to be rescaled
 
 
 # make a final variable that is P(TEall)
 # have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
 p_te_all = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
-  if (merged_data$rescaled_p_te_t[i] != 0 & merged_data$rescaled_p_te_d[i] != 0 & merged_data$rescaled_p_te_a_c_combo[i] != 0){
-    p_te_all[i] = merged_data$rescaled_p_te_t[i]*merged_data$rescaled_p_te_d[i]*merged_data$rescaled_p_te_a_c_combo[i]
+  if (merged_data$rescaled_p_te_t[i] != 0 & merged_data$rescaled_p_te_d[i] != 0 & merged_data$p_te_a_c_combo[i] != 0){
+    p_te_all[i] = merged_data$rescaled_p_te_t[i]*merged_data$rescaled_p_te_d[i]*merged_data$p_te_a_c_combo[i]
   } else {
     p_te_all[i] = 0
   }
 }
 summary(p_te_all)
 merged_data$p_te_all = p_te_all
-length(which(p_te_all == 0)) # 167938
-length(which(p_te_all > 0)) # 2716
-length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$rescaled_p_te_a_c_combo != 0)) # 2716
+length(which(p_te_all == 0)) # 1336
+length(which(p_te_all > 0)) # 2634
+length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$p_te_a_c_combo != 0)) # 2634
 
 
 # export the data set 
-write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_4FEB2020.csv")
-write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14FEB2020.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14FEB2020.rds")
 
 
 
