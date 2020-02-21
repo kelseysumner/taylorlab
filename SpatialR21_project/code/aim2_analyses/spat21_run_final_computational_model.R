@@ -20,6 +20,8 @@ library(tidyr)
 library(betareg)
 library(lme4)
 library(ggplot2)
+library(sjstats)
+library(lmerTest)
 
 
 #### ----- read in the data sets ----- ####
@@ -51,6 +53,128 @@ str(model_data$mean_moi_category)
 
 
 
+#### ------ make some plots of covariates ------- ####
+
+# make a plot of p_te_all over the exposure
+ggplot(model_data, aes(x = p_te_all)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = pfr364Q_std_combined_rescaled)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = mean_moi)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = mosquito_week_count_cat)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = village_name)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = HH_ID_human)) + geom_density() + facet_wrap(~aim2_exposure)
+table(model_data$HH_ID_human,model_data$aim2_exposure)
+table(model_data$unq_memID,model_data$aim2_exposure)
+table(model_data$sample_id_human,model_data$aim2_exposure)
+
+
+
+#### ------- check for overdispersion ------- ####
+
+# test the model with the original p(TEall) coding
+model2_all_2r <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+summary(model2_all_2r)
+performance::icc(model2_all_2r)
+model2_all_1r <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+summary(model2_all_1r)
+performance::icc(model2_all_1r)
+
+# test the crude model with the origianl p(TEall) coding 
+model2_all_crude <- glmer(p_te_all~aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+summary(model2_all_crude)
+
+# test the model with original p(TEall) coding and not multilevel
+model2_all_nmlm <- glm(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name,family=binomial(link = "logit"), data = model_data)
+summary(model2_all_nmlm)
+performance::icc(model2_all_crude)
+
+# test the model with the alternative p(TEall) coding
+model2_all_alt <- glmer(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+summary(model2_all_alt)
+performance::icc(model2_all_alt)
+
+# test the model with alternative p(TEall) coding and not multilevel
+model2_all_alt_nmlm <- glm(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name,family=binomial(link = "logit"), data = model_data)
+summary(model2_all_alt_nmlm)
+
+# test the crude model with the alternative p(TEall) coding
+model2_all_alt_crude <- glmer(p_te_all_alt~aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+summary(model2_all_alt_crude)
+performance::icc(model2_all_alt_crude)
+
+# look at a summary of p_te_all and p_te_alt by household
+tmp = merged_data %>%
+  group_by(HH_ID_human) %>%
+  summarize(mean_p_te_all = mean(p_te_all))
+tmp_alt = merged_data %>%
+  group_by(HH_ID_human) %>%
+  summarize(mean_p_te_all_alt = mean(p_te_all_alt))
+
+# look at a summary of p_te_all and p_te_alt by person
+tmp = merged_data %>%
+  group_by(unq_memID) %>%
+  summarize(mean_p_te_all = mean(p_te_all))
+tmp_alt = merged_data %>%
+  group_by(unq_memID) %>%
+  summarize(mean_p_te_all_alt = mean(p_te_all_alt))
+
+# run a multilevel logistic model with new p(TEall) coding but with glmmtmb package
+model2_tmb <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model2_tmb)
+performance::icc(model2_tmb)
+
+# run a multilevel logistic model with new p(TEall) coding but with glmmadmb package
+model2_tmb <- glmm(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model2_tmb)
+performance::icc(model2_tmb)
+
+# overdispersion function from: https://ase.tufts.edu/gsc/gradresources/guidetomixedmodelsinr/mixed%20model%20guide.html
+overdisp_fun <- function(model) {
+  ## number of variance parameters in an n-by-n variance-covariance matrix
+  vpars <- function(m) {
+    nrow(m) * (nrow(m) + 1)/2
+  }
+  # The next two lines calculate the residual degrees of freedom
+  model.df <- sum(sapply(VarCorr(model), vpars)) + length(fixef(model))
+  rdf <- nrow(model.frame(model)) - model.df
+  # extracts the Pearson residuals
+  rp <- residuals(model, type = "pearson")
+  Pearson.chisq <- sum(rp^2)
+  prat <- Pearson.chisq/rdf
+  # Generates a p-value. If less than 0.05, the data are overdispersed.
+  pval <- pchisq(Pearson.chisq, df = rdf, lower.tail = FALSE)
+  c(chisq = Pearson.chisq, ratio = prat, rdf = rdf, p = pval)
+}
+overdisp_fun(model2_all) # data are not overdispersed
+overdisp_fun(model2_all_alt) # data are not overdispersed
+
+
+# another function to check for dispersion using code from Ben Bolker
+dispersion_glmer <- function(model) {
+  ## number of variance parameters in
+  ##   an n-by-n variance-covariance matrix
+  vpars <- function(m) {
+    nrow(m)*(nrow(m)+1)/2
+  }
+  model.df <- sum(sapply(VarCorr(model),vpars))+length(fixef(model))
+  rdf <- nrow(model.frame(model))-model.df
+  rp <- residuals(model,type="pearson")
+  Pearson.chisq <- sum(rp^2)
+  prat <- Pearson.chisq/rdf
+  pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+  c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
+dispfun <- function(m) {
+  r <- residuals(m,type="pearson")
+  n <- df.residual(m)
+  dsq <- sum(r^2)
+  c(dsq=dsq,n=n,disp=dsq/n)
+}
+dispersion_glmer(model2_all_alt)
+dispfun(model2_all_alt)
+
+
+
 #### -------- create two copies for everyone for logistic regression ------- ####
 
 # first make two copies of everyone
@@ -58,11 +182,11 @@ copy_data = model_data
 
 # now make a new variable in the original data set that is having a transmission event or not
 model_data$transmission_event = rep("yes",nrow(model_data)) # here, everyone has transmission event
-model_data$transmission_weight = model_data$p_te_all
+model_data$transmission_weight = model_data$p_te_all_alt
 
 # now make a new variable in the copied data set that is not having a transmission event
 copy_data$transmission_event = rep("no",nrow(copy_data)) # here, no one has transmission event
-copy_data$transmission_weight = 1-model_data$p_te_all # inverse weight for those that didn't have a transmission event
+copy_data$transmission_weight = 1-model_data$p_te_all_alt # inverse weight for those that didn't have a transmission event
 
 # now combine the original and copy data sets
 combined_data = rbind(model_data,copy_data)
@@ -77,7 +201,7 @@ combined_data$transmission_event = relevel(combined_data$transmission_event,ref=
 #### -------- now run a crude logistic regression model ------- ####
 
 # this is a regular logistic regression model and not multi-level model with the original model data set
-regular_logistic = glm(p_te_all ~ aim2_exposure, family=binomial(link="logit"), data=model_data)
+regular_logistic = glm(p_te_all_alt ~ aim2_exposure, family=binomial(link="logit"), data=model_data)
 summary(regular_logistic)
 
 # this is a regular logistic regression model and not multi-level model with the combined data set jess suggested
@@ -95,7 +219,7 @@ summary(multi_model)
 
 # now run a multi-level logistic regression model on the combined data set jess suggested
 # that has two observations for each person
-combo_multi_model <- glmer(transmission_event~aim2_exposure+age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = combined_data, weights=transmission_weight)
+combo_multi_model <- glmer(transmission_event~age_cat_baseline+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = combined_data, weights=transmission_weight)
 summary(combo_multi_model)
 # this one did not have trouble converging
 
@@ -109,7 +233,7 @@ exp(confint(modeltest_2,devtol=1e-5))
 anova(modeltest,modeltest_2)
 
 
-#### --------- try a zero inflated binomial model ------- ####
+#### --------- try a zero inflated binomial or beta model ------- ####
 
 # load packages
 library("glmmTMB") 
@@ -122,15 +246,47 @@ library("bbmle")
 model_zero <- glmmTMB(p_te_all_alt~aim2_exposure+(1|HH_ID_human/unq_memID),ziformula=~1,family=binomial(link = "logit"), data = model_data)
 summary(model_zero)
 
-# try the model we want with all confounders
-model_zero_2 <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),ziformula=~1,family=binomial(link = "logit"), data = model_data)
+# try the model we want with all confounders but not zero inflated
+model_zero_2 <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model_zero_2)
+performance::icc(model_zero_2)
 
-# also try a zero-inflated beta distribution
+# try the model we want with all confounders but not zero inflated and with a dispersion parameter
+model_zero_2 <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"),dispformula = ~unq_memID, data = model_data)
+summary(model_zero_2)
+performance::icc(model_zero_2)
+
+# try a zero-inflated beta model with the =1 value removed
+model_data_test = model_data %>%
+  filter(p_te_all_alt < 1)
+model_zero_beta <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),ziformula=~.,beta_family(link = "logit"), data = model_data_test)
+summary(model_zero_beta)
+
+# try a zero-inflated beta model with the =1 value removed and with the number of haps shared to the right of the zero inflation term
+model_data$sum_haps_shared = model_data$csp_haps_shared+model_data$ama_haps_shared
+model_data_test = model_data %>%
+  filter(p_te_all_alt < 1)
+model_zero_beta <- glmmTMB(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),ziformula=~sum_haps_shared,beta_family(link = "logit"), data = model_data_test)
+summary(model_zero_beta)
+
+# try a zero-inflated beta model with the =1 value removed and with the intercept to the right of the zero inflation term
+model_zero_beta <- glmmTMB(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),ziformula=~1,beta_family(link = "logit"), data = model_data_test)
+summary(model_zero_beta)
+
+# also try a zero-one-inflated beta distribution with a different package
 library(gamlss)
-model_beta = gamlss(p_te_all_alt~aim2_exposure+re(random=~1|HH_ID_human/unq_memID),family=BEINFO,data=na.omit(model_data))
+model_beta = gamlss(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+re(random=~1|HH_ID_human/unq_memID),family=BEINF,data=na.omit(model_data))
 summary(model_beta)
 # not really sure what this is doing
+
+# also try a zero-inflated beta distribution with a different package
+model_beta = gamlss(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+re(random=~1|HH_ID_human/unq_memID),family=BEZI,data=na.omit(model_data_test))
+summary(model_beta)
+# not really sure what this is doing
+
+# also try a multilevel logistic regression with a different package
+model_logistic = gamlss(p_te_all_alt~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+ mean_moi_rescaled +pfr364Q_std_combined_rescaled+village_name+re(random=~1|HH_ID_human/unq_memID),family=LO(),data=na.omit(model_data_test))
+summary(model_logistic)
 
 
 #### ------ run the final models and do model selection ------- ####
@@ -235,7 +391,7 @@ exp(0.78294)
 anova(model2,model7) # model 2 is better
 
 # now run the crude model with no covariates
-model8 <- glmer(p_te_all_alt~aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data, control = glmerControl(optimizer="bobyqa"))
+model8 <- glmer(p_te_all_alt~aim2_exposure+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data_test, control = glmerControl(optimizer="bobyqa"))
 summary(model8)
 exp(1.2122)
 anova(model2,model8) # model 2 is better

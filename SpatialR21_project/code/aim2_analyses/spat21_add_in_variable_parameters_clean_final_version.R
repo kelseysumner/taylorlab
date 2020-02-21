@@ -4,7 +4,7 @@
 #                Clean version                #
 #                   Aim 2                     #
 #             CSP and AMA data                #
-#            December 20, 2019                #
+#            February 18, 2020                #
 #                K. Sumner                    #
 # ------------------------------------------- #
 
@@ -58,26 +58,6 @@ csp_hap_summary = csp_hap_summary %>%
 # add a column that is the haplotype prevalence
 csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_haplotypes_across_samples/nrow(csp_hap_prevalence_data)
 
-# now rescale the csp_hap_prevalence to take into account (scale variable to range [a,b])
-b=1-min(csp_hap_summary$csp_hap_prevalence)
-a=min(csp_hap_summary$csp_hap_prevalence)
-csp_hap_summary$csp_hap_prevalence_new = ((b-a)*(csp_hap_summary$csp_hap_prevalence-min(csp_hap_summary$csp_hap_prevalence))/(max(csp_hap_summary$csp_hap_prevalence)-min(csp_hap_summary$csp_hap_prevalence)))+a
-summary(csp_hap_summary$csp_hap_prevalence)
-summary(csp_hap_summary$csp_hap_prevalence_new)
-
-# make plots of the new csp_hap_prevalence
-original_csp_hap_prevalence_plot = ggplot(data=csp_hap_summary)+
-  geom_density(aes(x=csp_hap_prevalence))
-original_csp_hap_prevalence_plot
-new_csp_hap_prevalence_plot = ggplot(data=csp_hap_summary)+
-  geom_density(aes(x=csp_hap_prevalence_new))
-new_csp_hap_prevalence_plot
-
-# use new csp hap prevalence coding
-# csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_hap_prevalence_new
-
-# write out the haplotype prevalence table
-# write_csv(csp_hap_summary,"Desktop/csp_hap_prevalence_summary.csv")
 
 
 ## for ama
@@ -109,83 +89,18 @@ ama_hap_summary = ama_hap_summary %>%
 # add a column that is the haplotype prevalence
 ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_haplotypes_across_samples/nrow(ama_hap_prevalence_data)
 
-# now rescale the csp_hap_prevalence to take into account (scale variable to range [a,b])
-b=1-min(ama_hap_summary$ama_hap_prevalence)
-a=min(ama_hap_summary$ama_hap_prevalence)
-ama_hap_summary$ama_hap_prevalence_new = ((b-a)*(ama_hap_summary$ama_hap_prevalence-min(ama_hap_summary$ama_hap_prevalence))/(max(ama_hap_summary$ama_hap_prevalence)-min(ama_hap_summary$ama_hap_prevalence)))+a
-summary(ama_hap_summary$ama_hap_prevalence)
-summary(ama_hap_summary$ama_hap_prevalence_new)
-
-# make plots of the new csp_hap_prevalence
-original_ama_hap_prevalence_plot = ggplot(data=ama_hap_summary)+
-  geom_density(aes(x=ama_hap_prevalence))
-original_ama_hap_prevalence_plot
-new_ama_hap_prevalence_plot = ggplot(data=ama_hap_summary)+
-  geom_density(aes(x=ama_hap_prevalence_new))
-new_ama_hap_prevalence_plot
-
-# use new csp hap prevalence coding
-# ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_hap_prevalence_new
-
-# write out the haplotype prevalence table
-# write_csv(ama_hap_summary,"Desktop/ama_hap_prevalence_summary.csv")
-
-
-
-#### ------- calculate haplotype probability values for ama and csp -------- ####
-
-
-# calculate the P(TE) for csp based on the number and prevalence of haplotypes
-p_te_c = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$csp_haps_shared[i] > 0 & !(is.na(merged_data$csp_haps_shared[i]))){
-    cum_prop = 1
-    split_list = str_split(merged_data$csp_list_haps_shared[i],",")[[1]]
-    for (j in 1:merged_data$csp_haps_shared[i]) {
-      for (k in 1:nrow(csp_hap_summary)){
-        if (split_list[j] == csp_hap_summary$csp_haplotype_ids[k]){
-          cum_prop = cum_prop*(1-csp_hap_summary$csp_hap_prevalence[k])
-          }
-        }
-      }
-      p_te_c[i] = 1 - cum_prop
-  } else {
-    p_te_c[i] = 0
-  }
-}
-# add the new variable to the data set
-merged_data$p_te_c = p_te_c
-
-
-
-
-# calculate the P(TE) for ama based on the number and prevalence of haplotypes
-p_te_a = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$ama_haps_shared[i] > 0 & !(is.na(merged_data$ama_haps_shared[i]))){
-    cum_prop = 1
-    split_list = str_split(merged_data$ama_list_hap_shared[i],",")[[1]]
-    for (j in 1:merged_data$ama_haps_shared[i]) {
-      for (k in 1:nrow(ama_hap_summary)){
-        if (split_list[j] == ama_hap_summary$ama_haplotype_ids[k]){
-          cum_prop = cum_prop*(1-ama_hap_summary$ama_hap_prevalence[k])
-        }
-      }
-    }
-    p_te_a[i] = 1 - cum_prop
-  } else {
-    p_te_a[i] = 0
-  }
-}
-# add the new variable to the data set
-merged_data$p_te_a = p_te_a
-
 
 
 #### ------- ALTERNATE METHOD PENALIZING HIGH MOI: calculate haplotype probability values for ama and csp -------- ####
 
 # read in the model data set (already subset to P(TEt)>0 and P(TEd)>0)
 merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
+
+
+# remove the p(TE) values already calculated
+colnames(merged_data)
+merged_data = merged_data %>%
+  dplyr::select(-c(p_te_c,p_te_a,p_te_t,p_te_d,p_te_a_c_combo,rescaled_p_te_a_c_combo,rescaled_p_te_d,rescaled_p_te_t,p_te_all))
 
 
 # calculate the P(TE) for csp based on the number and prevalence of haplotypes
@@ -233,145 +148,9 @@ for (i in 1:nrow(merged_data)){
 # add the new variable to the data set
 merged_data$p_te_a_alt = p_te_a_alt
 
-# rescale the p_te_a and p_te_c variables
-merged_data$p_te_a_alt_rescaled = (merged_data$p_te_a_alt-min(merged_data$p_te_a_alt))/(max(merged_data$p_te_a_alt)-min(merged_data$p_te_a_alt))
-merged_data$p_te_c_alt_rescaled = (merged_data$p_te_c_alt-min(merged_data$p_te_c_alt))/(max(merged_data$p_te_c_alt)-min(merged_data$p_te_c_alt))
-
-# make p_te_a_c_combo
-# first combine the pfcsp and pfama1 haplotypes
-p_te_a_c_combo_alt = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$p_te_a_alt_rescaled[i] != 0 & merged_data$p_te_c_alt_rescaled[i] != 0){
-    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt_rescaled[i])*(1-merged_data$p_te_c_alt_rescaled[i])
-  } else if (merged_data$p_te_a_alt_rescaled[i] != 0 & merged_data$p_te_c_alt_rescaled[i] == 0){
-    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_a_alt_rescaled[i])
-  } else if (merged_data$p_te_a_alt_rescaled[i] == 0 & merged_data$p_te_c_alt_rescaled[i] != 0){
-    p_te_a_c_combo_alt[i] = 1-(1-merged_data$p_te_c_alt_rescaled[i])
-  } else{
-    p_te_a_c_combo_alt[i] = 0
-  }
-}
-summary(p_te_a_c_combo_alt)
-merged_data$p_te_a_c_combo_alt = p_te_a_c_combo_alt
-length(which(p_te_a_c_combo_alt == 0)) # 1336
-length(which(merged_data$p_te_a_alt == 0 & merged_data$p_te_c_alt == 0)) # 1336
-
-# make a new p_te_all_alt
-# have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
-p_te_all_alt = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$rescaled_p_te_t[i] != 0 & merged_data$rescaled_p_te_d[i] != 0 & merged_data$p_te_a_c_combo_alt[i] != 0){
-    p_te_all_alt[i] = merged_data$rescaled_p_te_t[i]*merged_data$rescaled_p_te_d[i]*merged_data$p_te_a_c_combo_alt[i]
-  } else {
-    p_te_all_alt[i] = 0
-  }
-}
-summary(p_te_all_alt)
-merged_data$p_te_all_alt = p_te_all_alt
-length(which(p_te_all_alt == 0)) # 1336
-length(which(p_te_all_alt > 0)) # 2634
-length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$p_te_a_c_combo_alt != 0)) # 2634
-
-
-
-# now make a plot of the change in p_te_a_c_combo over moi
-merged_data$p_te_a_c_combo_change = merged_data$p_te_a_c_combo_alt-merged_data$p_te_a_c_combo
-hap_coding_change_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo_change)) +
-  geom_point() +
-  geom_smooth(method="loess") +
-  xlab("Mean participant MOI") +
-  ylab("Change in P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_change_plot
-plot(merged_data$p_te_a_alt,merged_data$p_te_a)
-plot(merged_data$p_te_c_alt,merged_data$p_te_c)
-summary(merged_data$p_te_a)
-summary(merged_data$p_te_a_alt)
-summary(merged_data$p_te_c)
-summary(merged_data$p_te_c_alt)
-summary(merged_data$p_te_a_c_combo)
-summary(merged_data$p_te_a_c_combo_alt)
-ggsave(hap_coding_change_plot, filename="/Users/kelseysumner/Desktop/hap_coding_change_plot.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-# look at plot of new haplotypes measure over moi
-hap_coding_alt_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo_alt)) +
-  geom_point() +
-  geom_smooth(method="loess",col="orange") +
-  xlab("Mean participant MOI") +
-  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_alt_plot
-ggsave(hap_coding_alt_plot, filename="/Users/kelseysumner/Desktop/hap_coding_alt_plot.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-
-# look at plot of old haplotypes measure over moi
-hap_coding_old_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo)) +
-  geom_point() +
-  geom_smooth(method="loess",col="purple") +
-  xlab("Mean participant MOI") +
-  ylab("Old formula for P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_old_plot
-ggsave(hap_coding_old_plot, filename="/Users/kelseysumner/Desktop/hap_coding_old_plot.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-
-# look at plot of new haplotypes measure over pfcsp haplotypes shared
-hap_coding_alt_plot_csphaps = ggplot(data=merged_data,aes(x=csp_haps_shared,y=p_te_a_c_combo_alt)) +
-  geom_point() +
-  geom_smooth(method="loess",col="orange") +
-  xlab("pfcsp haplotypes shared") +
-  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_alt_plot_csphaps
-ggsave(hap_coding_alt_plot_csphaps, filename="/Users/kelseysumner/Desktop/hap_coding_alt_plot_csphaps.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-# look at plot of new haplotypes measure over pfcsp haplotypes shared
-hap_coding_alt_plot_amahaps = ggplot(data=merged_data,aes(x=ama_haps_shared,y=p_te_a_c_combo_alt)) +
-  geom_point() +
-  geom_smooth(method="loess",col="purple") +
-  xlab("pfama1 haplotypes shared") +
-  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_alt_plot_amahaps
-ggsave(hap_coding_alt_plot_amahaps, filename="/Users/kelseysumner/Desktop/hap_coding_alt_plot_amahaps.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-# make density plots of old terms for p_te_a_c_combo
-hap_coding_old_plot_density = ggplot(data=merged_data,aes(x=p_te_a_c_combo)) +
-  geom_density(fill="purple") +
-  ylab("Old formula for P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_old_plot_density
-ggsave(hap_coding_old_plot_density, filename="/Users/kelseysumner/Desktop/hap_coding_old_plot_density.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-# make density plots of new terms for p_te_a_c_combo_alt
-hap_coding_new_plot_density = ggplot(data=merged_data,aes(x=p_te_a_c_combo_alt)) +
-  geom_density(fill="orange") +
-  ylab("New formula for P(TE) for pfama1 and pfcsp combined") +
-  theme_bw() +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
-hap_coding_new_plot_density
-ggsave(hap_coding_new_plot_density, filename="/Users/kelseysumner/Desktop/hap_coding_new_plot_density.png", device="png",
-       height=10, width=14, units="in", dpi=500)
-
-
 
 
 #### -------- make the probability TE curve for the time between samples ------- ####
-
-# read back in the data set
-# merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/spat21_merged_data_interim.rds")
 
 
 # create a formula for the P(TE) across time
@@ -413,8 +192,8 @@ time_plot = ggplot(data=p_te_t_df) +
   scale_x_continuous(limits=c(-14,7),breaks=c(-14,-7,0,7)) +
   scale_y_continuous(limits=c(0,1))
 time_plot
-ggsave(time_plot, filename="/Users/kelseysumner/Desktop/theoretical_time_distribution_plot.png", device="png",
-       height=8, width=12, units="in", dpi=500)
+# ggsave(time_plot, filename="/Users/kelseysumner/Desktop/theoretical_time_distribution_plot.png", device="png",
+       # height=8, width=12, units="in", dpi=500)
 
 
 
@@ -464,55 +243,59 @@ summary(p_te_d_df$p_te_d)
 #### ------- make a final variable of combined P(TEall) ------- ####
 
 # rescale p_te_a and p_te_c
-merged_data$rescaled_p_te_a = (merged_data$p_te_a-min(merged_data$p_te_a))/(max(merged_data$p_te_a)-min(merged_data$p_te_a))
-merged_data$rescaled_p_te_c = (merged_data$p_te_c-min(merged_data$p_te_c))/(max(merged_data$p_te_c)-min(merged_data$p_te_c))
-
-# first combine the pfcsp and pfama1 haplotypes
-p_te_a_c_combo = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$rescaled_p_te_a[i] != 0 & merged_data$rescaled_p_te_c[i] != 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$rescaled_p_te_a[i])*(1-merged_data$rescaled_p_te_c[i])
-  } else if (merged_data$rescaled_p_te_a[i] != 0 & merged_data$rescaled_p_te_c[i] == 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$rescaled_p_te_a[i])
-  } else if (merged_data$rescaled_p_te_a[i] == 0 & merged_data$rescaled_p_te_c[i] != 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$rescaled_p_te_c[i])
-  } else{
-    p_te_a_c_combo[i] = 0
-  }
-}
-summary(p_te_a_c_combo)
-merged_data$p_te_a_c_combo = p_te_a_c_combo
-length(which(p_te_a_c_combo == 0)) # 1336
-length(which(merged_data$p_te_a == 0 & merged_data$p_te_c == 0)) # 1336
-
+merged_data$rescaled_p_te_a = (merged_data$p_te_a_alt-min(merged_data$p_te_a_alt))/(max(merged_data$p_te_a_alt)-min(merged_data$p_te_a_alt))
+merged_data$rescaled_p_te_c = (merged_data$p_te_c_alt-min(merged_data$p_te_c_alt))/(max(merged_data$p_te_c_alt)-min(merged_data$p_te_c_alt))
 
 # rescale the variables to all have to be between 0 and 1
-summary(merged_data$p_te_a_c_combo)
+summary(merged_data$p_te_a_alt)
+summary(merged_data$p_te_c_alt)
+summary(merged_data$rescaled_p_te_a)
+summary(merged_data$rescaled_p_te_c)
 summary(merged_data$p_te_d) 
 summary(merged_data$p_te_t)
 # no longer need to be rescaled
 
 
-# make a final variable that is P(TEall)
+# make a final variable that is P(TEall) for csp
 # have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
-p_te_all = rep(NA,nrow(merged_data))
+p_te_all_csp = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
-  if (merged_data$rescaled_p_te_t[i] != 0 & merged_data$rescaled_p_te_d[i] != 0 & merged_data$p_te_a_c_combo[i] != 0){
-    p_te_all[i] = merged_data$rescaled_p_te_t[i]*merged_data$rescaled_p_te_d[i]*merged_data$p_te_a_c_combo[i]
+  if (merged_data$p_te_t[i] != 0 & merged_data$p_te_d[i] != 0 & merged_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp[i] = merged_data$p_te_t[i]*merged_data$p_te_d[i]*merged_data$rescaled_p_te_c[i]
   } else {
-    p_te_all[i] = 0
+    p_te_all_csp[i] = 0
   }
 }
-summary(p_te_all)
-merged_data$p_te_all = p_te_all
-length(which(p_te_all == 0)) # 1336
-length(which(p_te_all > 0)) # 2634
-length(which(merged_data$rescaled_p_te_t != 0 & merged_data$rescaled_p_te_d != 0 & merged_data$p_te_a_c_combo != 0)) # 2634
+summary(p_te_all_csp)
+merged_data$p_te_all_csp = p_te_all_csp
+length(which(p_te_all_csp == 0)) # 1692
+length(which(p_te_all_csp > 0)) # 2278
+length(which(merged_data$p_te_t != 0 & merged_data$p_te_d != 0 & merged_data$rescaled_p_te_c != 0)) # 2278
+
+
+# make a final variable that is P(TEall) for ama
+# have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
+p_te_all_ama = rep(NA,nrow(merged_data))
+for (i in 1:nrow(merged_data)){
+  if (merged_data$p_te_t[i] != 0 & merged_data$p_te_d[i] != 0 & merged_data$rescaled_p_te_a[i] != 0){
+    p_te_all_ama[i] = merged_data$p_te_t[i]*merged_data$p_te_d[i]*merged_data$rescaled_p_te_a[i]
+  } else {
+    p_te_all_ama[i] = 0
+  }
+}
+summary(p_te_all_ama)
+merged_data$p_te_all_ama = p_te_all_ama
+length(which(p_te_all_ama == 0)) # 2717
+length(which(p_te_all_ama > 0)) # 1253
+length(which(merged_data$p_te_t != 0 & merged_data$p_te_d != 0 & merged_data$rescaled_p_te_a != 0)) # 1253
+
+
+
 
 
 # export the data set 
-write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14FEB2020.csv")
-write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14FEB2020.rds")
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_18FEB2020.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
 
 
 
@@ -528,11 +311,10 @@ write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_14FEB2020.rd
 # make a plot of p_te_t
 # time plot
 p_te_t_density_plot_x = ggplot(data=merged_data,aes(x=date_difference_flipped)) +
-  geom_density(alpha=0.6,fill=c("#c2a5cf")) + 
+  geom_density(alpha=0.8,fill=c("#00441b")) + 
   theme_bw() + 
   xlab("Days between human infection and mosquito collection") +
-  ylab("Density") +
-  ggtitle("Density of observations over time")
+  ylab("Density")
 p_te_t_density_plot_x
 dpb <- ggplot_build(p_te_t_density_plot_x)
 x1 <- min(which(dpb$data[[1]]$x >=-14))
@@ -540,7 +322,7 @@ x2 <- max(which(dpb$data[[1]]$x <=7))
 p_te_t_density_plot_x = p_te_t_density_plot_x +
   geom_area(data=data.frame(x=dpb$data[[1]]$x[x1:x2],
                             y=dpb$data[[1]]$y[x1:x2]),
-            aes(x=x, y=y), fill="#762a83", colour = "black") +
+            aes(x=x, y=y), fill="#8AAF9D", colour = "black") +
   scale_x_continuous(breaks=c(400,300,200,100,7,-14,-100,-200,-300,-400)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 ggsave(p_te_t_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_t_density_plot_x.png", device="png",
@@ -550,11 +332,10 @@ ggsave(p_te_t_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_t_densi
 
 # make a plot of p_te_d
 p_te_d_density_plot_x = ggplot(data=merged_data,aes(x=distance_km)) +
-  geom_density(alpha=0.6,fill=c("#fdae6b")) + 
+  geom_density(alpha=0.8,fill=c("#00441b")) + 
   theme_bw() + 
   xlab("Distance (Km) between human infection and mosquito collection") +
-  ylab("Density") +
-  ggtitle("Density of observations over distance")
+  ylab("Density")
 p_te_d_density_plot_x
 dpb <- ggplot_build(p_te_d_density_plot_x)
 x1 <- min(which(dpb$data[[1]]$x >=0))
@@ -562,7 +343,7 @@ x2 <- max(which(dpb$data[[1]]$x <=3))
 p_te_d_density_plot_x = p_te_d_density_plot_x +
   geom_area(data=data.frame(x=dpb$data[[1]]$x[x1:x2],
                             y=dpb$data[[1]]$y[x1:x2]),
-            aes(x=x, y=y), fill="#f16913", colour = "black") +
+            aes(x=x, y=y), fill="#8AAF9D", colour = "black") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25)) +
   scale_x_continuous(breaks=c(0,3,6,9,12),limits=c(0,12))
 ggsave(p_te_d_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_d_density_plot_x.png", device="png",
@@ -615,6 +396,18 @@ p_te_a_c_combo
 ggsave(p_te_a_c_combo, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot_x.png", device="png",
        height=8, width=14, units="in", dpi=500)
 
+
+
+# make a plot of p_te_c across csp moi
+p_te_c_plot = ggplot() +
+  geom_violin(data=model_data,aes(x=factor(csp_haps_shared),y=p_te_c_alt),alpha=0.8,fill="#00441b") + 
+  theme_bw() + 
+  ylab(expression(paste("Probability of transmission for ", italic("pfcsp "), "haplotypes"))) +
+  xlab("Number of haplotypes shared") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
+p_te_c_plot
+ggsave(p_te_c_plot, filename="/Users/kelseysumner/Desktop/p_te_c_plot.png", device="png",
+       height=8, width=14, units="in", dpi=500)
 
 
 # make a plot of p_te_all by village
@@ -683,6 +476,11 @@ ggsave(p_te_all_mosquito_collection, filename="/Users/kelseysumner/Desktop/p_te_
 # mosquitoes (red): #F21A00
 # no infection (light grey): #D3DDDC
 
-
-
+# look at number of people with asymptomatic and symptomatic infections
+participants = merged_data %>%
+  group_by(unq_memID,aim2_exposure) %>%
+  summarize(number = n())
+participants2 = participants %>%
+  group_by(aim2_exposure) %>%
+  summarize(total=n())
 
