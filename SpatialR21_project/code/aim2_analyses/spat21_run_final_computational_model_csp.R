@@ -66,10 +66,9 @@ str(model_data$mean_moi_category)
 
 # make a plot of p_te_all over the exposure
 ggplot(model_data, aes(x = p_te_all_csp)) + geom_density() + facet_wrap(~aim2_exposure)
-ggplot(model_data, aes(x = p_te_all_ama)) + geom_density() + facet_wrap(~aim2_exposure)
 ggplot(model_data, aes(x = pfr364Q_std_combined_rescaled)) + geom_density() + facet_wrap(~aim2_exposure)
 ggplot(model_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~aim2_exposure)
-ggplot(model_data, aes(x = mean_moi)) + geom_density() + facet_wrap(~aim2_exposure)
+ggplot(model_data, aes(x = csp_moi_rescaled)) + geom_density() + facet_wrap(~aim2_exposure)
 ggplot(model_data, aes(x = mosquito_week_count_cat)) + geom_density() + facet_wrap(~aim2_exposure)
 ggplot(model_data, aes(x = village_name)) + geom_density() + facet_wrap(~aim2_exposure)
 ggplot(model_data, aes(x = HH_ID_human)) + geom_density() + facet_wrap(~aim2_exposure)

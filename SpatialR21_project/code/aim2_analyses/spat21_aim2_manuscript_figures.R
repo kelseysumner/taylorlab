@@ -20,12 +20,13 @@ library(lubridate)
 library(ggalluvial)
 library(gridExtra)
 library(ggsci)
+library(ggrepel)
 
 
 #### ---------- read in the data sets ---------- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_aim2_computational_model_subset_data_6FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
 
 # read in the merged anopheles mosquito data set
 anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
@@ -1229,6 +1230,52 @@ pyramid_plot_csp_10
 # export the figure with all the haplotypes
 ggsave(pyramid_plot_csp_10, filename="/Users/kelseysumner/Desktop/pyramid_plot_csp_inatleast10samples.png", device="png",
        height=9, width=14, units="in", dpi=400)
+
+
+
+
+#### ---------- make a plot of the haplotype censoring criteria ------- ####
+
+# read in the data set of the control haplotype information
+control_data = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/haplotype_testing/control_haplotype_proportions.csv")
+
+# subset to just csp controls
+control_data = control_data %>%
+  filter(target == "csp")
+
+# rename some of the control mixture labels
+control_data$control[control_data$control == "C1: 3D7"] = "C1: 100% 3D7"
+control_data$control[control_data$control == "C3: 33% FCR3/FMG"] = "C3: 33% FCR3"
+control_data$control[control_data$control == "C4: 25% FCR3/FMG"] = "C4: 25% FCR3"
+control_data$control[control_data$control == "C5: 20% FCR3/FMG"] = "C5: 20% FCR3"
+control_data$control[control_data$control == "C6: 6% FCR3/FMG"] = "C6: 6% FCR3"
+control_data$control[control_data$control == "C6: 90% V1/S, Dd2"] = "C6: 90% V1/S,Dd2"
+
+# add a column for the control type
+control_data$control_type = c("3D7","V1/S,Dd2","7g8","3D7","V1/S,Dd2","FCR3","3D7","7g8","FCR3","V1/S,Dd2","3D7","7g8","FCR3","V1/S,Dd2","V1/S,Dd2","FCR3","3D7","7g8")
+
+# multiply observed and expected by 100 to make percentages like the table
+control_data$observed = control_data$observed*100
+control_data$expected = control_data$expected*100
+
+# now make a version that adds labels to the dots
+control_plot_2 = ggplot(data=control_data,aes(x=expected,y=observed)) +
+  geom_point() +
+  labs(x="Expected strain mixtures (%)", y="Observed strain mixtures (%)") +
+  geom_abline(intercept = 0, slope = 1,lty="dashed") +
+  geom_label_repel(aes(label = control,fill = control_type),
+                   box.padding   = 0.35, 
+                   point.padding = 0.5,
+                   segment.color = 'grey50',size=2) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E2EFD9","#B8BDD9","#F2E7C4","#F2DDD0")) +
+  theme(legend.position = "none")
+control_plot_2
+
+# export the plot
+ggsave(control_plot_2, filename="/Users/kelseysumner/Desktop/control_plot_2.png", device="png",
+       height=5, width=6, units="in", dpi=400)
+
 
 
 

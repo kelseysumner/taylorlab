@@ -195,7 +195,7 @@ summary(merged_data$mosquito_week_count_rescaled)
 
 # write out the data set 
 # write_rds(merged_data,"spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
-merged_data = read_rds("Desktop/spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
+merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/time sensitivity analysis data sets/spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
 
 #### --------- create a function to look at different time codings ----------- ####
 
@@ -285,6 +285,32 @@ merged_data$p_te_t_32 = p_te_t_sensivity_analysis_part2(32)
 #### ------- now create new data sets for each value -------- ####
 
 # first: remove malaria infections that occurred within 14 days of symptomatic infection where received treatment in study
+
+# tally up the people that had antimalarials at a monthly visit at least 14 days before their infection
+had_antimalarials_recently = final_data %>%
+  filter(main_exposure_primary_case_def == "asymptomatic infection" & mal_illness == "yes" & ill_med == "yes" &
+           (medicine_ACT_hum_monthly_data == "yes" | medicine_Qui_hum_monthly_data == "yes" | medicine_SP_hum_monthly_data == "yes" | 
+              medicine_OACT_hum_monthly_data == "yes" | medicine_AMO_hum_monthly_data == "yes" | medicine_SPT_hum_monthly_data == "yes" |
+              medicine_CIP_hum_monthly_data == "yes" | medicine_PAN_hum_monthly_data == "yes" | medicine_DNT_hum_monthly_data == "yes" |
+              medicine_OTH_hum_monthly_data == "yes")) %>%
+  select(main_exposure_primary_case_def,med_date,recover,sample_id_date,ill_med,sample_name_dbs) %>%
+  mutate(time_since_antimalarials_taken = sample_id_date - med_date) %>%
+  filter((time_since_antimalarials_taken < 15 & time_since_antimalarials_taken >= 0) | is.na(time_since_antimalarials_taken)) %>%
+  rename(sample_id_human = sample_name_dbs)
+
+# see if any of these asymptomatic infections are in the paired data set
+test = left_join(edgelist_data,had_antimalarials_recently,by="sample_id_human")
+test = test %>%
+  filter(ill_med=="yes")
+# the self-reported use of antimalarials isn't that reputable
+
+# let's see how many people had a positive RDT at a symptomatic visit and received an antimalarial within 14 days of the asymptomatic infection
+# first reorder the data set
+final_data = final_data[with(final_data, order(final_data$unq_memID, final_data$sample_id_date)),]
+final_data %>%
+  select(sample_name_final,sample_id_date,unq_memID) %>%
+  View()
+
 
 # check to see if there are any instances where you have two symptomatic infections within 14 days of each other
 received_antimalarial = rep(NA,nrow(final_data))

@@ -28,7 +28,7 @@ library(moments)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/alternate coding/spat21_aim2_merged_data_with_weights_alt_coding_13FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
 
 
 
@@ -36,11 +36,11 @@ model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/mod
 
 # aim2_exposure
 table(model_data$aim2_exposure, useNA = "always")
-# p_te_all_alt
-summary(model_data$p_te_all_alt)
-sd(model_data$p_te_all_alt)
-skewness(model_data$p_te_all_alt)
-kurtosis(model_data$p_te_all_alt)
+# p_te_all_csp
+summary(model_data$p_te_all_csp)
+sd(model_data$p_te_all_csp)
+skewness(model_data$p_te_all_csp)
+kurtosis(model_data$p_te_all_csp)
 # pfr364Q_std_combined
 summary(model_data$pfr364Q_std_combined)
 sd(model_data$pfr364Q_std_combined)
@@ -410,10 +410,6 @@ model_data = model_data %>%
 colnames(model_data)
 model_data = model_data %>%
   dplyr::select(-c(mosquito_week_count_rescaled_cubic))
-
-# write out the data set
-write_csv(model_data,"Desktop/spat21_final_model_data_set_13FEB2020.csv")
-write_rds(model_data,"Desktop/spat21_final_model_data_set_13FEB2020.rds")
 
 
 

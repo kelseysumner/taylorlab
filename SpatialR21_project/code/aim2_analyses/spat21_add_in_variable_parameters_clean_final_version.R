@@ -103,6 +103,20 @@ merged_data = merged_data %>%
   dplyr::select(-c(p_te_c,p_te_a,p_te_t,p_te_d,p_te_a_c_combo,rescaled_p_te_a_c_combo,rescaled_p_te_d,rescaled_p_te_t,p_te_all))
 
 
+# merge in participant moi
+ama_data = read_rds("Desktop/clean_ids_haplotype_results/AMA/haplotype_summary/spat21_ama_summarized_haplotype_list_31DEC2019.rds")
+csp_data = read_rds("Desktop/clean_ids_haplotype_results/CSP/haplotype_summary/spat21_csp_summarized_haplotype_list_31DEC2019.rds")
+ama_data = ama_data %>%
+  select(sample_name_dbs,haplotype_number) %>%
+  rename(ama_moi=haplotype_number, sample_id_human = sample_name_dbs)
+csp_data = csp_data %>%
+  select(sample_name_dbs,haplotype_number) %>%
+  rename(csp_moi=haplotype_number, sample_id_human = sample_name_dbs)
+merged_data = left_join(merged_data,ama_data,by="sample_id_human")
+merged_data = left_join(merged_data,csp_data,by="sample_id_human")
+summary(merged_data$ama_moi)
+summary(merged_data$csp_moi)
+
 # calculate the P(TE) for csp based on the number and prevalence of haplotypes
 p_te_c_alt = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
@@ -294,12 +308,15 @@ length(which(merged_data$p_te_t != 0 & merged_data$p_te_d != 0 & merged_data$res
 
 
 # export the data set 
-write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_18FEB2020.csv")
-write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_24FEB2020.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_24FEB2020.rds")
 
 
 
 #### ------- make some plots of the output -------- ####
+
+# read in the model data set
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
 
 
 # symptomatic (blue): #3B9AB2
@@ -400,10 +417,10 @@ ggsave(p_te_a_c_combo, filename="/Users/kelseysumner/Desktop/p_te_a_density_plot
 
 # make a plot of p_te_c across csp moi
 p_te_c_plot = ggplot() +
-  geom_violin(data=model_data,aes(x=factor(csp_haps_shared),y=p_te_c_alt),alpha=0.8,fill="#00441b") + 
+  geom_violin(data=model_data,aes(x=factor(csp_haps_shared),y=p_te_c_alt),alpha=0.8,fill="#8AAF9D") + 
   theme_bw() + 
   ylab(expression(paste("Probability of transmission for ", italic("pfcsp "), "haplotypes"))) +
-  xlab("Number of haplotypes shared") +
+  xlab("Number of haplotypes shared between participant and mosquito") +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 p_te_c_plot
 ggsave(p_te_c_plot, filename="/Users/kelseysumner/Desktop/p_te_c_plot.png", device="png",
@@ -477,10 +494,11 @@ ggsave(p_te_all_mosquito_collection, filename="/Users/kelseysumner/Desktop/p_te_
 # no infection (light grey): #D3DDDC
 
 # look at number of people with asymptomatic and symptomatic infections
-participants = merged_data %>%
+participants = model_data %>%
   group_by(unq_memID,aim2_exposure) %>%
   summarize(number = n())
 participants2 = participants %>%
   group_by(aim2_exposure) %>%
   summarize(total=n())
+
 
