@@ -1212,7 +1212,7 @@ ggsave(pyramid_plot_csp, filename="/Users/kelseysumner/Desktop/pyramid_plot_csp.
 
 
 
-# now try to make a pyramid plot subset to those haplotypes found in >10 samples
+# now try to make a pyramid plot subset to the first 50 haplotypes
 pyramid_plot_csp_10 = ggplot(combined_hap_summary_subset_10, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
   geom_bar(stat = "identity", width = .6,color="black") +   # draw the bars
   coord_flip() +  # Flip axes
