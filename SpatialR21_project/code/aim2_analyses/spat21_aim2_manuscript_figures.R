@@ -40,11 +40,170 @@ csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_h
 ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
 
 # read in the full human data set
-final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
+
+
+#### -------- make figure 1 of manuscript showing descriptives of data over time ----------- ####
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
+
+## part 1: make a plot of mosquitoes over time
+
+# set up the data set
+mosquito_data_infected = anoph_merged_data %>%
+  filter(!(is.na(pf_pcr_infection_status_sample_level_a))) %>%
+  select(collection_date,pf_pcr_infection_status_sample_level_a) %>%
+  mutate(value=rep(1,length(!(is.na(pf_pcr_infection_status_sample_level_a)))), month_date = floor_date(collection_date, "month")) %>%
+  group_by(month_date,pf_pcr_infection_status_sample_level_a) %>%
+  tally(wt=value)
+
+# relevel the data
+mosquito_data_infected$pf_pcr_infection_status_sample_level_a = relevel(mosquito_data_infected$pf_pcr_infection_status_sample_level_a,"positive")
+
+# make an additional df for plot
+mosquito_df_for_plot = mosquito_data_infected %>%
+  mutate(symp_status = ifelse(pf_pcr_infection_status_sample_level_a == "positive","infection","no infection")) %>%
+  mutate(new_date = paste0(month(month_date),"-",year(month_date)))
+mosquito_df_for_plot$symp_status = as.factor(mosquito_df_for_plot$symp_status)
+mosquito_df_for_plot$symp_status = relevel(mosquito_df_for_plot$symp_status,ref="no infection")
+
+# set up month order
+month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
+mosquito_df_for_plot <- within(mosquito_df_for_plot, new_date <- factor(new_date, levels=month_order))
+
+# make a bar plot
+plot1 = ggplot(data = mosquito_df_for_plot,aes(x=new_date,y=n,fill=symp_status)) +
+  geom_bar(stat="identity",colour="black")+
+  scale_fill_manual(values=c("#D3DDDC","#F21A00")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of mosquitoes")+
+  labs(fill="Infection status") +
+  scale_y_continuous(limits = c(0,350)) +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),legend.text = element_text(size=20), legend.title = element_text(size=30)) 
+plot1
+ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
+ height=5.25, width=10, units="in", dpi=500)
+
+# make a dot plot
+plot1 = ggplot(data = mosquito_df_for_plot) +
+  geom_point(aes(x=new_date,y=n,fill=symp_status),colour = "black",pch=21,size=3)+
+  scale_fill_manual(values=c("#D3DDDC","#F21A00")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of mosquitoes")+
+  labs(fill="Infection status")
+plot1
+# ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
+# height=5.25, width=11, units="in", dpi=500)
+
+# now make a density plot
+anophed_merged_data_no_na = anoph_merged_data %>%
+  filter(!(is.na(pf_pcr_infection_status_sample_level_a)))
+plot_density_1 = ggplot(data = anophed_merged_data_no_na) +
+  geom_density(aes(x=collection_date,fill=pf_pcr_infection_status_sample_level_a),alpha=0.7)+
+  scale_fill_manual(values=c("#D3DDDC","#F21A00")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of mosquitoes")+
+  labs(fill="Infection status")
+plot_density_1
+
+
+## now make a plot for symptomatic infections at monthly follow-up visits
+
+# make a data set of just symptomatic infections
+symptomatic_df = final_data %>%
+  filter(visit_type == "monthly and sick visit" | visit_type== "sick visit") %>%
+  select(c(unq_memID,sample_id_date,sample_name_final,HH_ID,village_name,main_outcome_primary_case_def)) %>%
+  mutate(symp_infection = ifelse(!(is.na(main_outcome_primary_case_def)),"symptomatic infection","no infection"))
+table(symptomatic_df$symp_infection, useNA = "always")
+
+# create a new variable that is just the month
+symptomatic_df$month = paste0(lubridate::month(symptomatic_df$sample_id_date),"-",lubridate::year(symptomatic_df$sample_id_date))
+table(symptomatic_df$month, useNA = "always")
+
+# cut down the data set to just the variables of interest
+plot_human_data_symp = symptomatic_df %>%
+  select(symp_infection,month,unq_memID) %>%
+  group_by(month,symp_infection) %>%
+  summarize(n=n())
+
+# set order for x-axis for months
+table(plot_human_data_symp, useNA = "always")
+month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
+plot_human_data_symp <- within(plot_human_data_symp, month <- factor(month, levels=month_order))
+
+# make a stacked bar plot of the symptomatic infections tested over time
+plot2 = ggplot(data = plot_human_data_symp,aes(x=month,y=n,fill=symp_infection)) +
+  geom_bar(stat="identity",colour="black")+
+  scale_fill_manual(values=c("#D3DDDC","#3B9AB2")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of participants")+
+  labs(fill="Infection status") +
+  scale_y_continuous(limits=c(0,350)) +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),legend.text = element_text(size=20), legend.title = element_text(size=30)) 
+plot2
+
+# export the plot
+ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2_stackedsymp.png", device="png",
+       height=5.25, width=10, units="in", dpi=500)
+
+
+## now make a plot for asymptomatic infections at monthly follow-up visits
+
+# make a data set of just asymptomatic infections
+asymptomatic_df = final_data %>%
+  filter(!(is.na(main_exposure_primary_case_def))) %>%
+  select(c(unq_memID,sample_id_date,sample_name_final,HH_ID,village_name,main_exposure_primary_case_def))
+table(asymptomatic_df$main_exposure_primary_case_def, useNA = "always")
+
+# create a new variable that is just the month
+asymptomatic_df$month = paste0(lubridate::month(asymptomatic_df$sample_id_date),"-",lubridate::year(asymptomatic_df$sample_id_date))
+table(asymptomatic_df$month, useNA = "always")
+
+# cut down the data set to just the variables of interest
+plot_human_data_asymp = asymptomatic_df %>%
+  select(main_exposure_primary_case_def,month,unq_memID) %>%
+  group_by(month,main_exposure_primary_case_def) %>%
+  summarize(n=n())
+
+# set order for x-axis for months
+table(plot_human_data_asymp, useNA = "always")
+month_order = c("6-2017","7-2017","8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018")
+plot_human_data_asymp <- within(plot_human_data_asymp, month <- factor(month, levels=month_order))
+
+# change the order for main_exposure_case_def
+plot_human_data_asymp$main_exposure_primary_case_def = as.factor(plot_human_data_asymp$main_exposure_primary_case_def)
+plot_human_data_asymp$main_exposure_primary_case_def = relevel(plot_human_data_asymp$main_exposure_primary_case_def,ref="no infection")
+
+# make a stacked bar plot of the symptomatic infections tested over time
+plot3 = ggplot(data = plot_human_data_asymp,aes(x=month,y=n,fill=main_exposure_primary_case_def)) +
+  geom_bar(stat="identity",colour="black")+
+  scale_fill_manual(values=c("#D3DDDC","#E1AF00")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of participants")+
+  labs(fill="Infection status") +
+  scale_y_continuous(limits=c(0,350)) +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),legend.text = element_text(size=20), legend.title = element_text(size=30)) 
+plot3
+
+# export the plot
+ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3_stackedasymp.png", device="png",
+       height=5.25, width=10, units="in", dpi=500)
 
 
 
-#### -------- make visualization 1 --------- ####
+
+#### -------- make mosquitoes over time visualization --------- ####
 
 ##  make a plot of the anopheles mosquitoes using the stream graph plot
 
