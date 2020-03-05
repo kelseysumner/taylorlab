@@ -253,10 +253,24 @@ colnames(foo)
 # pull out the haplotype sequences associated with each haplotype name
 haplotype_sequences_to_remove = c(new_haplotype_sequences$sequences[which(new_haplotype_sequences$sequence_names %in% haplotypes_to_remove_from_final)])
 
+# check if the haplotype sequences to remove occur in more than 1 sample
+haplotype.names = colnames(foo)
+haplotypes_in_samples = rep(NA,ncol(foo))
+total_reads_in_samples = rep(NA,ncol(foo))
+for (k in 1:ncol(foo)){
+  haplotypes_in_samples[k] = length(which(foo[,k] > 0))
+  total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
+}
+haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+# remove haplotypes to remove based on low SNP % that are found in only 1 sample
+haplotype_num_summary = haplotype_num_summary %>%
+  filter(haplotypes_across_samples == 0 | haplotypes_across_samples == 1)
+to_remove = intersect(haplotype_sequences_to_remove,haplotype_num_summary$haplotype_ids) # 1 haplotype
+
 # enforce censoring to rds data set
 ncol(foo) # 44
-foo = foo[,-(which(colnames(foo) %in% haplotype_sequences_to_remove))]
-ncol(foo) # 38 (which is 44-6 and correct)
+foo = foo[,-(which(colnames(foo) %in% to_remove))]
+ncol(foo) # 38 (which is 44-1=43 and correct)
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -268,8 +282,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 59 sample removed
-haplotype_summary_censored_final = haplotype_summary_censored_final[-needtoremove,]
+needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
 
 # remove any samples that have no haplotypes anymore
 ncol(foo)
@@ -296,7 +309,7 @@ ncol(foo)
 nrow(foo)
 
 # write out the haplotypes results as a fasta
-uniquesToFasta(getUniques(foo), fout="Desktop/spat21_AMA_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+uniquesToFasta(getUniques(foo), fout="Desktop/embatalk_phase1_AMA_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -313,8 +326,6 @@ foo = as.data.frame(foo)
 foo$`MiSeq.ID` = rownames(foo)
 colnames(foo)
 
-# output the censored rds file
-write_rds(foo,"Desktop/embatalk_phase1_AMA_haplotype_table_censored_final_verison_27FEB2020.rds")
 
 ### ------- now combine with the miseq inventory
 
@@ -342,8 +353,8 @@ ama_merge_data = ama_merge_data %>%
   filter(!(is.na(haplotype_number)))
 
 # write out as an RDS and CSV files
-write_rds(ama_merge_data,"Desktop/embatalk_phase1_AMA_haplotype_table_censored_final_version_with_moi_and_ids_29FEB2020.rds")
-write_csv(ama_merge_data,"Desktop/embatalk_phase1_AMA_haplotype_table_censored_final_version_with_moi_and_ids_29FEB2020.csv")
+write_rds(ama_merge_data,"Desktop/embatalk_phase1_AMA_haplotype_table_censored_final_version_with_moi_and_ids_5MAR2020.rds")
+write_csv(ama_merge_data,"Desktop/embatalk_phase1_AMA_haplotype_table_censored_final_version_with_moi_and_ids_5MAR2020.csv")
 
 
 
@@ -618,10 +629,24 @@ colnames(foo)
 # pull out the haplotype sequences associated with each haplotype name
 haplotype_sequences_to_remove = c(new_haplotype_sequences$sequences[which(new_haplotype_sequences$sequence_names %in% haplotypes_to_remove_from_final)])
 
+# check if the haplotype sequences to remove occur in more than 1 sample
+haplotype.names = colnames(foo)
+haplotypes_in_samples = rep(NA,ncol(foo))
+total_reads_in_samples = rep(NA,ncol(foo))
+for (k in 1:ncol(foo)){
+  haplotypes_in_samples[k] = length(which(foo[,k] > 0))
+  total_reads_in_samples[k] = sum(foo[,k],na.rm=T)
+}
+haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotypes_across_samples" = haplotypes_in_samples, "total_reads_across_samples" = total_reads_in_samples)
+# remove haplotypes to remove based on low SNP % that are found in only 1 sample
+haplotype_num_summary = haplotype_num_summary %>%
+  filter(haplotypes_across_samples == 0 | haplotypes_across_samples == 1)
+to_remove = intersect(haplotype_sequences_to_remove,haplotype_num_summary$haplotype_ids) # 2 haplotypes
+
 # enforce censoring to rds data set
 ncol(foo) # 33
-foo = foo[,-(which(colnames(foo) %in% haplotype_sequences_to_remove))]
-ncol(foo) # 25 (which is 33-8 and correct)
+foo = foo[,-(which(colnames(foo) %in% to_remove))]
+ncol(foo) # 31 (which is 33-2 and correct)
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -633,8 +658,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 127 samples removed
-haplotype_summary_censored_final = haplotype_summary_censored_final[-needtoremove,]
+needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
 
 # remove any samples that have no haplotypes anymore
 ncol(foo)
@@ -701,13 +725,12 @@ haplotype_summary_censored_final = dplyr::rename(haplotype_summary_censored_fina
 csp_merge_data = dplyr::left_join(csp_merge_data,haplotype_summary_censored_final,by="MiSeq.ID")
 
 # remove samples without MOI
-length(which(is.na(csp_merge_data$haplotype_number))) # 170
+length(which(is.na(csp_merge_data$haplotype_number))) # 43
 csp_merge_data = csp_merge_data %>%
   filter(!(is.na(haplotype_number)))
 
 # write out as an RDS and CSV files
-write_rds(csp_merge_data,"Desktop/embatalk_phase1_CSP_haplotype_table_censored_final_version_with_moi_and_ids_29FEB2020.rds")
-write_csv(csp_merge_data,"Desktop/embatalk_phase1_CSP_haplotype_table_censored_final_version_with_moi_and_ids_29FEB2020.csv")
-
+write_rds(csp_merge_data,"Desktop/embatalk_phase1_CSP_haplotype_table_censored_final_version_with_moi_and_ids_5MAR2020.rds")
+write_csv(csp_merge_data,"Desktop/embatalk_phase1_CSP_haplotype_table_censored_final_version_with_moi_and_ids_5MAR2020.csv")
 
 

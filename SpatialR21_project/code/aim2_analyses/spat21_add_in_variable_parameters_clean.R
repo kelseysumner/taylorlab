@@ -296,7 +296,7 @@ ggsave(hap_coding_change_plot, filename="/Users/kelseysumner/Desktop/hap_coding_
        height=10, width=14, units="in", dpi=500)
 
 # look at plot of new haplotypes measure over moi
-hap_coding_alt_plot = ggplot(data=merged_data,aes(x=mean_moi,y=p_te_a_c_combo_alt)) +
+hap_coding_alt_plot = ggplot(data=merged_data,aes(x=csp_haps_shared,y=p_te_c_alt)) +
   geom_point() +
   geom_smooth(method="loess",col="orange") +
   xlab("Mean participant MOI") +

@@ -58,6 +58,8 @@ csp_hap_summary = csp_hap_summary %>%
 # add a column that is the haplotype prevalence
 csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_haplotypes_across_samples/nrow(csp_hap_prevalence_data)
 
+# convert population prevalence
+csp_hap_summary$csp_hap_prevalence = csp_hap_summary$csp_hap_prevalence^(1/3)
 
 
 ## for ama
@@ -89,6 +91,8 @@ ama_hap_summary = ama_hap_summary %>%
 # add a column that is the haplotype prevalence
 ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_haplotypes_across_samples/nrow(ama_hap_prevalence_data)
 
+# convert population prevalence
+ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_hap_prevalence^(1/3)
 
 
 #### ------- ALTERNATE METHOD PENALIZING HIGH MOI: calculate haplotype probability values for ama and csp -------- ####
@@ -103,20 +107,6 @@ merged_data = merged_data %>%
   dplyr::select(-c(p_te_c,p_te_a,p_te_t,p_te_d,p_te_a_c_combo,rescaled_p_te_a_c_combo,rescaled_p_te_d,rescaled_p_te_t,p_te_all))
 
 
-# merge in participant moi
-ama_data = read_rds("Desktop/clean_ids_haplotype_results/AMA/haplotype_summary/spat21_ama_summarized_haplotype_list_31DEC2019.rds")
-csp_data = read_rds("Desktop/clean_ids_haplotype_results/CSP/haplotype_summary/spat21_csp_summarized_haplotype_list_31DEC2019.rds")
-ama_data = ama_data %>%
-  select(sample_name_dbs,haplotype_number) %>%
-  rename(ama_moi=haplotype_number, sample_id_human = sample_name_dbs)
-csp_data = csp_data %>%
-  select(sample_name_dbs,haplotype_number) %>%
-  rename(csp_moi=haplotype_number, sample_id_human = sample_name_dbs)
-merged_data = left_join(merged_data,ama_data,by="sample_id_human")
-merged_data = left_join(merged_data,csp_data,by="sample_id_human")
-summary(merged_data$ama_moi)
-summary(merged_data$csp_moi)
-
 # calculate the P(TE) for csp based on the number and prevalence of haplotypes
 p_te_c_alt = rep(NA,nrow(merged_data))
 for (i in 1:nrow(merged_data)){
@@ -126,11 +116,11 @@ for (i in 1:nrow(merged_data)){
     for (j in 1:merged_data$csp_haps_shared[i]) {
       for (k in 1:nrow(csp_hap_summary)){
         if (split_list[j] == csp_hap_summary$csp_haplotype_ids[k]){
-          cum_prop = cum_prop*(1-csp_hap_summary$csp_hap_prevalence[k])
+          cum_prop = cum_prop*(csp_hap_summary$csp_hap_prevalence[k])
         }
       }
     }
-    p_te_c_alt[i] = (1 - cum_prop)*(merged_data$csp_haps_shared[i]/merged_data$csp_moi[i])
+    p_te_c_alt[i] = (1-cum_prop)*(merged_data$csp_haps_shared[i]/merged_data$csp_moi[i])
   } else {
     p_te_c_alt[i] = 0
   }
@@ -150,11 +140,11 @@ for (i in 1:nrow(merged_data)){
     for (j in 1:merged_data$ama_haps_shared[i]) {
       for (k in 1:nrow(ama_hap_summary)){
         if (split_list[j] == ama_hap_summary$ama_haplotype_ids[k]){
-          cum_prop = cum_prop*(1-ama_hap_summary$ama_hap_prevalence[k])
+          cum_prop = cum_prop*(ama_hap_summary$ama_hap_prevalence[k])
         }
       }
     }
-    p_te_a_alt[i] = (1 - cum_prop)*(merged_data$ama_haps_shared[i]/merged_data$ama_moi[i])
+    p_te_a_alt[i] = (1-cum_prop)*(merged_data$ama_haps_shared[i]/merged_data$ama_moi[i])
   } else {
     p_te_a_alt[i] = 0
   }
@@ -308,8 +298,8 @@ length(which(merged_data$p_te_t != 0 & merged_data$p_te_d != 0 & merged_data$res
 
 
 # export the data set 
-write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_24FEB2020.csv")
-write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_24FEB2020.rds")
+write_csv(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_5MAR2020.csv")
+write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
 
 

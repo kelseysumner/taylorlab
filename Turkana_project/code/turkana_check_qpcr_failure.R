@@ -20,6 +20,13 @@ turkana_data = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK
 # read in the qpcr data from phase 2 that is just the positives for Betsy
 positive_data = read_csv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Merged data/14FEB2020 Positive sample - round 2/EMBATALK_positive_samples_round2_14FEB2020.csv")
 
+# read in the qpcr data from phase 2 that is just the positives for Betsy
+positive_data_1 = read_csv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Merged data/9JAN2020 Positive sample - round 1/EMBATALK_positive_samples_9JAN2020.csv")
+
+# read in the new turkana inventory
+new_inventory = read_csv("Desktop/Tabitha last batch 5MAR2020/embatalk_inventory_extra_5MAR2020.csv")
+
+
 
 #### ------- pull the samples that had low CT values in the positive qpcr samples from phase 2 -------- ####
 
@@ -111,5 +118,85 @@ merged_na_unq = merged_na_unq %>%
 # export this
 write_csv(merged_na_unq,"Desktop/embatalk_undetermined_in_one_replicate_qpcr_data_27FEB2020.csv")
 
+
+
+#### ------- now read in the phase 1 positive sample and make CT chart ----- ####
+
+# now look at positives for phase 1 only
+
+# now create a variable that determines whether a sample is collected from the community, travel, or facility
+table(positive_data_1$`DBSplate ID`, useNA = "always")
+positive_data_1$sample_type = rep(NA,nrow(positive_data_1))
+for (i in 1:nrow(positive_data_1)){
+  if (str_detect(positive_data_1$`DBSplate ID`[i],"C")){
+    positive_data_1$sample_type[i] = "community"
+  } 
+  if (str_detect(positive_data_1$`DBSplate ID`[i],"T")){
+    positive_data_1$sample_type[i] = "travel"
+  } 
+  if (str_detect(positive_data_1$`DBSplate ID`[i],"F")){
+    positive_data_1$sample_type[i] = "facility"
+  }
+}
+table(positive_data_1$sample_type, useNA = "always")
+table(positive_data_1$`DBSplate ID`,positive_data_1$sample_type, useNA = "always")
+
+# now create a variable that determines whether or not both replicates had CT values < 34
+positive_data_1$under_ct_34 = ifelse(positive_data_1$pfr364CT1 < 34 & positive_data_1$pfr364CT2 < 34 & !(is.na(positive_data_1$pfr364CT1)) & !(is.na(positive_data_1$pfr364CT2)),"yes",
+                                   ifelse(positive_data_1$pfr364CT1 < 34 & is.na(positive_data_1$pfr364CT2) & !(is.na(positive_data_1$pfr364CT1)),"yes",ifelse(
+                                     positive_data_1$pfr364CT2 < 34 & is.na(positive_data_1$pfr364CT1) & !(is.na(positive_data_1$pfr364CT2)),"yes","no")))
+# check the coding
+table(positive_data_1$under_ct_34, useNA = "always")
+under_34 = positive_data_1 %>%
+  filter(under_ct_34 == "yes")
+over_34 = positive_data_1 %>%
+  filter(under_ct_34 == "no")
+summary(under_34$pfr364CT1)
+summary(under_34$pfr364CT2)
+summary(over_34$pfr364CT1)
+summary(over_34$pfr364CT2)
+
+# now pull out how many fall into each category by sample type
+table(positive_data_1$sample_type,positive_data_1$under_ct_34, useNA = "always")
+
+
+
+#### ---------- pull out Pf+ travelers information --------- ####
+
+# pull out the Pf positive and travelers samples from the full data set
+pf_data = turkana_data %>%
+  filter(str_detect(`DBSplate ID`,"T") & pf_pcr_infection_status == "positive") %>%
+  select(`sample ID`,`DBSplate ID`,column,row,`gDNA plate ID`)
+
+# export the data set for Betsy and Tabitha
+write_csv(pf_data,"Desktop/embatalk_positive_travelers_5MAR2020.csv")
+
+
+
+#### ----- look at duplicates in the inventory ------- ####
+
+# now merge together the old and new inventories
+colnames(turkana_data)
+colnames(new_inventory)
+new_inventory = new_inventory %>%
+  filter("Sample Name" != "Blank") %>%
+  rename("Sample Name" = "sample ID","Column Number"="column","Row Number"="row") %>%
+  select(-c(Well))
+turkana_data = turkana_data %>%
+  select("sample ID","column","row","DBSplate ID")
+full_inventory = rbind(turkana_data,new_inventory)
+intersect(turkana_data$`sample ID`,new_inventory$`sample ID`) # 4 samples intersected
+
+# now check for duplicates
+length(unique(full_inventory$`sample ID`)) # 6928 unique 
+length(which(is.na(full_inventory$`sample ID`) == T)) # 0 missing
+count_table = table(full_inventory$`sample ID`, useNA = "always")
+dups_table = count_table[which(count_table > 1)] # 13 duplicates
+dups_table
+ids_to_remove = names(dups_table)
+
+# write out info for duplicates
+dup_df = full_inventory[which(full_inventory$`sample ID` %in% ids_to_remove),]
+write_csv(dup_df,"Desktop/embatalk_duplicates_all_5MAR2020.csv")
 
 
