@@ -99,12 +99,14 @@ ama_hap_summary$ama_hap_prevalence = ama_hap_summary$ama_hap_prevalence^(1/3)
 
 # read in the model data set (already subset to P(TEt)>0 and P(TEd)>0)
 merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/spat21_final_model_data_set_11FEB2020.rds")
-
+# merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/full data/spat21_aim2_merged_data_with_weights_24FEB2020.rds")
 
 # remove the p(TE) values already calculated
 colnames(merged_data)
 merged_data = merged_data %>%
   dplyr::select(-c(p_te_c,p_te_a,p_te_t,p_te_d,p_te_a_c_combo,rescaled_p_te_a_c_combo,rescaled_p_te_d,rescaled_p_te_t,p_te_all))
+# merged_data = merged_data %>%
+  # dplyr::select(-c(p_te_t,p_te_d,p_te_all_csp,p_te_all_ama,rescaled_p_te_a,rescaled_p_te_c,p_te_c_alt,p_te_a_alt))
 
 
 # calculate the P(TE) for csp based on the number and prevalence of haplotypes
@@ -306,7 +308,7 @@ write_rds(merged_data,"Desktop/spat21_aim2_merged_data_with_weights_5MAR2020.rds
 #### ------- make some plots of the output -------- ####
 
 # read in the model data set
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
 
 # symptomatic (blue): #3B9AB2
@@ -330,7 +332,7 @@ p_te_t_density_plot_x = p_te_t_density_plot_x +
   geom_area(data=data.frame(x=dpb$data[[1]]$x[x1:x2],
                             y=dpb$data[[1]]$y[x1:x2]),
             aes(x=x, y=y), fill="#8AAF9D", colour = "black") +
-  scale_x_continuous(breaks=c(400,300,200,100,7,-14,-100,-200,-300,-400)) +
+  scale_x_continuous(breaks=c(400,300,200,100,0,-100,-200,-300,-400)) +
   theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25))
 ggsave(p_te_t_density_plot_x, filename="/Users/kelseysumner/Desktop/p_te_t_density_plot_x.png", device="png",
        height=8, width=14, units="in", dpi=500)

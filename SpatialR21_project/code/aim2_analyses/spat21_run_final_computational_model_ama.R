@@ -27,7 +27,7 @@ library(glmmTMB)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
 
 
@@ -80,7 +80,7 @@ table(model_data$sample_id_human,model_data$aim2_exposure)
 #### ------ run the final models and do model selection ------- ####
 
 # run model 2 chosen through the csp model selection process
-model2 <- glmmTMB(p_te_all_ama~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat + ama_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model2 <- glmmTMB(p_te_all_ama~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model2)
 table1 = exp(confint(model2,method="Wald"))
 
@@ -90,18 +90,18 @@ table1 = exp(confint(model2,method="Wald"))
 #### ------ make a forest plot of the ama results --------- ####
 
 # create a data frame of model 2 output
-estimates = table1[2:9,3]
-lower_ci = table1[2:9,1]
-upper_ci = table1[2:9,2]
-names = c("Asymptomatic infection","Participant asexual parasite density","Participant age >15 years","Participant age 5-15 years","75-147 mosquitoes","Participant MOI","Kinesamo village","Sitabicha village")
+estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],table1[5,3],NA,table1[6,3],NA,table1[7,3],table1[8,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],table1[5,1],NA,table1[6,1],NA,table1[7,1],table1[8,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],table1[5,2],NA,table1[6,2],NA,table1[7,2],table1[8,2])
+names = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","Participant asexual parasite density","Participant age 5-15 years","Participant age >15 years","75-147 mosquitoes","Participant MOI","Kinesamo village","Sitabicha village"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","Participant asexual parasite density","Participant age 5-15 years","Participant age >15 years","75-147 mosquitoes","Participant MOI","Kinesamo village","Sitabicha village"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
 
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +

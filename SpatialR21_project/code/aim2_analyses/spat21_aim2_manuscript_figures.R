@@ -26,7 +26,10 @@ library(ggrepel)
 #### ---------- read in the data sets ---------- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
+# subset the data set to samples that passed pfcsp sequencing only
+model_data = model_data %>%
+  filter(!(is.na(csp_haps_shared)))
 
 # read in the merged anopheles mosquito data set
 anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
@@ -90,16 +93,27 @@ ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="p
  height=5.25, width=10, units="in", dpi=500)
 
 # make a dot plot
+no_infection = mosquito_df_for_plot %>%
+  filter(symp_status=="no infection")
+infection = mosquito_df_for_plot %>%
+  filter(symp_status=="infection")
 plot1 = ggplot(data = mosquito_df_for_plot) +
+  geom_line(data=no_infection,aes(x=new_date,y=n),color="#D3DDDC", size=1, alpha=0.9,group=1)+
+  geom_line(data=infection,aes(x=new_date,y=n),color="#F21A00", size=1, alpha=0.9,group=1)+
   geom_point(aes(x=new_date,y=n,fill=symp_status),colour = "black",pch=21,size=3)+
   scale_fill_manual(values=c("#D3DDDC","#F21A00")) +
   theme_bw() +
   xlab("Month")+
   ylab("Number of mosquitoes")+
-  labs(fill="Infection status")
+  labs(fill="Infection status") +
+  scale_y_continuous(breaks=c(0,50,100,150,200,250,300),limits=c(0,300)) +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size=20), legend.title = element_text(size=30), 
+        panel.grid.major.x = element_blank()) 
 plot1
-# ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
-# height=5.25, width=11, units="in", dpi=500)
+ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
+ height=5.25, width=11, units="in", dpi=500)
 
 # now make a density plot
 anophed_merged_data_no_na = anoph_merged_data %>%
@@ -155,6 +169,29 @@ plot2
 ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2_stackedsymp.png", device="png",
        height=5.25, width=10, units="in", dpi=500)
 
+# make a dot plot
+no_infection = plot_human_data_symp %>%
+  filter(symp_infection=="no infection")
+infection = plot_human_data_symp %>%
+  filter(symp_infection=="symptomatic infection")
+plot2 = ggplot(data = plot_human_data_symp) +
+  geom_line(data=no_infection,aes(x=month,y=n),color="#D3DDDC", size=1, alpha=0.9,group=1)+
+  geom_line(data=infection,aes(x=month,y=n),color="#3B9AB2", size=1, alpha=0.9,group=1)+
+  geom_point(aes(x=month,y=n,fill=symp_infection),colour = "black",pch=21,size=3)+
+  scale_fill_manual(values=c("#D3DDDC","#3B9AB2")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of participants")+
+  labs(fill="Infection status") +
+  scale_y_continuous(breaks=c(0,10,20,30,40,50),limits=c(0,50)) +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size=20), legend.title = element_text(size=30), 
+        panel.grid.major.x = element_blank()) 
+plot2
+ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2.png", device="png",
+       height=5.25, width=11, units="in", dpi=500)
+
 
 ## now make a plot for asymptomatic infections at monthly follow-up visits
 
@@ -199,6 +236,30 @@ plot3
 # export the plot
 ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3_stackedasymp.png", device="png",
        height=5.25, width=10, units="in", dpi=500)
+
+
+# make a dot plot
+no_infection = plot_human_data_asymp %>%
+  filter(main_exposure_primary_case_def=="no infection")
+infection = plot_human_data_asymp %>%
+  filter(main_exposure_primary_case_def=="asymptomatic infection")
+plot3 = ggplot(data = plot_human_data_asymp) +
+  geom_line(data=no_infection,aes(x=month,y=n),color="#D3DDDC", size=1, alpha=0.9,group=1)+
+  geom_line(data=infection,aes(x=month,y=n),color="#E1AF00", size=1, alpha=0.9,group=1)+
+  geom_point(aes(x=month,y=n,fill=main_exposure_primary_case_def),colour = "black",pch=21,size=3)+
+  scale_fill_manual(values=c("#D3DDDC","#E1AF00")) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Number of participants")+
+  labs(fill="Infection status") +
+  scale_y_continuous(breaks=c(0,50,100,150,200),limits=c(0,200)) +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size=20), legend.title = element_text(size=30), 
+        panel.grid.major.x = element_blank()) 
+plot3
+ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3.png", device="png",
+       height=5.25, width=11, units="in", dpi=500)
 
 
 
@@ -1314,6 +1375,11 @@ asymp_human_hap_summary$haplotype_ids = factor(asymp_human_hap_summary$haplotype
 symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_ids, levels=symp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 
+# subset them to just be the first 100 haplotypes
+asymp_human_hap_summary = asymp_human_hap_summary[1:75,]
+symp_human_hap_summary = symp_human_hap_summary[1:75,]
+abdomen_hap_summary = abdomen_hap_summary[1:75,]
+
 # make a data frame of both df combined
 asymp_human_hap_summary$type = rep("Asymptomatic infected participants",nrow(asymp_human_hap_summary))
 symp_human_hap_summary$type = rep("Symptomatic infected participants",nrow(symp_human_hap_summary))
@@ -1355,12 +1421,12 @@ pyramid_plot_csp = ggplot(combined_hap_summary_subset_0, aes(x = haplotype_ids, 
   coord_flip() +  # Flip axes
   scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
   theme_bw() +
-  scale_y_continuous(breaks=c(-350,-300,-250,-200,-150,-100,-50,0,50,100,150,200,250,300,350)) +
-  labs(title=expression(paste(italic("pfcsp: "),"Haplotypes shared across samples")), fill = "Sample type") +
-  xlab("Unique haplotypes") +
+  scale_y_continuous(breaks=c(-150,-100,-50,0,50,100,150,200,250,300,350,400),limits=c(-150,400)) +
+  labs(fill = "Sample type") +
+  xlab("Unique haplotype ID") +
   ylab("Number of samples with haplotype") +
-  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25),axis.text.y=element_blank(),
-        axis.ticks.y = element_blank(), legend.position = c(1,1),legend.justification = c(1,1),legend.box.background = element_rect(colour = "black"))  +
+  theme(plot.title = element_text(size = 35, face = "bold", hjust = 0.5), text = element_text(size=35),axis.text.y=element_blank(),
+        axis.ticks.y = element_blank(), legend.position = c(0.65, 0.9),legend.box.background = element_rect(colour = "black"),legend.text = element_text(size=30), legend.title = element_text(size=30))  +
   geom_vline(xintercept = 0,color="black",size=1.5)
 pyramid_plot_csp
 

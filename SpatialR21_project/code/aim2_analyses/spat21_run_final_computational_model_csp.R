@@ -29,7 +29,7 @@ library(glmmTMB)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_18FEB2020.rds")
+model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
 
 
@@ -77,6 +77,22 @@ table(model_data$HH_ID_human,model_data$aim2_exposure)
 table(model_data$unq_memID,model_data$aim2_exposure)
 table(model_data$sample_id_human,model_data$aim2_exposure)
 
+# look more into the distribution of p_te_all_csp
+hist(model_data$p_te_all_csp,breaks=50)
+asymp_only = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection")
+symp_only = model_data %>%
+  filter(aim2_exposure == "symptomatic infection")
+hist(asymp_only$p_te_all_csp,breaks=100)
+hist(symp_only$p_te_all_csp,breaks=100)
+
+# look into why some symptomatic infections had non-zero but close to zero probabiltites
+symp_only_small = symp_only %>%
+  filter(p_te_all_csp < 0.2)
+length(which(symp_only$csp_haps_shared == 1))/nrow(symp_only) # more singleton haplotypes in the symptomatic infections
+length(which(asymp_only$csp_haps_shared == 1))/nrow(asymp_only)
+
+
 
 #### ------- check for overdispersion ------- ####
 
@@ -97,15 +113,15 @@ model2_all_nmlm <- glm(p_te_all_csp~aim2_exposure+age_cat_baseline+mosquito_week
 summary(model2_all_nmlm)
 
 # look at a summary of p_te_all and p_te_alt by household
-tmp = merged_data %>%
+tmp = model_data %>%
   group_by(HH_ID_human) %>%
   summarize(mean_p_te_all_csp = mean(p_te_all_csp))
-tmp_alt = merged_data %>%
+tmp_alt = model_data %>%
   group_by(HH_ID_human) %>%
   summarize(mean_p_te_all_ama = mean(p_te_all_ama))
 
 # look at a summary of p_te_all and p_te_alt by person
-tmp = merged_data %>%
+tmp = model_data %>%
   group_by(unq_memID) %>%
   summarize(mean_p_te_all_csp = mean(p_te_all_csp))
 tmp_alt = merged_data %>%
@@ -150,6 +166,20 @@ dispfun <- function(m) {
 dispersion_glmer(model2_tmb)
 dispfun(model2_tmb) # not overdispersed
 
+# try running a multi-level model that is just at the participant level
+model2_tmb_1level <- glmmTMB(p_te_all_csp~aim2_exposure+age_cat_baseline+mosquito_week_count_cat +pfr364Q_std_combined_rescaled+village_name+csp_moi_rescaled+(1|unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model2_tmb_1level)
+performance::icc(model2_tmb_1level)
+
+# try running a multi-level model that is just at the household level
+model2_tmb_1level <- glmmTMB(p_te_all_csp~aim2_exposure+age_cat_baseline+mosquito_week_count_cat +pfr364Q_std_combined_rescaled+village_name+csp_moi_rescaled+(1|HH_ID_human),family=binomial(link = "logit"), data = model_data)
+summary(model2_tmb_1level)
+performance::icc(model2_tmb_1level)
+
+# try running a multi-level model that is just at the particpant multiple level
+model2_tmb_1level <- glmmTMB(p_te_all_csp~aim2_exposure+age_cat_baseline+mosquito_week_count_cat +pfr364Q_std_combined_rescaled+village_name+csp_moi_rescaled+(1|sample_id_human),family=binomial(link = "logit"), data = model_data)
+summary(model2_tmb_1level)
+performance::icc(model2_tmb_1level)
 
 
 #### ------ run the final models and do model selection ------- ####
@@ -222,15 +252,59 @@ anova(model5,model8) # model 5 better
 
 
 # summary:
-# deciding to go with model 2
+# deciding to go with model 2 but will remove csp moi
 
 
-#### ------ create a forest plot of the final model output ------ ####
+#### ------ create a forest plot of the final model output (doesn't have csp moi covariate) ------ ####
 
-# create a data frame of model 2 output
-model2 <- glmmTMB(p_te_all_csp~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+# run model 2 output without csp moi
+model2 <- glmmTMB(p_te_all_csp~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model2)
+performance::icc(model2)
+exp(confint(model2,method="Wald"))
+
+# run model without being multilevel
+model2_all_nmlm <- glm(p_te_all_csp~aim2_exposure+age_cat_baseline+mosquito_week_count_cat+pfr364Q_std_combined_rescaled+village_name,family=binomial(link = "logit"), data = model_data)
+summary(model2_all_nmlm)
+exp(0.432712)
+exp(confint(model2_all_nmlm,method="Wald"))
+
 table1 = exp(confint(model2,method="Wald"))
+estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],table1[5,3],NA,table1[6,3],NA,table1[7,3],table1[8,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],table1[5,1],NA,table1[6,1],NA,table1[7,1],table1[8,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],table1[5,2],NA,table1[6,2],NA,table1[7,2],table1[8,2])
+names = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds ratio (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=25)) 
+fp
+
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome.png", device="png",
+       height=9, width=12.5, units="in", dpi=400)
+
+
+
+#### ------- make a forest plot of model with the covariate for csp moi included ------ ####
+
+# run model 2 output with csp moi
+model2_withmoi <- glmmTMB(p_te_all_csp~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model2_withmoi)
+performance::icc(model2_withmoi)
+exp(confint(model2_withmoi,method="Wald"))
+
+table1 = exp(confint(model2_withmoi,method="Wald"))
 estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],table1[5,3],NA,table1[6,3],NA,table1[7,3],NA,table1[8,3],table1[9,3])
 lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],table1[5,1],NA,table1[6,1],NA,table1[7,1],NA,table1[8,1],table1[9,1])
 upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],table1[5,2],NA,table1[6,2],NA,table1[7,2],NA,table1[8,2],table1[9,2])
@@ -252,8 +326,11 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
 fp
 
 # export the plot
-ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome.png", device="png",
+ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome_with_moi_covariate.png", device="png",
        height=9, width=12.5, units="in", dpi=400)
+
+
+
 
 
 #### ------- make a plot of p_te_all stratified -------- ####
@@ -292,7 +369,7 @@ ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_violin
 
 
 
-#### ------ make a plot of the odds ratios of p_te_all coded binary -------- ####
+#### ------ make a plot of the odds ratios of p_te_all coded binary and csp moi in model -------- ####
 
 # look at a summary of the outcome variable
 summary(model_data$p_te_all_csp)
@@ -460,90 +537,186 @@ levels(model_data$outcome_binary_lessthan0.95)
 model_data$outcome_binary_lessthan0.95 = relevel(model_data$outcome_binary_lessthan0.95,ref = "less than 0.95")
 
 # binary outcome 0 with a logistic model - this is basically a hurdle model
-model0 <- glmmTMB(outcome_binary_lessthan0~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model0 <- glmmTMB(outcome_binary_lessthan0~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model0)
 exp(confint(model0,method="Wald"))
 
 # binary outcome <0.05 with a logistic model
-model.05 <- glmmTMB(outcome_binary_lessthan0.05~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.05 <- glmmTMB(outcome_binary_lessthan0.05~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.05)
 exp(confint(model.05,method="Wald"))
 # converged
 
 # binary outcome <0.1 with a logistic model
-model.1 <- glmmTMB(outcome_binary_lessthan0.1~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.1 <- glmmTMB(outcome_binary_lessthan0.1~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.1)
 exp(confint(model.1,method="Wald"))
 # converged
 
 # binary outcome <0.15 with a logistic model
-model.15 <- glmmTMB(outcome_binary_lessthan0.15~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.15 <- glmmTMB(outcome_binary_lessthan0.15~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.15)
 exp(confint(model.15,method="Wald"))
 # converged
 
 # binary outcome <0.2 with a logistic model
-model.2 <- glmmTMB(outcome_binary_lessthan0.2~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.2 <- glmmTMB(outcome_binary_lessthan0.2~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.2)
 exp(confint(model.2, method="Wald"))
 # converged
 
 # binary outcome <0.25 with a logistic model
-model.25 <- glmmTMB(outcome_binary_lessthan0.25~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.25 <- glmmTMB(outcome_binary_lessthan0.25~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.25)
 exp(confint(model.25, method="Wald"))
 # converged
 
 # binary outcome <0.3 with a logistic model
-model.3 <-  glmmTMB(outcome_binary_lessthan0.3~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.3 <-  glmmTMB(outcome_binary_lessthan0.3~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.3)
 exp(confint(model.3, method="Wald"))
 # converged
 
 # binary outcome <0.35 with a logistic model
-model.35 <- glmmTMB(outcome_binary_lessthan0.35~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.35 <- glmmTMB(outcome_binary_lessthan0.35~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.35)
 exp(confint(model.35, method="Wald"))
 # converged
 
 # binary outcome <0.4 with a logistic model
-model.4 <- glmmTMB(outcome_binary_lessthan0.4~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.4 <- glmmTMB(outcome_binary_lessthan0.4~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.4)
-exp(confint(model.4, method="Wald")) # can't compute confidence interval
+exp(confint(model.4, method="Wald")) 
 # converged
 
 # binary outcome <0.45 with a logistic model
-model.45 <- glmmTMB(outcome_binary_lessthan0.45~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.45 <- glmmTMB(outcome_binary_lessthan0.45~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.45)
-exp(confint(model.45, method="Wald")) # can't compute confidence interval
+exp(confint(model.45, method="Wald")) 
 # converged
 
 # binary outcome <0.5 with a logistic model
-model.5 <- glmmTMB(outcome_binary_lessthan0.5~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.5 <- glmmTMB(outcome_binary_lessthan0.5~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.5)
-exp(confint(model.5, method="Wald")) # can't compute confidence interval
+exp(confint(model.5, method="Wald")) 
 # converged
 
 # binary outcome <0.55 with a logistic model
-model.55 <- glmmTMB(outcome_binary_lessthan0.55~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.55 <- glmmTMB(outcome_binary_lessthan0.55~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+csp_moi_rescaled+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.55)
-exp(confint(model.55, method="Wald")) # can't compute confidence interval
+exp(confint(model.55, method="Wald")) 
+# converged
+
+# read in the model results
+model_results = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/computational_model_materials/aim2_binary_outcome_final_with_moi.csv")
+model_results = model_results[-c(13),]
+
+# try another way to make this plot
+model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#E1AF00") +
+  geom_line(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#E1AF00") +
+  geom_ribbon(data=model_results,aes(x=1:length(binary_outcome),ymin = lower_ci, ymax = upper_ci),alpha=0.2,fill="#E1AF00") +
+  theme_bw() +
+  xlab("Cutoff for what is a transmission event") + 
+  ylab("Odds ratio (95% CI)") + 
+  scale_y_continuous(breaks=c(0,1,2,3),trans="log10") +
+  geom_hline(yintercept=1,linetype="dashed") + 
+  coord_flip() +
+  theme(text = element_text(size=25)) 
+model_plot
+
+
+ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plot_with_moi.png", device="png",
+       height=7, width=8, units="in", dpi=500)
+
+
+
+#### ------- rerun the binary outcome models but without csp moi in the models ------- ####
+
+# binary outcome 0 with a logistic model - this is basically a hurdle model
+model0 <- glmmTMB(outcome_binary_lessthan0~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model0)
+exp(confint(model0,method="Wald"))
+
+# binary outcome <0.05 with a logistic model
+model.05 <- glmmTMB(outcome_binary_lessthan0.05~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.05)
+exp(confint(model.05,method="Wald"))
+# converged
+
+# binary outcome <0.1 with a logistic model
+model.1 <- glmmTMB(outcome_binary_lessthan0.1~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.1)
+exp(confint(model.1,method="Wald"))
+# converged
+
+# binary outcome <0.15 with a logistic model
+model.15 <- glmmTMB(outcome_binary_lessthan0.15~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.15)
+exp(confint(model.15,method="Wald"))
+# converged
+
+# binary outcome <0.2 with a logistic model
+model.2 <- glmmTMB(outcome_binary_lessthan0.2~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.2)
+exp(confint(model.2, method="Wald"))
+# converged
+
+# binary outcome <0.25 with a logistic model
+model.25 <- glmmTMB(outcome_binary_lessthan0.25~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.25)
+exp(confint(model.25, method="Wald"))
+# converged
+
+# binary outcome <0.3 with a logistic model
+model.3 <-  glmmTMB(outcome_binary_lessthan0.3~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.3)
+exp(confint(model.3, method="Wald"))
+# converged
+
+# binary outcome <0.35 with a logistic model
+model.35 <- glmmTMB(outcome_binary_lessthan0.35~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.35)
+exp(confint(model.35, method="Wald"))
+# converged
+
+# binary outcome <0.4 with a logistic model
+model.4 <- glmmTMB(outcome_binary_lessthan0.4~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.4)
+exp(confint(model.4, method="Wald")) 
+# converged
+
+# binary outcome <0.45 with a logistic model
+model.45 <- glmmTMB(outcome_binary_lessthan0.45~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.45)
+exp(confint(model.45, method="Wald")) 
+# converged
+
+# binary outcome <0.5 with a logistic model
+model.5 <- glmmTMB(outcome_binary_lessthan0.5~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.5)
+exp(confint(model.5, method="Wald")) 
+# converged
+
+# binary outcome <0.55 with a logistic model
+model.55 <- glmmTMB(outcome_binary_lessthan0.55~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(model.55)
+exp(confint(model.55, method="Wald")) 
 # converged
 
 # binary outcome <0.6 with a logistic model
-model.6 <- glmmTMB(outcome_binary_lessthan0.6~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.6 <- glmmTMB(outcome_binary_lessthan0.6~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.6)
 exp(confint(model.6, method="Wald")) # can't compute confidence interval
 # converged but producing weird results
 
 # binary outcome <0.65 with a logistic model
-model.65 <- glmmTMB(outcome_binary_lessthan0.65~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.65 <- glmmTMB(outcome_binary_lessthan0.65~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.65)
 exp(confint(model.65, method="Wald")) # can't compute confidence interval
 # converged but producing weird results
 
 # binary outcome <0.7 with a logistic model
-model.7 <- glmmTMB(outcome_binary_lessthan0.7~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +csp_moi_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+model.7 <- glmmTMB(outcome_binary_lessthan0.7~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model.7)
 exp(confint(model.7, method="Wald")) # can't compute confidence interval
 # converged but weird results
@@ -557,27 +730,18 @@ model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),
   geom_line(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#E1AF00") +
   geom_ribbon(data=model_results,aes(x=1:length(binary_outcome),ymin = lower_ci, ymax = upper_ci),alpha=0.2,fill="#E1AF00") +
   theme_bw() +
-  xlab("Binary outcome coding") + 
+  xlab("Cutoff for what is a transmission event") + 
   ylab("Odds ratio (95% CI)") + 
-  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10),trans="log10") +
+  scale_y_continuous(breaks=c(0,1,2,3),trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip() +
   theme(text = element_text(size=25)) 
 model_plot
-# third way to do the plot
-model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#E1AF00") +
-  geom_smooth(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#E1AF00",fill="#E1AF00") +
-  theme_bw() +
-  xlab("Binary outcome coding") +
-  ylab("Odds ratio (95% CI)") + 
-  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10),trans="log10") +
-  geom_hline(yintercept=1,linetype="dashed") + 
-  coord_flip() +
-  theme(text = element_text(size=25)) 
-model_plot
+
 
 
 ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plot.png", device="png",
        height=7, width=8, units="in", dpi=500)
+
 
 
