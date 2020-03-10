@@ -26,6 +26,10 @@ positive_data_1 = read_csv("Desktop/Dissertation Materials/Turkana Project/EMBAT
 # read in the new turkana inventory
 new_inventory = read_csv("Desktop/Tabitha last batch 5MAR2020/embatalk_inventory_extra_5MAR2020.csv")
 
+# read in the sequencing inventories from noah
+seq_inventory_1 = read_csv("Desktop/EMBATALK NGS Run 1.csv")
+seq_inventory_2 = read_csv("Desktop/EMBATALK NGS Run 2.csv")
+seq_inventory_3 = read_csv("Desktop/EMBATALK NGS Run 3.csv")
 
 
 #### ------- pull the samples that had low CT values in the positive qpcr samples from phase 2 -------- ####
@@ -200,3 +204,150 @@ dup_df = full_inventory[which(full_inventory$`sample ID` %in% ids_to_remove),]
 write_csv(dup_df,"Desktop/embatalk_duplicates_all_5MAR2020.csv")
 
 
+#### ------ create separate data sets for over and under CT 34 for first 2 qpcr runs --------- ####
+
+# cut down the positive data sets to just the columns of interest
+colnames(positive_data)
+colnames(positive_data_1)
+positive_data = positive_data %>%
+  select("sample ID","gDNA plate ID","column","row","sample_type","under_ct_34")
+positive_data_1 = positive_data_1 %>%
+  select("sample ID","gDNA plate ID","column","row","sample_type","under_ct_34")
+all_positive_data = rbind(positive_data,positive_data_1)
+
+# separate source plate - well column
+# do this for the first sequence inventory
+source_plate = rep(NA,nrow(seq_inventory_1))
+well = rep(NA,nrow(seq_inventory_1))
+for (i in 1:nrow(seq_inventory_1)){
+  if (is.na(seq_inventory_1$`Source Well-Plate`[i])){
+    source_plate[i] = NA
+    well[i] = NA
+  } else {
+    source_plate[i] = str_split(seq_inventory_1$`Source Well-Plate`[i],"-")[[1]][1]
+    well[i] = str_split(seq_inventory_1$`Source Well-Plate`[i],"-")[[1]][2]
+  }
+}
+# add the new vectors to the dataset
+seq_inventory_1$source_plate = source_plate
+seq_inventory_1$well = well
+length(which(is.na(seq_inventory_1$source_plate)))
+length(which(is.na(seq_inventory_1$well)))
+table(seq_inventory_1$source_plate, useNA = "always")
+table(seq_inventory_1$well, useNA = "always")
+seq_inventory_1$source_plate[which(seq_inventory_1$`Source Well-Plate`=="2BH4")] = "2B"
+seq_inventory_1$well[which(seq_inventory_1$`Source Well-Plate`=="2BH4")] = "H4"
+# do this for the second sequence inventory
+source_plate = rep(NA,nrow(seq_inventory_2))
+well = rep(NA,nrow(seq_inventory_2))
+for (i in 1:nrow(seq_inventory_2)){
+  if (is.na(seq_inventory_2$`Source Plate-Well`[i])){
+    source_plate[i] = NA
+    well[i] = NA
+  } else {
+    source_plate[i] = str_split(seq_inventory_2$`Source Plate-Well`[i],"-")[[1]][1]
+    well[i] = str_split(seq_inventory_2$`Source Plate-Well`[i],"-")[[1]][2]
+  }
+}
+# add the new vectors to the dataset
+seq_inventory_2$source_plate = source_plate
+seq_inventory_2$well = well
+length(which(is.na(seq_inventory_2$source_plate)))
+length(which(is.na(seq_inventory_2$well)))
+table(seq_inventory_2$source_plate, useNA = "always")
+table(seq_inventory_2$well, useNA = "always")
+# do this for the third sequence inventory
+source_plate = rep(NA,nrow(seq_inventory_3))
+well = rep(NA,nrow(seq_inventory_3))
+for (i in 1:nrow(seq_inventory_3)){
+  if (is.na(seq_inventory_3$`Source Plate-Well`[i])){
+    source_plate[i] = NA
+    well[i] = NA
+  } else {
+    source_plate[i] = str_split(seq_inventory_3$`Source Plate-Well`[i],"-")[[1]][1]
+    well[i] = str_split(seq_inventory_3$`Source Plate-Well`[i],"-")[[1]][2]
+  }
+}
+# add the new vectors to the dataset
+seq_inventory_3$source_plate = source_plate
+seq_inventory_3$well = well
+length(which(is.na(seq_inventory_3$source_plate)))
+length(which(is.na(seq_inventory_3$well)))
+table(seq_inventory_3$source_plate, useNA = "always")
+table(seq_inventory_3$well, useNA = "always")
+
+# cut down the sequencing inventory data sets
+colnames(seq_inventory_1)
+seq_inventory_1 = seq_inventory_1 %>%
+  select("Sample","Pf(+) Plate","Column Letter","Row Number","source_plate","well")
+seq_inventory_2 = seq_inventory_2 %>%
+  select("Sample","Pf(+) Plate","Column Letter","Row Number","source_plate","well")
+seq_inventory_3 = seq_inventory_3 %>%
+  select("Sample","Pf(+) Plate","Column Letter","Row Number","source_plate","well")
+
+# now combine the two sequencing data sets together
+all_seq_inventory = rbind(seq_inventory_1,seq_inventory_2,seq_inventory_3)
+
+# recode one of the samples in the seq inventory
+all_seq_inventory$Sample[which(all_seq_inventory$Sample=="g0503")] = "G0503"
+
+# rename the positive data set sample_id
+colnames(all_positive_data)
+all_positive_data = all_positive_data %>%
+  rename("Sample" = "sample ID")
+
+# change the positive data sample Ids to Os
+all_positive_data$Sample[which(all_positive_data$Sample=="GO265")] = "G0265"
+all_positive_data$Sample[which(all_positive_data$Sample=="GO270")] = "G0270"
+all_positive_data$Sample[which(all_positive_data$Sample=="GO284")] = "G0284"
+all_positive_data$Sample[which(all_positive_data$Sample=="GO338A")] = "G0338A"
+all_positive_data$Sample[which(all_positive_data$Sample=="GO385A")] = "G0385A"
+all_positive_data$Sample[which(all_positive_data$Sample=="MO268")] = "M0268"
+all_seq_inventory$Sample[which(all_seq_inventory$Sample=="G0499B")] = "G0499D"
+all_seq_inventory$Sample[which(all_seq_inventory$Sample=="G0266A")] = "G0226A"
+
+# combine the positive data set and sequencing inventory
+all_data_combined = left_join(all_seq_inventory,all_positive_data,by="Sample")
+# check the join
+length(which(is.na(all_data_combined$`Column Letter`)))
+length(which(is.na(all_data_combined$column)))
+
+# separate the data sets by sample type
+community_data = all_data_combined %>%
+  filter(sample_type == "community")
+traveler_data = all_data_combined %>%
+  filter(sample_type == "travel")
+facility_data = all_data_combined %>%
+  filter(sample_type == "facility")
+
+# separate the data sets by ct values
+community_data_under_ct_34 = community_data %>%
+  filter(under_ct_34 == "yes")
+community_data_over_ct_34 = community_data %>%
+  filter(under_ct_34 == "no")
+traveler_data_under_ct_34 = traveler_data %>%
+  filter(under_ct_34 == "yes")
+traveler_data_over_ct_34 = traveler_data %>%
+  filter(under_ct_34 == "no")
+
+# export the data sets
+write_csv(community_data_under_ct_34, "Desktop/embatalk_community_data_under_ct_34_10MAR2020.csv")
+write_csv(community_data_over_ct_34, "Desktop/embatalk_community_data_over_ct_34_10MAR2020.csv")
+write_csv(traveler_data_under_ct_34, "Desktop/embatalk_traveler_data_under_ct_34_10MAR2020.csv")
+write_csv(traveler_data_over_ct_34, "Desktop/embatalk_traveler_data_over_ct_34_10MAR2020.csv")
+write_csv(facility_data, "Desktop/embatalk_facility_data_all_10MAR2020.csv")
+
+# read in the extra turkana samples from betsy
+extra_turkana_data = read_csv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/travelers positives/for_betsy_final.csv")
+
+# merge the extra turkana samples from betsy with the gdna plate info
+small_turkana_data = turkana_data %>%
+  select(`sample ID`,`gDNA plate ID`)
+extra_turkana_data = left_join(extra_turkana_data,small_turkana_data,by="sample ID")
+
+# export the extra turkana samples 
+extra_turkana_data = extra_turkana_data %>%
+  select(-c(`DBSplate ID.x`))
+extra_turkana_data = extra_turkana_data %>%
+  select(`sample ID`,`gDNA plate ID`,"row","column")
+write_csv(extra_turkana_data,"Desktop/embatalk_traveler_extra_samples_10MAR2020.csv")

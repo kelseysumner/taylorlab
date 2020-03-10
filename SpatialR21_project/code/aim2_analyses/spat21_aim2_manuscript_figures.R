@@ -1375,7 +1375,7 @@ asymp_human_hap_summary$haplotype_ids = factor(asymp_human_hap_summary$haplotype
 symp_human_hap_summary$haplotype_ids = factor(symp_human_hap_summary$haplotype_ids, levels=symp_human_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 abdomen_hap_summary$haplotype_ids = factor(abdomen_hap_summary$haplotype_ids, levels=abdomen_hap_summary$haplotype_ids[order(-asymp_human_hap_summary$haplotypes_across_samples)])
 
-# subset them to just be the first 100 haplotypes
+# subset them to just be the first 75 haplotypes
 asymp_human_hap_summary = asymp_human_hap_summary[1:75,]
 symp_human_hap_summary = symp_human_hap_summary[1:75,]
 abdomen_hap_summary = abdomen_hap_summary[1:75,]
