@@ -21,6 +21,7 @@ library(ggalluvial)
 library(gridExtra)
 library(ggsci)
 library(ggrepel)
+library(ggridges)
 
 
 #### ---------- read in the data sets ---------- ####
@@ -89,8 +90,8 @@ plot1 = ggplot(data = mosquito_df_for_plot,aes(x=new_date,y=n,fill=symp_status))
   theme(text = element_text(size=15),
         legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),legend.text = element_text(size=20), legend.title = element_text(size=30)) 
 plot1
-ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
- height=5.25, width=10, units="in", dpi=500)
+# ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
+ # height=5.25, width=10, units="in", dpi=500)
 
 # make a dot plot
 no_infection = mosquito_df_for_plot %>%
@@ -112,8 +113,8 @@ plot1 = ggplot(data = mosquito_df_for_plot) +
         legend.text = element_text(size=20), legend.title = element_text(size=30), 
         panel.grid.major.x = element_blank()) 
 plot1
-ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
- height=5.25, width=11, units="in", dpi=500)
+# ggsave(plot1, filename="/Users/kelseysumner/Desktop/figure1_plot.png", device="png",
+ # height=5.25, width=11, units="in", dpi=500)
 
 # now make a density plot
 anophed_merged_data_no_na = anoph_merged_data %>%
@@ -124,7 +125,11 @@ plot_density_1 = ggplot(data = anophed_merged_data_no_na) +
   theme_bw() +
   xlab("Month")+
   ylab("Number of mosquitoes")+
-  labs(fill="Infection status")
+  labs(fill="Infection status") +
+  theme(text = element_text(size=15),
+        legend.position = c(0.8, 0.8),legend.box.background = element_rect(colour = "black"),
+        legend.text = element_text(size=20), legend.title = element_text(size=30), 
+        panel.grid.major.x = element_blank()) 
 plot_density_1
 
 
@@ -166,8 +171,8 @@ plot2 = ggplot(data = plot_human_data_symp,aes(x=month,y=n,fill=symp_infection))
 plot2
 
 # export the plot
-ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2_stackedsymp.png", device="png",
-       height=5.25, width=10, units="in", dpi=500)
+# ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2_stackedsymp.png", device="png",
+       # height=5.25, width=10, units="in", dpi=500)
 
 # make a dot plot
 no_infection = plot_human_data_symp %>%
@@ -189,8 +194,8 @@ plot2 = ggplot(data = plot_human_data_symp) +
         legend.text = element_text(size=20), legend.title = element_text(size=30), 
         panel.grid.major.x = element_blank()) 
 plot2
-ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2.png", device="png",
-       height=5.25, width=11, units="in", dpi=500)
+# ggsave(plot2, filename="/Users/kelseysumner/Desktop/plot2.png", device="png",
+       # height=5.25, width=11, units="in", dpi=500)
 
 
 ## now make a plot for asymptomatic infections at monthly follow-up visits
@@ -234,8 +239,8 @@ plot3 = ggplot(data = plot_human_data_asymp,aes(x=month,y=n,fill=main_exposure_p
 plot3
 
 # export the plot
-ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3_stackedasymp.png", device="png",
-       height=5.25, width=10, units="in", dpi=500)
+# ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3_stackedasymp.png", device="png",
+       # height=5.25, width=10, units="in", dpi=500)
 
 
 # make a dot plot
@@ -258,11 +263,66 @@ plot3 = ggplot(data = plot_human_data_asymp) +
         legend.text = element_text(size=20), legend.title = element_text(size=30), 
         panel.grid.major.x = element_blank()) 
 plot3
-ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3.png", device="png",
-       height=5.25, width=11, units="in", dpi=500)
+# ggsave(plot3, filename="/Users/kelseysumner/Desktop/plot3.png", device="png",
+       # height=5.25, width=11, units="in", dpi=500)
 
 
+## now try to make a geom_density_ridges_gradient plot
 
+# create a combined data frame of all the data frames
+colnames(asymptomatic_df)
+asymptomatic_df = asymptomatic_df %>%
+  select(main_exposure_primary_case_def,sample_id_date) %>%
+  mutate(type = "Asymptomatic visit") %>%
+  rename(infection_status = main_exposure_primary_case_def,date = sample_id_date)
+colnames(symptomatic_df)
+symptomatic_df = symptomatic_df %>%
+  select(main_outcome_primary_case_def,sample_id_date) %>%
+  mutate(type = "Symptomatic visit") %>%
+  rename(infection_status = main_outcome_primary_case_def,date=sample_id_date)
+colnames(anophed_merged_data_no_na)
+mosquito_df = anophed_merged_data_no_na %>%
+  select(pf_pcr_infection_status_sample_level_a,collection_date) %>%
+  mutate(type = "Mosquito collection") %>%
+  rename(infection_status = pf_pcr_infection_status_sample_level_a,date=collection_date)
+colnames(mosquito_df)
+colnames(symptomatic_df)
+colnames(asymptomatic_df)
+all_df = rbind(mosquito_df,symptomatic_df,asymptomatic_df)
+all_df$infection_status[which(all_df$infection_status == "symptomatic infection")] = "Positive"
+all_df$infection_status[which(all_df$infection_status == "asymptomatic infection")] = "Positive"
+all_df$infection_status[which(all_df$infection_status == "no infection")] = "Negative"
+all_df$infection_status[which(is.na(all_df$infection_status))] = "Negative"
+all_df$infection_status[which(all_df$infection_status == "positive")] = "Positive"
+all_df$infection_status[which(all_df$infection_status == "negative")] = "Negative"
+table(all_df$infection_status, useNA = "always")
+all_df$infection_status = as.character(all_df$infection_status)
+all_df$type_status = paste(all_df$type,all_df$infection_status)
+table(all_df$type_status,useNA = "always")
+
+# try a facet plot
+all_df$type = as.factor(all_df$type)
+all_df$type = relevel(all_df$type,ref="Symptomatic visit")
+all_df$type = relevel(all_df$type,ref="Mosquito collection")
+density_all_plot = ggplot(all_df, aes(y = factor(infection_status))) +
+  facet_grid(type ~ .) +
+  geom_density_ridges(aes(x=date,fill=type_status),alpha=0.7,color = "white",bandwidth=14,scale=8) +
+  scale_fill_cyclical(values = c("#D3DDDC", "#E1AF00","#D3DDDC","#F21A00","#D3DDDC","#3B9AB2")) +
+  xlab("") +
+  ylab("Malaria infection status") +
+  theme_bw() +
+  scale_x_date(date_breaks="2 months",limits = as.Date(c("2017-05-01","2018-09-01"))) + 
+  theme(text = element_text(size=30),axis.text.x = element_text(angle = 90)) 
+  
+ggsave(density_all_plot, filename="/Users/kelseysumner/Desktop/density_all_plot_fig1.png", device="png",
+  height=15, width=12, units="in", dpi=500)
+  
+
+
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
 
 #### -------- make mosquitoes over time visualization --------- ####
 
@@ -1502,7 +1562,9 @@ ggsave(control_plot_2, filename="/Users/kelseysumner/Desktop/control_plot_2.png"
        height=5, width=6, units="in", dpi=400)
 
 
-
+# gg_ridges
+# make font on axes bigger
+# have 1 x axis and same y axis
 
 
 
