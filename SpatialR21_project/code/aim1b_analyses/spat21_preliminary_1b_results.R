@@ -10,6 +10,7 @@
 
 #### ------- load libraries -------- ####
 library(tidyverse)
+library(schoolmath)
 
 
 #### ----- read in the data sets ------- ####
@@ -154,7 +155,65 @@ pre_symptomatic_data = csp_data %>%
   filter(symp_30_after_asymp == "yes")
 
 # export this data set
-write_csv(pre_symptomatic_data,"Desktop/spat_1b_pre_symptomatic_data_csp_24MAR2020.csv")
+# write_csv(pre_symptomatic_data,"Desktop/spat_1b_pre_symptomatic_data_csp_24MAR2020.csv")
+
+# now just look at the specific haplotypes over time
+
+# cut down the dataset to the variable of interest
+pre_symptomatic_data_small = pre_symptomatic_data %>%
+  select(unq_memID,sample_id_date,haplotype_number,haplotype_list)
+
+# now separate out the specific haplotypes within individuals
+individual_hap_list = rep(NA,nrow(pre_symptomatic_data_small))
+total_haps = c()
+for (i in 1:nrow(pre_symptomatic_data_small)){
+  individual_hap_list[i] = str_split(pre_symptomatic_data_small$haplotype_list[i],",")
+  total_haps = c(total_haps,str_split(pre_symptomatic_data_small$haplotype_list[i],",")[[1]])
+}
+unique_haps = unique(total_haps)
+
+# make new columns of the specific haplotypes
+pre_symptomatic_data_small = pre_symptomatic_data_small %>% 
+  `is.na<-`(unique_haps)
+for (j in 1:nrow(pre_symptomatic_data_small)){
+  for (k in 1:length(individual_hap_list[[j]])){
+    for (l in 1:ncol(pre_symptomatic_data_small)){
+      if (individual_hap_list[[j]][k] == colnames(pre_symptomatic_data_small)[l]){
+        pre_symptomatic_data_small[j,l] = individual_hap_list[[j]][k]
+      }
+    }
+  }
+}
+
+
+# figure out how many haplotypes were shared between pairs
+pre_symp_for_loop_data = pre_symptomatic_data_small[,5:49]
+haps_shared_btwn_pairs = rep(NA,nrow(pre_symp_for_loop_data))
+for (i in 1:nrow(pre_symp_for_loop_data)) {
+  count = 0
+  for (j in 1:ncol(pre_symp_for_loop_data)) {
+    if (is.odd(i) & as.character(pre_symp_for_loop_data[i,j]) == as.character(pre_symp_for_loop_data[i+1,j]) &
+        !(is.na(pre_symp_for_loop_data[i,j])) & !(is.na(pre_symp_for_loop_data[i+1,j]))) {
+      count = count+1
+    }
+  }
+  haps_shared_btwn_pairs[i] = count
+}
+# add the column to the data set
+pre_symptomatic_data_small$haps_shared_btwn_pairs = haps_shared_btwn_pairs
+# now make sure the row below had the same information
+for (i in 1:nrow(pre_symptomatic_data_small)) {
+  if (is.even(i)){
+    pre_symptomatic_data_small$haps_shared_btwn_pairs[i] = pre_symptomatic_data_small$haps_shared_btwn_pairs[i-1]
+  }
+}
+
+# now calculate how many were shared out of each participant's MOI
+pre_symptomatic_data_small$proportion_haps_shared = pre_symptomatic_data_small$haps_shared_btwn_pairs/pre_symptomatic_data_small$haplotype_number
+
+# export the data set
+# write_csv(pre_symptomatic_data_small,"Desktop/spat_1b_pre_symptomatic_data_csp_26MAR2020.csv")
+
 
 
 ## then look at those people who had symptomatic infections, were prescribed antimalarials, and then had an infection within 30 days
@@ -164,7 +223,73 @@ recrudescence_data = csp_data %>%
   filter(infxn_30_after_symp == "yes")
 
 # export this data set
-write_csv(recrudescence_data,"Desktop/spat_1b_recrudescence_data_csp_24MAR2020.csv")
+# write_csv(recrudescence_data,"Desktop/spat_1b_recrudescence_data_csp_24MAR2020.csv")
+
+# now just look at the specific haplotypes over time
+
+# cut down the dataset to the variable of interest
+recrudescence_data_small = recrudescence_data %>%
+  select(unq_memID,sample_id_date,haplotype_number,haplotype_list)
+
+# now separate out the specific haplotypes within individuals
+individual_hap_list = rep(NA,nrow(recrudescence_data_small))
+total_haps = c()
+for (i in 1:nrow(recrudescence_data_small)){
+  individual_hap_list[i] = str_split(recrudescence_data_small$haplotype_list[i],",")
+  total_haps = c(total_haps,str_split(recrudescence_data_small$haplotype_list[i],",")[[1]])
+}
+unique_haps = unique(total_haps)
+
+# make new columns of the specific haplotypes
+recrudescence_data_small = recrudescence_data_small %>% 
+  `is.na<-`(unique_haps)
+for (j in 1:nrow(recrudescence_data_small)){
+  for (k in 1:length(individual_hap_list[[j]])){
+    for (l in 1:ncol(recrudescence_data_small)){
+      if (individual_hap_list[[j]][k] == colnames(recrudescence_data_small)[l]){
+        recrudescence_data_small[j,l] = individual_hap_list[[j]][k]
+      }
+    }
+  }
+}
+
+# export the data set
+# write_csv(recrudescence_data_small,"Desktop/spat_1b_recrudescence_data_with_haplotypes_csp_26MAR2020.csv")
+
+# figure out how many haplotypes were shared between pairs
+pre_symp_for_loop_data = recrudescence_data_small[,5:34]
+haps_shared_btwn_pairs = rep(NA,nrow(pre_symp_for_loop_data))
+for (i in 1:nrow(pre_symp_for_loop_data)) {
+  count = 0
+  for (j in 1:ncol(pre_symp_for_loop_data)) {
+    if (is.odd(i) & as.character(pre_symp_for_loop_data[i,j]) == as.character(pre_symp_for_loop_data[i+1,j]) &
+        !(is.na(pre_symp_for_loop_data[i,j])) & !(is.na(pre_symp_for_loop_data[i+1,j]))) {
+      count = count+1
+    }
+  }
+  haps_shared_btwn_pairs[i] = count
+}
+# add the column to the data set
+recrudescence_data_small$haps_shared_btwn_pairs = haps_shared_btwn_pairs
+# now make sure the row below had the same information
+for (i in 1:nrow(recrudescence_data_small)) {
+  if (is.even(i)){
+    recrudescence_data_small$haps_shared_btwn_pairs[i] = recrudescence_data_small$haps_shared_btwn_pairs[i-1]
+  }
+}
+
+# now calculate how many were shared out of each participant's MOI
+recrudescence_data_small$proportion_haps_shared = recrudescence_data_small$haps_shared_btwn_pairs/recrudescence_data_small$haplotype_number
+
+# export the data set
+# write_csv(recrudescence_data_small,"Desktop/spat_1b_recrudescence_data_csp_26MAR2020.csv")
+
+
+
+
+
+
+
 
 
 
@@ -299,7 +424,63 @@ pre_symptomatic_data = ama_data %>%
   filter(symp_30_after_asymp == "yes")
 
 # export this data set
-write_csv(pre_symptomatic_data,"Desktop/spat_1b_pre_symptomatic_data_ama_24MAR2020.csv")
+# write_csv(pre_symptomatic_data,"Desktop/spat_1b_pre_symptomatic_data_ama_24MAR2020.csv")
+
+# cut down the dataset to the variable of interest
+pre_symptomatic_data_small = pre_symptomatic_data %>%
+  select(unq_memID,sample_id_date,haplotype_number,haplotype_list)
+
+# now separate out the specific haplotypes within individuals
+individual_hap_list = rep(NA,nrow(pre_symptomatic_data_small))
+total_haps = c()
+for (i in 1:nrow(pre_symptomatic_data_small)){
+  individual_hap_list[i] = str_split(pre_symptomatic_data_small$haplotype_list[i],",")
+  total_haps = c(total_haps,str_split(pre_symptomatic_data_small$haplotype_list[i],",")[[1]])
+}
+unique_haps = unique(total_haps)
+
+# make new columns of the specific haplotypes
+pre_symptomatic_data_small = pre_symptomatic_data_small %>% 
+  `is.na<-`(unique_haps)
+for (j in 1:nrow(pre_symptomatic_data_small)){
+  for (k in 1:length(individual_hap_list[[j]])){
+    for (l in 1:ncol(pre_symptomatic_data_small)){
+      if (individual_hap_list[[j]][k] == colnames(pre_symptomatic_data_small)[l]){
+        pre_symptomatic_data_small[j,l] = individual_hap_list[[j]][k]
+      }
+    }
+  }
+}
+
+
+# figure out how many haplotypes were shared between pairs
+pre_symp_for_loop_data = pre_symptomatic_data_small[,5:41]
+haps_shared_btwn_pairs = rep(NA,nrow(pre_symp_for_loop_data))
+for (i in 1:nrow(pre_symp_for_loop_data)) {
+  count = 0
+  for (j in 1:ncol(pre_symp_for_loop_data)) {
+    if (is.odd(i) & as.character(pre_symp_for_loop_data[i,j]) == as.character(pre_symp_for_loop_data[i+1,j]) &
+        !(is.na(pre_symp_for_loop_data[i,j])) & !(is.na(pre_symp_for_loop_data[i+1,j]))) {
+      count = count+1
+    }
+  }
+  haps_shared_btwn_pairs[i] = count
+}
+# add the column to the data set
+pre_symptomatic_data_small$haps_shared_btwn_pairs = haps_shared_btwn_pairs
+# now make sure the row below had the same information
+for (i in 1:nrow(pre_symptomatic_data_small)) {
+  if (is.even(i)){
+    pre_symptomatic_data_small$haps_shared_btwn_pairs[i] = pre_symptomatic_data_small$haps_shared_btwn_pairs[i-1]
+  }
+}
+
+# now calculate how many were shared out of each participant's MOI
+pre_symptomatic_data_small$proportion_haps_shared = pre_symptomatic_data_small$haps_shared_btwn_pairs/pre_symptomatic_data_small$haplotype_number
+
+# export the data set
+write_csv(pre_symptomatic_data_small,"Desktop/spat_1b_pre_symptomatic_data_ama_26MAR2020.csv")
+
 
 
 ## then look at those people who had symptomatic infections, were prescribed antimalarials, and then had an infection within 30 days
@@ -309,9 +490,66 @@ recrudescence_data = ama_data %>%
   filter(infxn_30_after_symp == "yes")
 
 # export this data set
-write_csv(recrudescence_data,"Desktop/spat_1b_recrudescence_data_ama_24MAR2020.csv")
+# write_csv(recrudescence_data,"Desktop/spat_1b_recrudescence_data_ama_24MAR2020.csv")
 
+# now just look at the specific haplotypes over time
 
+# cut down the dataset to the variable of interest
+recrudescence_data_small = recrudescence_data %>%
+  select(unq_memID,sample_id_date,haplotype_number,haplotype_list)
+
+# now separate out the specific haplotypes within individuals
+individual_hap_list = rep(NA,nrow(recrudescence_data_small))
+total_haps = c()
+for (i in 1:nrow(recrudescence_data_small)){
+  individual_hap_list[i] = str_split(recrudescence_data_small$haplotype_list[i],",")
+  total_haps = c(total_haps,str_split(recrudescence_data_small$haplotype_list[i],",")[[1]])
+}
+unique_haps = unique(total_haps)
+
+# make new columns of the specific haplotypes
+recrudescence_data_small = recrudescence_data_small %>% 
+  `is.na<-`(unique_haps)
+for (j in 1:nrow(recrudescence_data_small)){
+  for (k in 1:length(individual_hap_list[[j]])){
+    for (l in 1:ncol(recrudescence_data_small)){
+      if (individual_hap_list[[j]][k] == colnames(recrudescence_data_small)[l]){
+        recrudescence_data_small[j,l] = individual_hap_list[[j]][k]
+      }
+    }
+  }
+}
+
+# export the data set
+# write_csv(recrudescence_data_small,"Desktop/spat_1b_recrudescence_data_with_haplotypes_csp_26MAR2020.csv")
+
+# figure out how many haplotypes were shared between pairs
+pre_symp_for_loop_data = recrudescence_data_small[,5:34]
+haps_shared_btwn_pairs = rep(NA,nrow(pre_symp_for_loop_data))
+for (i in 1:nrow(pre_symp_for_loop_data)) {
+  count = 0
+  for (j in 1:ncol(pre_symp_for_loop_data)) {
+    if (is.odd(i) & as.character(pre_symp_for_loop_data[i,j]) == as.character(pre_symp_for_loop_data[i+1,j]) &
+        !(is.na(pre_symp_for_loop_data[i,j])) & !(is.na(pre_symp_for_loop_data[i+1,j]))) {
+      count = count+1
+    }
+  }
+  haps_shared_btwn_pairs[i] = count
+}
+# add the column to the data set
+recrudescence_data_small$haps_shared_btwn_pairs = haps_shared_btwn_pairs
+# now make sure the row below had the same information
+for (i in 1:nrow(recrudescence_data_small)) {
+  if (is.even(i)){
+    recrudescence_data_small$haps_shared_btwn_pairs[i] = recrudescence_data_small$haps_shared_btwn_pairs[i-1]
+  }
+}
+
+# now calculate how many were shared out of each participant's MOI
+recrudescence_data_small$proportion_haps_shared = recrudescence_data_small$haps_shared_btwn_pairs/recrudescence_data_small$haplotype_number
+
+# export the data set
+write_csv(recrudescence_data_small,"Desktop/spat_1b_recrudescence_data_ama_26MAR2020.csv")
 
 
 
