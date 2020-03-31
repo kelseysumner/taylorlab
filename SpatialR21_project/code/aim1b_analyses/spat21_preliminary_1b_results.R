@@ -16,10 +16,10 @@ library(schoolmath)
 #### ----- read in the data sets ------- ####
 
 # read in the ama data set
-ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/ama_data_aim1b_20MAR2020.rds")
+ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/ama_data_aim1b_20MAR2020.rds")
 
 # read in the csp data set
-csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/csp_data_aim1b_20MAR2020.rds")
+csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/csp_data_aim1b_20MAR2020.rds")
 
 
 
@@ -48,6 +48,10 @@ num_infections_after = test %>%
 
 # looks like this worked correctly so apply to everything
 csp_data = slice(group_by(csp_data, unq_memID), -1)
+
+# export this data set
+write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_27MAR2020.csv")
+write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_27MAR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
@@ -317,6 +321,10 @@ num_infections_after = test %>%
 
 # looks like this worked correctly so apply to everything
 ama_data = slice(group_by(ama_data, unq_memID), -1)
+
+# export this data set
+write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_27MAR2020.csv")
+write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_27MAR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####

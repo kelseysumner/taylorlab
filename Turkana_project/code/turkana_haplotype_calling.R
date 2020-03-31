@@ -24,7 +24,7 @@ library(schoolmath)
 #### ------- read in the AMA haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1/haplotype_output/AMA_embatalk_phase1_haplotypes.rds")
+foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/haplotype_output/AMA/AMA_embatalk_phase1and2_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -362,7 +362,7 @@ write_csv(ama_merge_data,"Desktop/embatalk_phase1_AMA_haplotype_table_censored_f
 #### ------- read in the CSP haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1/haplotype_output/CSP_embatalk_phase1_haplotypes.rds")
+foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/haplotype_output/CSP/CSP_embatalk_phase1and2_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
