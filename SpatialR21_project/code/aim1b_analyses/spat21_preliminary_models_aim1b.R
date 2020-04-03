@@ -265,3 +265,5 @@ fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_model_with_moi.png", device="png",
        height=9, width=12.5, units="in", dpi=400)
+
+
