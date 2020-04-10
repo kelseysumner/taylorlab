@@ -12,6 +12,7 @@
 
 # load in the packages of interest
 library(tidyverse)
+library(BSDA)
 
 
 #### ----- read in the data sets ----- ####
@@ -26,6 +27,7 @@ csp_data = model_data %>%
 # subset the data set to samples that passed pfcsp sequencing only
 ama_data = model_data %>%
   filter(!(is.na(ama_haps_shared)))
+
 
 
 
@@ -127,18 +129,29 @@ mean(csp_all$symp_average_p_te_all_csp)
 mean(ama_all$asymp_average_p_te_all_ama)
 mean(ama_all$symp_average_p_te_all_ama)
 
+# check the median of means by symptomatic status
+# for csp
+median(csp_all$asymp_average_p_te_all_csp)
+median(csp_all$symp_average_p_te_all_csp)
+# for ama
+median(ama_all$asymp_average_p_te_all_ama)
+median(ama_all$symp_average_p_te_all_ama)
+
 # check normality (but N>30 so not a large issue)
 # for csp
 d <- csp_all$asymp_average_p_te_all_csp-csp_all$symp_average_p_te_all_csp
 shapiro.test(d) # normality not an issue
+hist(d)
 # for ama
 d <- ama_all$asymp_average_p_te_all_ama-ama_all$symp_average_p_te_all_ama
 shapiro.test(d) # normality could be an issue but N>30 so central limit theorem applies
+hist(d)
 
 # paired t-test
 t.test(csp_all$asymp_average_p_te_all_csp, csp_all$symp_average_p_te_all_csp, paired = TRUE, alternative = "greater")
 t.test(ama_all$asymp_average_p_te_all_ama, ama_all$symp_average_p_te_all_ama, paired = TRUE, alternative = "greater")
 
-
-
+# sign test just to be careful
+SIGN.test(csp_all$asymp_average_p_te_all_csp, csp_all$symp_average_p_te_all_csp,md=0,alternative = "greater")
+SIGN.test(ama_all$asymp_average_p_te_all_ama, ama_all$symp_average_p_te_all_ama,md=0,alternative = "greater")
 

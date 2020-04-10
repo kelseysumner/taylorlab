@@ -22,7 +22,6 @@ ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Disse
 csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/csp_data_aim1b_20MAR2020.rds")
 
 
-
 ####
 # LOOK AT CSP DATA 
 ####
@@ -49,9 +48,15 @@ num_infections_after = test %>%
 # looks like this worked correctly so apply to everything
 csp_data = slice(group_by(csp_data, unq_memID), -1)
 
+# create new variables that are "any new" vs. "none new"
+csp_data$any_new_categories = ifelse(csp_data$haplotype_category == "all new","any new",
+                                     ifelse(csp_data$haplotype_category == "old and new","any new","none new"))
+table(csp_data$haplotype_category,csp_data$any_new_categories,useNA = "always")
+
+
 # export this data set
-write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_27MAR2020.csv")
-write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_27MAR2020.rds")
+write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_10APR2020.csv")
+write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_10APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
@@ -322,9 +327,15 @@ num_infections_after = test %>%
 # looks like this worked correctly so apply to everything
 ama_data = slice(group_by(ama_data, unq_memID), -1)
 
+# create new variables that are "any new" vs. "none new"
+ama_data$any_new_categories = ifelse(ama_data$haplotype_category == "all new","any new",
+                                     ifelse(ama_data$haplotype_category == "old and new","any new","none new"))
+table(ama_data$haplotype_category,ama_data$any_new_categories,useNA = "always")
+
+
 # export this data set
-write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_27MAR2020.csv")
-write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_27MAR2020.rds")
+write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_10APR2020.csv")
+write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_10APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####

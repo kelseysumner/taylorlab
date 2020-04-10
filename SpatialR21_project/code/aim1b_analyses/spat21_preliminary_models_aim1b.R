@@ -18,18 +18,32 @@ library(glmmTMB)
 #### ------ read in the data sets ------- ####
 
 # read in the ama data set
-ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_without_first_infection/without_first_infection_ama_data_spat21_aim1b_27MAR2020.rds")
+ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_without_first_infection/without_first_infection_ama_data_spat21_aim1b_10APR2020.rds")
 
 # read in the csp data set
-csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_without_first_infection/without_first_infection_csp_data_spat21_aim1b_27MAR2020.rds")
+csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_without_first_infection/without_first_infection_csp_data_spat21_aim1b_10APR2020.rds")
 
 # read in the full human demographic data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
 final_data = final_data %>%
-  select(c(sample_name_dbs,HH_ID))
+  select(c(sample_name_dbs,HH_ID,gender))
 
 
 #### ---- make sure the data is all in the proper format ------ ####
+
+# create a new variable for any persistent to all new
+# for csp
+csp_data$any_old_categories = ifelse(csp_data$haplotype_category == "all old","any old",
+                                     ifelse(csp_data$haplotype_category == "old and new","any old","no old"))
+table(csp_data$any_old_categories,csp_data$haplotype_category,useNA = "always")
+csp_data$any_old_categories = as.factor(csp_data$any_old_categories)
+csp_data$any_old_categories = relevel(csp_data$any_old_categories,ref="no old")
+# for ama
+ama_data$any_old_categories = ifelse(ama_data$haplotype_category == "all old","any old",
+                                     ifelse(ama_data$haplotype_category == "old and new","any old","no old"))
+table(ama_data$any_old_categories,ama_data$haplotype_category,useNA = "always")
+ama_data$any_old_categories = as.factor(ama_data$any_old_categories)
+ama_data$any_old_categories = relevel(ama_data$any_old_categories,ref="no old")
 
 # add household ID to the data sets
 csp_data = left_join(csp_data,final_data,by="sample_name_dbs")
@@ -40,9 +54,9 @@ ama_data = left_join(ama_data,final_data,by="sample_name_dbs")
 str(csp_data$sample_name_dbs)
 str(csp_data$unq_memID)
 str(csp_data$HH_ID)
-csp_data$haplotype_category = as.factor(csp_data$haplotype_category)
-levels(csp_data$haplotype_category)
-csp_data$haplotype_category = relevel(csp_data$haplotype_category,ref="all old")
+csp_data$any_new_categories = as.factor(csp_data$any_new_categories)
+levels(csp_data$any_new_categories)
+csp_data$any_new_categories = relevel(csp_data$any_new_categories,ref="none new")
 str(csp_data$symptomatic_status)
 csp_data$symptomatic_status = as.factor(csp_data$symptomatic_status)
 levels(csp_data$symptomatic_status)
@@ -56,9 +70,9 @@ csp_data$village_name = relevel(csp_data$village_name,ref="Maruti")
 str(ama_data$sample_name_dbs)
 str(ama_data$unq_memID)
 str(ama_data$HH_ID)
-ama_data$haplotype_category = as.factor(ama_data$haplotype_category)
-levels(ama_data$haplotype_category)
-ama_data$haplotype_category = relevel(ama_data$haplotype_category,ref="all old")
+ama_data$any_new_categories = as.factor(ama_data$any_new_categories)
+levels(ama_data$any_new_categories)
+ama_data$any_new_categories = relevel(ama_data$any_new_categories,ref="none new")
 str(ama_data$symptomatic_status)
 ama_data$symptomatic_status = as.factor(ama_data$symptomatic_status)
 levels(ama_data$symptomatic_status)
@@ -83,12 +97,12 @@ summary(ama_data)
 
 # for csp
 # for exposure
-ggplot(csp_data, aes(x = symptomatic_status)) + geom_density() + facet_wrap(~haplotype_category)
-ggplot(csp_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~haplotype_category)
-ggplot(csp_data, aes(x = village_name)) + geom_density() + facet_wrap(~haplotype_category)
-ggplot(csp_data, aes(x = haplotype_number,fill=haplotype_category)) + geom_density() + facet_wrap(~haplotype_category) + theme_bw() + theme(legend.position="none") + xlab("pfcsp MOI")
-table(csp_data$HH_ID,csp_data$haplotype_category)
-table(csp_data$unq_memID,csp_data$haplotype_category)
+ggplot(csp_data, aes(x = symptomatic_status)) + geom_density() + facet_wrap(~any_new_categories)
+ggplot(csp_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~any_new_categories)
+ggplot(csp_data, aes(x = village_name)) + geom_density() + facet_wrap(~any_new_categories)
+ggplot(csp_data, aes(x = haplotype_number,fill=any_new_categories)) + geom_density() + facet_wrap(~any_new_categories) + theme_bw() + theme(legend.position="none") + xlab("pfcsp MOI")
+table(csp_data$HH_ID,csp_data$any_new_categories)
+table(csp_data$unq_memID,csp_data$any_new_categories)
 # for outcome
 ggplot(csp_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~symptomatic_status)
 ggplot(csp_data, aes(x = village_name)) + geom_density() + facet_wrap(~symptomatic_status)
@@ -98,12 +112,12 @@ table(csp_data$unq_memID,csp_data$symptomatic_status)
 
 # for ama
 # for exposure
-ggplot(ama_data, aes(x = symptomatic_status)) + geom_density() + facet_wrap(~haplotype_category)
-ggplot(ama_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~haplotype_category)
-ggplot(ama_data, aes(x = village_name)) + geom_density() + facet_wrap(~haplotype_category)
-ggplot(ama_data, aes(x = haplotype_number,fill=haplotype_category)) + geom_density() + facet_wrap(~haplotype_category) + theme_bw() + theme(legend.position="none") + xlab("pfama MOI")
-table(ama_data$HH_ID,ama_data$haplotype_category)
-table(ama_data$unq_memID,ama_data$haplotype_category)
+ggplot(ama_data, aes(x = symptomatic_status)) + geom_density() + facet_wrap(~any_new_categories)
+ggplot(ama_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~any_new_categories)
+ggplot(ama_data, aes(x = village_name)) + geom_density() + facet_wrap(~any_new_categories)
+ggplot(ama_data, aes(x = haplotype_number,fill=any_new_categories)) + geom_density() + facet_wrap(~any_new_categories) + theme_bw() + theme(legend.position="none") + xlab("pfama MOI")
+table(ama_data$HH_ID,ama_data$any_new_categories)
+table(ama_data$unq_memID,ama_data$any_new_categories)
 # for outcome
 ggplot(ama_data, aes(x = age_cat_baseline)) + geom_density() + facet_wrap(~symptomatic_status)
 ggplot(ama_data, aes(x = village_name)) + geom_density() + facet_wrap(~symptomatic_status)
@@ -114,28 +128,28 @@ table(ama_data$unq_memID,ama_data$symptomatic_status)
 
 #### ---- now run some preliminary models for csp ------- ####
 
-# run a crude one level model
-csp_model_1levelcrude <- glm(symptomatic_status ~ haplotype_category,family=binomial(link = "logit"), data = csp_data)
+# run a crude one level model (log-risk regression for risk ratios)
+csp_model_1levelcrude <- glm(symptomatic_status ~ any_new_categories,family=binomial(link = "log"), data = csp_data)
 summary(csp_model_1levelcrude)
 
 # run a crude multilevel model
-csp_model_crude <- glmmTMB(symptomatic_status ~ haplotype_category + (1|HH_ID/unq_memID),family=binomial(link = "logit"), data = csp_data)
+csp_model_crude <- glmer(symptomatic_status ~ any_new_categories + (1|unq_memID),family=binomial(link = "logit"), data = csp_data)
 summary(csp_model_crude)
 performance::icc(csp_model_crude)
 
 # run a multi-level logistic regression model 
-csp_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + village_name + (1|HH_ID/unq_memID),family=binomial(link = "logit"), data = csp_data)
+csp_model_1 <- glmer(symptomatic_status ~ any_new_categories + age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = csp_data)
 summary(csp_model_1)
 performance::icc(csp_model_1)
 
 # run a multi-level logistic regression model with moi added
-csp_model_2 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + village_name + haplotype_number + (1|HH_ID/unq_memID),family=binomial(link = "logit"), data = csp_data)
+csp_model_2 <- glmer(symptomatic_status ~ any_new_categories + age_cat_baseline + haplotype_number + (1|unq_memID),family=binomial(link = "logit"), data = csp_data)
 summary(csp_model_2)
 performance::icc(csp_model_2)
 anova(csp_model_1,csp_model_2)
 
 # run a multi-level logistic regression model without age
-csp_model_3 <- glmmTMB(symptomatic_status ~ haplotype_category + village_name + haplotype_number + (1|HH_ID/unq_memID),family=binomial(link = "logit"), data = csp_data)
+csp_model_3 <- glmer(symptomatic_status ~ any_new_categories + haplotype_number + (1|unq_memID),family=binomial(link = "logit"), data = csp_data)
 summary(csp_model_3)
 performance::icc(csp_model_3)
 anova(csp_model_3,csp_model_2) # model 2 better
@@ -193,16 +207,16 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_with_moi.png", 
 #### ---- now run some preliminary models for ama ------- ####
 
 # run a crude one level model
-ama_model_1levelcrude <- glm(symptomatic_status ~ haplotype_category,family=binomial(link = "logit"), data = ama_data)
+ama_model_1levelcrude <- glm(symptomatic_status ~ any_new_categories,family=binomial(link = "logit"), data = ama_data)
 summary(ama_model_1levelcrude)
 
 # run a crude multilevel model
-ama_model_crude <- glmmTMB(symptomatic_status ~ haplotype_category + (1|HH_ID/unq_memID),family=binomial(link = "logit"), data = ama_data)
+ama_model_crude <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = ama_data)
 summary(ama_model_crude)
 performance::icc(ama_model_crude)
 
 # run a multi-level logistic regression model 
-ama_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + village_name + (1|HH_ID/unq_memID),family=binomial(link = "logit"), data = ama_data)
+ama_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + village_name + (1|unq_memID),family=binomial(link = "logit"), data = ama_data)
 summary(ama_model_1)
 performance::icc(ama_model_1)
 
