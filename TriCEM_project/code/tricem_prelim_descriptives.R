@@ -121,6 +121,24 @@ for (i in 1:nrow(human_data)) {
 human_unique_haplotypes = unique(human_unique_haplotypes)
 length(human_unique_haplotypes)
 
+# look at the overlap in haplotypes
+# for humans with all else
+other = c(abdomen_unique_haplotypes,head_unique_haplotypes)
+other = unique(other)
+length(setdiff(human_unique_haplotypes,other))
+length(setdiff(human_unique_haplotypes,other))/length(human_unique_haplotypes)
+# for abdomens with all else
+other = c(human_unique_haplotypes,head_unique_haplotypes)
+other = unique(other)
+length(setdiff(abdomen_unique_haplotypes,other))
+length(setdiff(abdomen_unique_haplotypes,other))/length(abdomen_unique_haplotypes)
+# for heads with all else
+other = c(human_unique_haplotypes,abdomen_unique_haplotypes)
+other = unique(other)
+length(setdiff(head_unique_haplotypes,other))
+length(setdiff(head_unique_haplotypes,other))/length(head_unique_haplotypes)
+
+
 
 #### -------- now look at different time intervals and sampling bias -------- ####
 

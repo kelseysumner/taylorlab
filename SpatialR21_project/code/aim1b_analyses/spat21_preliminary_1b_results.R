@@ -11,6 +11,7 @@
 #### ------- load libraries -------- ####
 library(tidyverse)
 library(schoolmath)
+library(lubridate)
 
 
 #### ----- read in the data sets ------- ####
@@ -25,6 +26,32 @@ csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Disse
 ####
 # LOOK AT CSP DATA 
 ####
+
+
+#### ------ add in information for the days since first infection ------- ####
+
+# first order the data set by date
+csp_data = dplyr::arrange(csp_data,unq_memID,sample_id_date)
+
+# add a variable for month
+csp_data$month = paste0(as.character(lubridate::month(csp_data$sample_id_date)),"-",as.character(lubridate::year(csp_data$sample_id_date)))
+csp_data$month = as.factor(csp_data$month)
+summary(csp_data$month)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = csp_data[match(unique(csp_data$unq_memID), csp_data$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+days_in_study = rep(NA,nrow(csp_data))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(csp_data)){
+    if (unq_memID_start_date$unq_memID[i] == csp_data$unq_memID[j]){
+      days_in_study[j] = csp_data$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
+    }
+  }
+}
+summary(days_in_study)  
+csp_data$days_in_study = days_in_study
 
 
 #### ------ for each particpant, remove the first infection ------- ####
@@ -53,10 +80,17 @@ csp_data$any_new_categories = ifelse(csp_data$haplotype_category == "all new","a
                                      ifelse(csp_data$haplotype_category == "old and new","any new","none new"))
 table(csp_data$haplotype_category,csp_data$any_new_categories,useNA = "always")
 
+# create a new variable for any persistent to all new
+# for csp
+csp_data$any_old_categories = ifelse(csp_data$haplotype_category == "all old","any old",
+                                     ifelse(csp_data$haplotype_category == "old and new","any old","no old"))
+table(csp_data$any_old_categories,csp_data$haplotype_category,useNA = "always")
+csp_data$any_old_categories = as.factor(csp_data$any_old_categories)
+csp_data$any_old_categories = relevel(csp_data$any_old_categories,ref="any old")
 
 # export this data set
-write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_10APR2020.csv")
-write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_10APR2020.rds")
+write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_14APR2020.csv")
+write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_14APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
@@ -306,6 +340,34 @@ recrudescence_data_small$proportion_haps_shared = recrudescence_data_small$haps_
 # LOOK AT AMA DATA 
 ####
 
+
+#### ------ add in information for the days since first infection ------- ####
+
+# first order the data set by date
+ama_data = dplyr::arrange(ama_data,unq_memID,sample_id_date)
+
+# add a variable for month
+ama_data$month = paste0(as.character(lubridate::month(ama_data$sample_id_date)),"-",as.character(lubridate::year(ama_data$sample_id_date)))
+ama_data$month = as.factor(ama_data$month)
+summary(ama_data$month)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = ama_data[match(unique(ama_data$unq_memID), ama_data$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+days_in_study = rep(NA,nrow(ama_data))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(ama_data)){
+    if (unq_memID_start_date$unq_memID[i] == ama_data$unq_memID[j]){
+      days_in_study[j] = ama_data$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
+    }
+  }
+}
+summary(days_in_study)  
+ama_data$days_in_study = days_in_study
+
+
+
 #### ------ for each particpant, remove the first infection ------- ####
 
 # first order the data set by date
@@ -332,10 +394,16 @@ ama_data$any_new_categories = ifelse(ama_data$haplotype_category == "all new","a
                                      ifelse(ama_data$haplotype_category == "old and new","any new","none new"))
 table(ama_data$haplotype_category,ama_data$any_new_categories,useNA = "always")
 
+# create new variables that are the "all new" vs. "any old"
+ama_data$any_old_categories = ifelse(ama_data$haplotype_category == "all old","any old",
+                                     ifelse(ama_data$haplotype_category == "old and new","any old","no old"))
+table(ama_data$any_old_categories,ama_data$haplotype_category,useNA = "always")
+ama_data$any_old_categories = as.factor(ama_data$any_old_categories)
+ama_data$any_old_categories = relevel(ama_data$any_old_categories,ref="any old")
 
 # export this data set
-write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_10APR2020.csv")
-write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_10APR2020.rds")
+write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_14APR2020.csv")
+write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_14APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
@@ -540,7 +608,7 @@ for (j in 1:nrow(recrudescence_data_small)){
 }
 
 # export the data set
-# write_csv(recrudescence_data_small,"Desktop/spat_1b_recrudescence_data_with_haplotypes_csp_26MAR2020.csv")
+# write_csv(recrudescence_data_small,"Desktop/spat_1b_recrudescence_data_with_haplotypes_ama_26MAR2020.csv")
 
 # figure out how many haplotypes were shared between pairs
 pre_symp_for_loop_data = recrudescence_data_small[,5:34]
