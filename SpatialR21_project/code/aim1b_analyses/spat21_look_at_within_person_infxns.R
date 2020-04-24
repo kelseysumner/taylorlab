@@ -167,6 +167,8 @@ csp_data = dplyr::arrange(csp_data, sample_id_date)
 
 # write some code that looks at each participants' infections over time
 haplotype_category = rep(NA,nrow(csp_data))
+count_new = rep(NA,nrow(csp_data))
+count_old = rep(NA,nrow(csp_data))
 unique_participants = unique(csp_data$unq_memID)
 for (i in 1:length(unique_participants)){
   person_list = c()
@@ -191,12 +193,20 @@ for (i in 1:length(unique_participants)){
       # now check for old and new haplotypes
       if (str_detect(interim_category,"n") & str_detect(interim_category,"o")){
         haplotype_category[j] = "old and new"
+        count_new[j] = str_count(interim_category,"n")
+        count_old[j] = str_count(interim_category,"o")
       } else if (str_detect(interim_category,"n") & !(str_detect(interim_category,"o"))){
         haplotype_category[j] = "all new"
+        count_new[j] = str_count(interim_category,"n")
+        count_old[j] = 0
       } else if (str_detect(interim_category,"o") & !(str_detect(interim_category,"n"))) {
         haplotype_category[j] = "all old"
+        count_new[j] = 0
+        count_old[j] = str_count(interim_category,"o")
       } else {
         haplotype_category[j] = NA
+        count_new[j] = NA
+        count_old[j] = NA
       }
 
       # add to the person list
@@ -206,12 +216,24 @@ for (i in 1:length(unique_participants)){
 }
 # check the output
 table(haplotype_category,useNA="always")
+table(count_new,useNA = "always")
+table(count_old,useNA = "always")
+table(haplotype_category,count_new,useNA = "always")
+table(haplotype_category,count_old,useNA = "always")
 # add the new haplotype category to the data set
 csp_data$haplotype_category = haplotype_category
+csp_data$count_new_haplotypes = count_new
+csp_data$count_old_haplotypes = count_old
+
+# create a variable that is the proportion of haplotypes in the infection that were new
+csp_data$proportion_new_haplotypes = csp_data$count_new_haplotypes/csp_data$haplotype_number
+
+# create a variable that is the proportion of haplotypes in the infection that were old
+csp_data$proportion_old_haplotypes = csp_data$count_old_haplotypes/csp_data$haplotype_number
 
 # export the data set
-write_csv(csp_data,"Desktop/csp_data_aim1b_20MAR2020.csv")
-write_rds(csp_data,"Desktop/csp_data_aim1b_20MAR2020.rds")
+write_csv(csp_data,"Desktop/csp_data_aim1b_24APR2020.csv")
+write_rds(csp_data,"Desktop/csp_data_aim1b_24APR2020.rds")
 
 
 ####
@@ -349,6 +371,8 @@ ama_data = dplyr::arrange(ama_data, sample_id_date)
 
 # write some code that looks at each participants' infections over time
 haplotype_category = rep(NA,nrow(ama_data))
+count_new = rep(NA,nrow(ama_data))
+count_old = rep(NA,nrow(ama_data))
 unique_participants = unique(ama_data$unq_memID)
 for (i in 1:length(unique_participants)){
   person_list = c()
@@ -373,12 +397,20 @@ for (i in 1:length(unique_participants)){
       # now check for old and new haplotypes
       if (str_detect(interim_category,"n") & str_detect(interim_category,"o")){
         haplotype_category[j] = "old and new"
+        count_new[j] = str_count(interim_category,"n")
+        count_old[j] = str_count(interim_category,"o")
       } else if (str_detect(interim_category,"n") & !(str_detect(interim_category,"o"))){
         haplotype_category[j] = "all new"
+        count_new[j] = str_count(interim_category,"n")
+        count_old[j] = 0
       } else if (str_detect(interim_category,"o") & !(str_detect(interim_category,"n"))) {
         haplotype_category[j] = "all old"
+        count_new[j] = 0
+        count_old[j] = str_count(interim_category,"o")
       } else {
         haplotype_category[j] = NA
+        count_new[j] = NA
+        count_old[j] = NA
       }
       
       # add to the person list
@@ -388,12 +420,24 @@ for (i in 1:length(unique_participants)){
 }
 # check the output
 table(haplotype_category,useNA="always")
+table(count_new,useNA = "always")
+table(count_old,useNA = "always")
+table(haplotype_category,count_new,useNA = "always")
+table(haplotype_category,count_old,useNA = "always")
 # add the new haplotype category to the data set
 ama_data$haplotype_category = haplotype_category
+ama_data$count_new_haplotypes = count_new
+ama_data$count_old_haplotypes = count_old
+
+# create a variable that is the proportion of haplotypes in the infection that were new
+ama_data$proportion_new_haplotypes = ama_data$count_new_haplotypes/ama_data$haplotype_number
+
+# create a variable that is the proportion of haplotypes in the infection that were old
+ama_data$proportion_old_haplotypes = ama_data$count_old_haplotypes/ama_data$haplotype_number
 
 # export the data set
-write_csv(ama_data,"Desktop/ama_data_aim1b_20MAR2020.csv")
-write_rds(ama_data,"Desktop/ama_data_aim1b_20MAR2020.rds")
+write_csv(ama_data,"Desktop/ama_data_aim1b_24APR2020.csv")
+write_rds(ama_data,"Desktop/ama_data_aim1b_24APR2020.rds")
 
 
 

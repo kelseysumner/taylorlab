@@ -17,10 +17,10 @@ library(lubridate)
 #### ----- read in the data sets ------- ####
 
 # read in the ama data set
-ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/ama_data_aim1b_20MAR2020.rds")
+ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/ama_data_aim1b_24APR2020.rds")
 
 # read in the csp data set
-csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/csp_data_aim1b_20MAR2020.rds")
+csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/csp_data_aim1b_24APR2020.rds")
 
 
 ####
@@ -89,8 +89,8 @@ csp_data$any_old_categories = as.factor(csp_data$any_old_categories)
 csp_data$any_old_categories = relevel(csp_data$any_old_categories,ref="any old")
 
 # export this data set
-write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_14APR2020.csv")
-write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_14APR2020.rds")
+write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_24APR2020.csv")
+write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_24APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
@@ -402,8 +402,8 @@ ama_data$any_old_categories = as.factor(ama_data$any_old_categories)
 ama_data$any_old_categories = relevel(ama_data$any_old_categories,ref="any old")
 
 # export this data set
-write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_14APR2020.csv")
-write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_14APR2020.rds")
+write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_24APR2020.csv")
+write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_24APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
