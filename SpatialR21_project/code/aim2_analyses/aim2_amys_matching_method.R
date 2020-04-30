@@ -294,15 +294,16 @@ csp_all = rename(csp_all,village_name = village_name.x)
 
 # now make a plot of the average probability of p_te_all by symptomatic status
 csp_plot = ggplot(csp_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_nonzero)) +
-  geom_point(aes(color=village_name),size=2.5,pch=21) + 
+  geom_point(aes(color=village_name,fill=village_name),size=2.5,pch=21,alpha=0.5) + 
   theme_bw() +
   geom_abline(intercept = 0, slope = 1,linetype="dashed") +
-  xlab("Median proportion nonzero for symptomatic infections") +
-  ylab("Median proportion nonzero for asymptomatic infections") +
-  labs(color="Village name") +
+  xlab("Median likelihood transmission for symptomatic infections") +
+  ylab("Median likelihood transmission for asymptomatic infections") +
+  labs(color="Village name",fill="Village name") +
   scale_x_continuous(limits=c(0,1)) +
   scale_y_continuous(limits=c(0,1)) +
-  scale_color_manual(values = c("#377eb8","#66bd63","#fb9a99"))
+  scale_color_manual(values = c("#006d2c","#08519c","#cc4c02")) +
+  scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02"))
 ggsave(csp_plot, filename="/Users/kelseysumner/Desktop/csp_matched_prob_plot_alt3.png", device="png",
        height=5, width=6, units="in", dpi=500)
 

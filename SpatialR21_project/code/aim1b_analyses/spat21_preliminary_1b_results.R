@@ -22,6 +22,11 @@ ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Disse
 # read in the csp data set
 csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_with_first_infection/csp_data_aim1b_24APR2020.rds")
 
+# read in the mosquito demographic data
+mosquito_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
+
+
+
 
 ####
 # LOOK AT CSP DATA 
@@ -52,6 +57,50 @@ for (i in 1:nrow(unq_memID_start_date)){
 }
 summary(days_in_study)  
 csp_data$days_in_study = days_in_study
+
+
+#### ------ add in information for the number of prior infections ------- ####
+
+# first order the data set by date
+csp_data = dplyr::arrange(csp_data,unq_memID,sample_id_date)
+
+# first pull out each participant's first infection
+unq_memID_first_infection = csp_data[match(unique(csp_data$unq_memID), csp_data$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+number_prior_infections = rep(NA,nrow(csp_data))
+for (i in 1:nrow(unq_memID_first_infection)){
+  count = 0
+  for (j in 1:nrow(csp_data)){
+    if (unq_memID_first_infection$unq_memID[i] == csp_data$unq_memID[j]){
+      count = count + 1
+      number_prior_infections[j] = count - 1
+    }
+  }
+}
+summary(number_prior_infections)  
+csp_data$number_prior_infections = number_prior_infections
+
+
+#### ------ add in number of mosquitoes collected in week following infection ------- ####
+
+# first create a count of whether or not mosquitoes collected within 7 days of the human sample
+mosquito_week_count = rep(NA,nrow(csp_data))
+for (i in 1:nrow(csp_data)){
+  count = 0
+  for (j in 1:nrow(mosquito_data)){
+    if ((mosquito_data$collection_date[j]-csp_data$sample_id_date[i] <= 7) & (mosquito_data$collection_date[j]-csp_data$sample_id_date[i] >= 0)){
+      count = count + 1
+    }
+  }
+  mosquito_week_count[i] = count
+}
+# add the new variable to the data set
+csp_data$mosquito_week_count = mosquito_week_count
+summary(csp_data$mosquito_week_count)
+# remember: this variable looks at all mosquitoes collected across all three villages within that week
+
+
 
 
 #### ------ for each particpant, remove the first infection ------- ####
@@ -89,8 +138,8 @@ csp_data$any_old_categories = as.factor(csp_data$any_old_categories)
 csp_data$any_old_categories = relevel(csp_data$any_old_categories,ref="any old")
 
 # export this data set
-write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_24APR2020.csv")
-write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_24APR2020.rds")
+write_csv(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_28APR2020.csv")
+write_rds(csp_data,"Desktop/without_first_infection_csp_data_spat21_aim1b_28APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
@@ -112,10 +161,11 @@ num_infections_stratified = csp_data %>%
 # then make the plot
 plot1 = ggplot(data=num_infections_stratified,aes(x=n,fill=symptomatic_status)) + 
   geom_density() + facet_wrap(~symptomatic_status) + theme_bw() + theme(legend.position = "none") +
+  scale_fill_manual(values = c("#225ea8","#238443")) +
   xlab("Number of infections within each individual") + scale_x_continuous(limits=c(0,15))
 # export the plot
-# ggsave(plot1, filename="/Users/kelseysumner/Desktop/plot1.png", device="png",
-       # height=3, width=5, units="in", dpi=500)
+ggsave(plot1, filename="/Users/kelseysumner/Desktop/plot1.png", device="png",
+       height=3, width=5, units="in", dpi=500)
 
 # make a density plot of the different haplotype categories within each participant
 # first set up the data
@@ -367,8 +417,49 @@ summary(days_in_study)
 ama_data$days_in_study = days_in_study
 
 
+#### ------ add in information for the number of prior infections ------- ####
 
-#### ------ for each particpant, remove the first infection ------- ####
+# first order the data set by date
+ama_data = dplyr::arrange(ama_data,unq_memID,sample_id_date)
+
+# first pull out each participant's first infection
+unq_memID_first_infection = ama_data[match(unique(ama_data$unq_memID), ama_data$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+number_prior_infections = rep(NA,nrow(ama_data))
+for (i in 1:nrow(unq_memID_first_infection)){
+  count = 0
+  for (j in 1:nrow(ama_data)){
+    if (unq_memID_first_infection$unq_memID[i] == ama_data$unq_memID[j]){
+      count = count + 1
+      number_prior_infections[j] = count - 1
+    }
+  }
+}
+summary(number_prior_infections)  
+ama_data$number_prior_infections = number_prior_infections
+
+
+#### ------ add in number of mosquitoes collected in week following infection ------- ####
+
+# first create a count of whether or not mosquitoes collected within 7 days of the human sample
+mosquito_week_count = rep(NA,nrow(ama_data))
+for (i in 1:nrow(ama_data)){
+  count = 0
+  for (j in 1:nrow(mosquito_data)){
+    if ((mosquito_data$collection_date[j]-ama_data$sample_id_date[i] <= 7) & (mosquito_data$collection_date[j]-ama_data$sample_id_date[i] >= 0)){
+      count = count + 1
+    }
+  }
+  mosquito_week_count[i] = count
+}
+# add the new variable to the data set
+ama_data$mosquito_week_count = mosquito_week_count
+summary(ama_data$mosquito_week_count)
+# remember: this variable looks at all mosquitoes collected across all three villages within that week
+
+
+#### ------ for each participant, remove the first infection ------- ####
 
 # first order the data set by date
 ama_data = dplyr::arrange(ama_data,unq_memID,sample_id_date)
@@ -402,8 +493,8 @@ ama_data$any_old_categories = as.factor(ama_data$any_old_categories)
 ama_data$any_old_categories = relevel(ama_data$any_old_categories,ref="any old")
 
 # export this data set
-write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_24APR2020.csv")
-write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_24APR2020.rds")
+write_csv(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_28APR2020.csv")
+write_rds(ama_data,"Desktop/without_first_infection_ama_data_spat21_aim1b_28APR2020.rds")
 
 
 #### ------- now look at summaries of the data set -------- ####
