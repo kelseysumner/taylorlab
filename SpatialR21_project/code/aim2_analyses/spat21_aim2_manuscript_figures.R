@@ -289,6 +289,7 @@ colnames(mosquito_df)
 colnames(symptomatic_df)
 colnames(asymptomatic_df)
 all_df = rbind(mosquito_df,symptomatic_df,asymptomatic_df)
+all_df$infection_status = as.character(all_df$infection_status)
 all_df$infection_status[which(all_df$infection_status == "symptomatic infection")] = "Positive"
 all_df$infection_status[which(all_df$infection_status == "asymptomatic infection")] = "Positive"
 all_df$infection_status[which(all_df$infection_status == "no infection")] = "Negative"
@@ -300,24 +301,61 @@ all_df$infection_status = as.character(all_df$infection_status)
 all_df$type_status = paste(all_df$type,all_df$infection_status)
 table(all_df$type_status,useNA = "always")
 
-# try a facet plot
+# try a facet plot with bars
 all_df$type = as.factor(all_df$type)
 all_df$type = relevel(all_df$type,ref="Symptomatic visit")
 all_df$type = relevel(all_df$type,ref="Mosquito collection")
-density_all_plot = ggplot(all_df, aes(y = factor(infection_status))) +
-  facet_grid(type ~ .) +
-  geom_density_ridges(aes(x=date,fill=type_status),alpha=0.7,color = "white",bandwidth=14,scale=8) +
+all_df_neg = all_df %>% filter(infection_status=="Negative")
+all_df_pos = all_df %>% filter(infection_status=="Positive")
+all_df_neg = data.frame(all_df_neg)
+all_df_pos = data.frame(all_df_pos)
+small_all_df = all_df %>%
+  mutate(new_date = floor_date(date,"week")) %>%
+  group_by(new_date,type,infection_status) %>%
+  summarize(n=n())
+# set the colors
+# symptomatic (blue): #3B9AB2
+# asymptomatic (yellow): #E1AF00
+# mosquitoes (red): #F21A00
+# no infection (light grey): #D3DDDC
+small_all_df$color = rep(NA,nrow(small_all_df))
+small_all_df$color[which(small_all_df$type=="Symptomatic visit" & small_all_df$infection_status=="Positive")] = "#3B9AB2"
+small_all_df$color[which(small_all_df$type=="Symptomatic visit" & small_all_df$infection_status=="Negative")] = "#D3DDDC"
+small_all_df$color[which(small_all_df$type=="Asymptomatic visit" & small_all_df$infection_status=="Positive")] = "#E1AF00"
+small_all_df$color[which(small_all_df$type=="Asymptomatic visit" & small_all_df$infection_status=="Negative")] = "#D3DDDC"
+small_all_df$color[which(small_all_df$type=="Mosquito collection" & small_all_df$infection_status=="Positive")] = "#F21A00"
+small_all_df$color[which(small_all_df$type=="Mosquito collection" & small_all_df$infection_status=="Negative")] = "#D3DDDC"
+plot_human_data_asymp <- within(plot_human_data_asymp, month <- factor(month, levels=month_order))
+color_order = c("#D3DDDC","#3B9AB2","#E1AF00","#F21A00")
+small_all_df <- within(small_all_df,color <- factor(color,levels=color_order))
+# make the plot
+density_all_plot = ggplot(data=small_all_df,aes(x=new_date,fill=color,y=n)) + 
+  facet_grid(type ~ .,switch = "y") +
+  geom_histogram(stat="identity",color="black") +
+  xlab("") +
+  ylab("Number of samples collected") +
+  scale_fill_identity() +
+  theme_bw() +
+  scale_x_date(date_breaks="1 month",limits = as.Date(c("2017-06-01","2018-08-01"))) + 
+  scale_y_continuous(limits = c(0,100),breaks=c(0,20,40,60,80,100),position = "right") + 
+  theme(text = element_text(size=30),axis.text.x = element_text(angle = 90)) 
+ggsave(density_all_plot, filename="/Users/kelseysumner/Desktop/density_all_plot_fig1.png", device="png",
+  height=15, width=20, units="in", dpi=500)
+
+
+
+# another way to make the plot
+# try a facet plot with gg_rdiges
+density_all_plot = ggplot(all_df) +
+  geom_density_ridges(aes(x=date,y=infection_status,fill=type_status),alpha=0.7,color = "white",bandwidth=14,scale=2,panel_scaling = F) +
   scale_fill_cyclical(values = c("#D3DDDC", "#E1AF00","#D3DDDC","#F21A00","#D3DDDC","#3B9AB2")) +
   xlab("") +
   ylab("Malaria infection status") +
   theme_bw() +
   scale_x_date(date_breaks="2 months",limits = as.Date(c("2017-05-01","2018-09-01"))) + 
   theme(text = element_text(size=30),axis.text.x = element_text(angle = 90)) 
-  
 ggsave(density_all_plot, filename="/Users/kelseysumner/Desktop/density_all_plot_fig1.png", device="png",
-  height=15, width=12, units="in", dpi=500)
-  
-
+       height=15, width=12, units="in", dpi=500)
 
 # symptomatic (blue): #3B9AB2
 # asymptomatic (yellow): #E1AF00

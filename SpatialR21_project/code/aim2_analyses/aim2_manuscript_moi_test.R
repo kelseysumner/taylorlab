@@ -140,3 +140,178 @@ tbl = table(model_data$mosquito_week_count_cat,model_data$aim2_exposure)
 # then do a chi-squared test
 chisq.test(tbl)
 
+# look at differences in moi
+# first set up the df
+asymp_moi = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection") %>%
+  select(csp_moi) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_moi)))
+symp_moi = model_data %>%
+  filter(aim2_exposure == "symptomatic infection") %>%
+  select(csp_moi) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_moi)))
+all_data = rbind(asymp_moi,symp_moi)
+# test for normality - data not normal
+shapiro.test(asymp_moi$csp_moi)
+shapiro.test(symp_moi$csp_moi)
+# test for equal variances
+(sd(asymp_moi$csp_moi))^2
+(sd(symp_moi$csp_moi))^2
+leveneTest(csp_moi ~ type, data = all_data) # variances are different
+# test if data roughly same shape - seem to be
+hist(asymp_moi$csp_moi)
+hist(symp_moi$csp_moi)
+# wilcoxon-mann-whitney test
+wilcox.test(csp_moi ~ type,data=all_data)
+
+# look at differences in village
+# first make a contingency table
+tbl = table(model_data$village_name,model_data$aim2_exposure)
+# then do a chi-squared test
+chisq.test(tbl)
+
+# look at differences in p_te_all_csp
+# first set up the df
+asymp_all = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection") %>%
+  select(p_te_all_csp) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_all)))
+symp_all = model_data %>%
+  filter(aim2_exposure == "symptomatic infection") %>%
+  select(p_te_all_csp) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_all)))
+all_data = rbind(asymp_all,symp_all)
+# test for normality - data not normal
+shapiro.test(asymp_all$p_te_all_csp)
+shapiro.test(symp_all$p_te_all_csp)
+# test for equal variances
+(sd(asymp_all$p_te_all_csp))^2
+(sd(symp_all$p_te_all_csp))^2
+leveneTest(p_te_all_csp ~ type, data = all_data) # variances are different
+# test if data roughly same shape - seem to be
+hist(asymp_all$p_te_all_csp)
+hist(symp_all$p_te_all_csp)
+# wilcoxon-mann-whitney test
+wilcox.test(p_te_all_csp ~ type,data=all_data)
+
+# look at differences in p_te_d
+# first set up the df
+asymp_all = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection") %>%
+  select(p_te_d) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_all)))
+symp_all = model_data %>%
+  filter(aim2_exposure == "symptomatic infection") %>%
+  select(p_te_d) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_all)))
+all_data = rbind(asymp_all,symp_all)
+# test for normality - data not normal
+shapiro.test(asymp_all$p_te_d)
+shapiro.test(symp_all$p_te_d)
+# test for equal variances
+(sd(asymp_all$p_te_d))^2
+(sd(symp_all$p_te_d))^2
+leveneTest(p_te_d ~ type, data = all_data) # variances are roughly the same
+# test if data roughly same shape - seem to be
+hist(asymp_all$p_te_d)
+hist(symp_all$p_te_d)
+# wilcoxon-mann-whitney test
+wilcox.test(p_te_d ~ type,data=all_data)
+
+# look at differences in p_te_c
+# first set up the df
+asymp_all = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection") %>%
+  select(p_te_c_alt) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_all)))
+symp_all = model_data %>%
+  filter(aim2_exposure == "symptomatic infection") %>%
+  select(p_te_c_alt) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_all)))
+all_data = rbind(asymp_all,symp_all)
+# test for normality - data not normal
+shapiro.test(asymp_all$p_te_c_alt)
+shapiro.test(symp_all$p_te_c_alt)
+# test for equal variances
+(sd(asymp_all$p_te_c_alt))^2
+(sd(symp_all$p_te_c_alt))^2
+leveneTest(p_te_c_alt ~ type, data = all_data) # variances are not the same
+# test if data roughly same shape - seem to be
+hist(asymp_all$p_te_c_alt)
+hist(symp_all$p_te_c_alt)
+# wilcoxon-mann-whitney test
+wilcox.test(p_te_c_alt ~ type,data=all_data)
+
+# look at differences in p_te_c for those that shared haplotypes
+# first set up the df
+asymp_all = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection" & p_te_c_alt > 0) %>%
+  select(p_te_c_alt) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_all)))
+symp_all = model_data %>%
+  filter(aim2_exposure == "symptomatic infection" &  p_te_c_alt > 0) %>%
+  select(p_te_c_alt) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_all)))
+all_data = rbind(asymp_all,symp_all)
+# test for normality - data not normal
+shapiro.test(asymp_all$p_te_c_alt)
+shapiro.test(symp_all$p_te_c_alt)
+# test for equal variances
+(sd(asymp_all$p_te_c_alt))^2
+(sd(symp_all$p_te_c_alt))^2
+leveneTest(p_te_c_alt ~ type, data = all_data) # variances are roughly the same
+# test if data roughly same shape - seem to be
+hist(asymp_all$p_te_c_alt)
+hist(symp_all$p_te_c_alt)
+# wilcoxon-mann-whitney test
+wilcox.test(p_te_c_alt ~ type,data=all_data)
+
+# look at differences number of haplotypes shared
+# first set up the df
+asymp_all = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection") %>%
+  select(csp_haps_shared) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_all)))
+symp_all = model_data %>%
+  filter(aim2_exposure == "symptomatic infection") %>%
+  select(csp_haps_shared) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_all)))
+all_data = rbind(asymp_all,symp_all)
+# test for normality - data not normal
+shapiro.test(asymp_all$csp_haps_shared)
+shapiro.test(symp_all$csp_haps_shared)
+# test for equal variances
+(sd(asymp_all$csp_haps_shared))^2
+(sd(symp_all$csp_haps_shared))^2
+leveneTest(csp_haps_shared ~ type, data = all_data) # variances are not the same
+# test if data roughly same shape - seem to be
+hist(asymp_all$csp_haps_shared)
+hist(symp_all$csp_haps_shared)
+# wilcoxon-mann-whitney test
+wilcox.test(csp_haps_shared ~ type,data=all_data)
+
+# look at differences number of haplotypes shared
+# first set up the df
+asymp_all = model_data %>%
+  filter(aim2_exposure == "asymptomatic infection" & csp_haps_shared > 0) %>%
+  select(csp_haps_shared) %>%
+  mutate(type = rep("asymptomatic infection",nrow(asymp_all)))
+symp_all = model_data %>%
+  filter(aim2_exposure == "symptomatic infection" & csp_haps_shared > 0) %>%
+  select(csp_haps_shared) %>%
+  mutate(type = rep("symptomatic infection",nrow(symp_all)))
+all_data = rbind(asymp_all,symp_all)
+# test for normality - data not normal
+shapiro.test(asymp_all$csp_haps_shared)
+shapiro.test(symp_all$csp_haps_shared)
+# test for equal variances
+(sd(asymp_all$csp_haps_shared))^2
+(sd(symp_all$csp_haps_shared))^2
+leveneTest(csp_haps_shared ~ type, data = all_data) # variances are not the same
+# test if data roughly same shape - seem to be
+hist(asymp_all$csp_haps_shared)
+hist(symp_all$csp_haps_shared)
+# wilcoxon-mann-whitney test
+wilcox.test(csp_haps_shared ~ type,data=all_data)
+
+

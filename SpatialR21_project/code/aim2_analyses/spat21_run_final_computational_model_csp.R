@@ -735,7 +735,7 @@ model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),
   scale_y_continuous(breaks=c(0,1,2,3),trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip() +
-  theme(text = element_text(size=25)) 
+  theme(text = element_text(size=18)) 
 model_plot
 
 

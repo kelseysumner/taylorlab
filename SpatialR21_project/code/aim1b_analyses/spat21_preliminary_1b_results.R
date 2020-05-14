@@ -84,12 +84,12 @@ csp_data$number_prior_infections = number_prior_infections
 
 #### ------ add in number of mosquitoes collected in week following infection ------- ####
 
-# first create a count of whether or not mosquitoes collected within 7 days of the human sample
+# first create a count of whether or not mosquitoes collected 14 days before the human sample
 mosquito_week_count = rep(NA,nrow(csp_data))
 for (i in 1:nrow(csp_data)){
   count = 0
   for (j in 1:nrow(mosquito_data)){
-    if ((mosquito_data$collection_date[j]-csp_data$sample_id_date[i] <= 7) & (mosquito_data$collection_date[j]-csp_data$sample_id_date[i] >= 0)){
+    if ((mosquito_data$collection_date[j]-csp_data$sample_id_date[i] >= -14) & (mosquito_data$collection_date[j]-csp_data$sample_id_date[i] <= 0)){
       count = count + 1
     }
   }
@@ -447,7 +447,7 @@ mosquito_week_count = rep(NA,nrow(ama_data))
 for (i in 1:nrow(ama_data)){
   count = 0
   for (j in 1:nrow(mosquito_data)){
-    if ((mosquito_data$collection_date[j]-ama_data$sample_id_date[i] <= 7) & (mosquito_data$collection_date[j]-ama_data$sample_id_date[i] >= 0)){
+    if ((mosquito_data$collection_date[j]-ama_data$sample_id_date[i] >= -14) & (mosquito_data$collection_date[j]-ama_data$sample_id_date[i] <= 0)){
       count = count + 1
     }
   }

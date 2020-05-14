@@ -28,6 +28,10 @@ csp_data = model_data %>%
 ama_data = model_data %>%
   filter(!(is.na(ama_haps_shared)))
 
+# read in the full human demographic data set
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
+final_data = final_data %>%
+  select(c(unq_memID,age_cat_baseline))
 
 
 
@@ -276,7 +280,7 @@ csp_all_nonzero_data$prop_nonzero = csp_all_nonzero_data$numerator/csp_all_nonze
 # now take the median of that proportion by symptomatic status
 csp_final_data = csp_all_nonzero_data %>%
   group_by(village_name,unq_memID,aim2_exposure) %>%
-  summarize(median_prop_nonzero = median(prop_nonzero,na.rm = T))
+  summarize(median_prop_nonzero = median(prop_nonzero,na.rm = T),num_infections = n())
 
 # now split up the data sets so have separate columns for asymptomatic and symptomatic infections
 # for csp
@@ -291,28 +295,129 @@ csp_symp = csp_final_data %>%
 csp_all = left_join(csp_asymp,csp_symp,by=c("unq_memID"))
 csp_all$village_name.y <- NULL
 csp_all = rename(csp_all,village_name = village_name.x)
+csp_all = data.frame(csp_all)
+csp_all$total_infections = csp_all$num_infections.x + csp_all$num_infections.y
+csp_all$num_infections.x <- NULL
+csp_all$num_infections.y <- NULL
+
+# now add a variable for the age categories
+final_data = final_data %>% group_by(unq_memID,age_cat_baseline) 
+final_data = data.frame(final_data)
+csp_all = left_join(csp_all,final_data,by="unq_memID")
+csp_all = unique(csp_all)
 
 # now make a plot of the average probability of p_te_all by symptomatic status
 csp_plot = ggplot(csp_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_nonzero)) +
-  geom_point(aes(color=village_name,fill=village_name),size=2.5,pch=21,alpha=0.5) + 
+  geom_point(aes(color=age_cat_baseline,fill=age_cat_baseline,size=total_infections),pch=21,alpha=0.5) + 
   theme_bw() +
   geom_abline(intercept = 0, slope = 1,linetype="dashed") +
   xlab("Median likelihood transmission for symptomatic infections") +
   ylab("Median likelihood transmission for asymptomatic infections") +
-  labs(color="Village name",fill="Village name") +
+  labs(color="Participant age category",fill="Participant age category",size="Number of malaria infections") +
   scale_x_continuous(limits=c(0,1)) +
   scale_y_continuous(limits=c(0,1)) +
   scale_color_manual(values = c("#006d2c","#08519c","#cc4c02")) +
   scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02"))
 ggsave(csp_plot, filename="/Users/kelseysumner/Desktop/csp_matched_prob_plot_alt3.png", device="png",
-       height=5, width=6, units="in", dpi=500)
+       height=5, width=8, units="in", dpi=500)
 
 # check the median of medians by symptomatic status
 # for csp
 median(csp_all$asymp_median_prop_nonzero)
 median(csp_all$symp_median_prop_nonzero)
+IQR(csp_all$asymp_median_prop_nonzero)
+IQR(csp_all$symp_median_prop_nonzero)
 
 # sign test
 SIGN.test(csp_all$asymp_median_prop_nonzero, csp_all$symp_median_prop_nonzero,md=0,alternative = "greater")
 
 
+
+
+#### -------- now do plot 3 for ama: compute proportion nonzero pairings with a mosquito ------ ####
+
+# what this does: for each person's infection, compute the proportion of nonzero pairings with mosquito
+# then take the median of that proportion across symptomatic status
+
+# only for ama right now
+
+# create a variable that says whether or not p_te_all_csp is non-zero or not
+ama_subset_data$nonzero = ifelse(ama_subset_data$p_te_all_ama > 0,"nonzero","zero")
+table(ama_subset_data$nonzero,useNA = "always")
+length(which(ama_subset_data$p_te_all_ama == 0))
+
+# for each person's infection, count the number of nonzero pairings
+ama_part1_data = ama_subset_data %>%
+  filter(nonzero == "nonzero") %>%
+  group_by(village_name,unq_memID,aim2_exposure,sample_id_human) %>%
+  summarize(numerator=n())
+ama_nonzero_data = ama_subset_data %>%
+  group_by(village_name,unq_memID,aim2_exposure,sample_id_human) %>%
+  summarize(denominator = n())
+
+# join the data frames
+ama_all_nonzero_data = left_join(ama_nonzero_data,ama_part1_data,by=c("sample_id_human"))
+
+# clean up the data frames
+ama_all_nonzero_data$village_name.y <- NULL
+ama_all_nonzero_data$aim2_exposure.y <- NULL
+ama_all_nonzero_data$unq_memID.y <- NULL
+ama_all_nonzero_data = ama_all_nonzero_data %>% rename(village_name = village_name.x,unq_memID=unq_memID.x,aim2_exposure=aim2_exposure.x)
+
+# change the numerators that are NA to 0
+ama_all_nonzero_data$numerator[which(is.na(ama_all_nonzero_data$numerator))] = 0
+
+# calculate the proportion of infections that are nonzero
+ama_all_nonzero_data$prop_nonzero = ama_all_nonzero_data$numerator/ama_all_nonzero_data$denominator
+
+# now take the median of that proportion by symptomatic status
+ama_final_data = ama_all_nonzero_data %>%
+  group_by(village_name,unq_memID,aim2_exposure) %>%
+  summarize(median_prop_nonzero = median(prop_nonzero,na.rm = T),num_infections = n())
+
+# now split up the data sets so have separate columns for asymptomatic and symptomatic infections
+# for ama
+ama_asymp = ama_final_data %>%
+  filter(aim2_exposure=="asymptomatic infection") %>%
+  select(-c(aim2_exposure)) %>%
+  rename("asymp_median_prop_nonzero" = median_prop_nonzero)
+ama_symp = ama_final_data %>%
+  filter(aim2_exposure=="symptomatic infection") %>%
+  select(-c(aim2_exposure)) %>%
+  rename("symp_median_prop_nonzero" = median_prop_nonzero)
+ama_all = left_join(ama_asymp,ama_symp,by=c("unq_memID"))
+ama_all$village_name.y <- NULL
+ama_all = rename(ama_all,village_name = village_name.x)
+ama_all = data.frame(ama_all)
+ama_all$total_infections = ama_all$num_infections.x + ama_all$num_infections.y
+ama_all$num_infections.x <- NULL
+ama_all$num_infections.y <- NULL
+
+# now add a variable for the age categories
+ama_all = left_join(ama_all,final_data,by="unq_memID")
+ama_all = unique(ama_all)
+
+# now make a plot of the average probability of p_te_all by symptomatic status
+ama_plot = ggplot(ama_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_nonzero)) +
+  geom_point(aes(color=age_cat_baseline,fill=age_cat_baseline,size=total_infections),pch=21,alpha=0.5) + 
+  theme_bw() +
+  geom_abline(intercept = 0, slope = 1,linetype="dashed") +
+  xlab("Median likelihood transmission for symptomatic infections") +
+  ylab("Median likelihood transmission for asymptomatic infections") +
+  labs(color="Participant age category",fill="Participant age category",size="Number of malaria infections") +
+  scale_x_continuous(limits=c(0,1)) +
+  scale_y_continuous(limits=c(0,1)) +
+  scale_color_manual(values = c("#006d2c","#08519c","#cc4c02")) +
+  scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02"))
+ggsave(ama_plot, filename="/Users/kelseysumner/Desktop/ama_matched_prob_plot_alt3.png", device="png",
+       height=5, width=8, units="in", dpi=500)
+
+# check the median of medians by symptomatic status
+# for ama
+median(ama_all$asymp_median_prop_nonzero)
+median(ama_all$symp_median_prop_nonzero)
+IQR(ama_all$asymp_median_prop_nonzero)
+IQR(ama_all$symp_median_prop_nonzero)
+
+# sign test
+SIGN.test(ama_all$asymp_median_prop_nonzero, ama_all$symp_median_prop_nonzero,md=0,alternative = "greater")
