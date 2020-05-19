@@ -71,6 +71,8 @@ str(csp_data$village_name)
 csp_data$village_name = as.factor(csp_data$village_name)
 csp_data$village_name = relevel(csp_data$village_name,ref="Maruti")
 str(csp_data$month)
+csp_data$haplotype_category = as.factor(csp_data$haplotype_category)
+csp_data$haplotype_category = relevel(csp_data$haplotype_category,ref="all old")
 # for ama
 str(ama_data$sample_name_dbs)
 str(ama_data$unq_memID)
@@ -88,6 +90,8 @@ str(ama_data$village_name)
 ama_data$village_name = as.factor(ama_data$village_name)
 ama_data$village_name = relevel(ama_data$village_name,ref="Maruti")
 str(ama_data$month)
+ama_data$haplotype_category = as.factor(ama_data$haplotype_category)
+ama_data$haplotype_category = relevel(ama_data$haplotype_category,ref="all old")
 
 
 #### ----- quickly do a functional form assessment for continuous variables ------ ####
@@ -244,6 +248,65 @@ ggplot(ama_data, aes(x = mosquito_week_count_cat_add)) + geom_density() + facet_
 
 
 
+#### -------- look at all three haplotype categories ------ ####
+
+# look at a summary of the three haplotype categories
+table(csp_data$haplotype_category,useNA = "always")
+
+# run a crude multilevel model
+csp_model_crude <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_crude)
+performance::icc(csp_model_crude)
+
+# run a multi-level logistic regression model
+csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_1)
+performance::icc(csp_model_1)
+exp(confint(csp_model_1,method="Wald"))
+
+# run a multi-level logistic regression model with an interaction term for age
+csp_model_1b <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + haplotype_category*age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_1b)
+performance::icc(csp_model_1b)
+anova(csp_model_1,csp_model_1b) # model 1 better
+exp(confint(csp_model_1b,method="Wald"))
+
+# run a multi-level logistic regression model with an interaction term for prior infections
+csp_model_1c <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + haplotype_category*add_cat_number_prior_infections + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_1c)
+performance::icc(csp_model_1c)
+anova(csp_model_1,csp_model_1c) # model 1 better
+exp(confint(csp_model_1c,method="Wald"))
+
+# make a forest plot of results
+table1 = exp(confint(csp_model_1,method="Wald"))
+summary(csp_model_1)
+estimates = c(exp(0.13082),exp(-0.86673),NA,exp(-0.08476),exp(-1.03685),NA,exp(-0.56599),NA,exp(0.87584))
+lower_ci = c(table1[3,1],table1[4,1],NA,table1[6,1],table1[5,1],NA,table1[7,1],NA,table1[8,1])
+upper_ci = c(table1[3,2],table1[4,2],NA,table1[6,2],table1[5,2],NA,table1[7,2],NA,table1[8,2])
+names = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1),colour=c("#54278f","#9e9ac8","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=15)) 
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_3_categories.png", device="png",
+       height=6, width=10, units="in", dpi=400)
+
+
+
+
+
 #### ---- now run some preliminary models for csp: any new to no new ------- ####
 
 # run a crude one level model (logistic regression for odds ratios)
@@ -283,20 +346,20 @@ summary(csp_model_1)
 estimates = c(exp(-0.40347),NA,exp(-0.03402),exp(-1.04893),NA,exp(-0.65798),NA,exp(0.87165))
 lower_ci = c(table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1])
 upper_ci = c(table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2])
-names = c("Any new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+names = c("Any new vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Any new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Any new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Any new vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Any new vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=c(3,1,1,1,1,1,1,1),colour=c("#238443","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab("") + ylab("Odds ratio (95% CI)") +
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10") +
   theme_bw() +
-  theme(text = element_text(size=25)) 
+  theme(text = element_text(size=15)) 
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_any_new.png", device="png",
@@ -343,19 +406,19 @@ summary(csp_model_1)
 estimates = c(exp(0.60628),NA,exp(-0.03891),exp(-1.04922),NA,exp(-0.45380),NA,exp(0.83755))
 lower_ci = c(table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1])
 upper_ci = c(table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2])
-names = c("All new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+names = c("All new vs. any recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. any recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. any recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
 # create a forest plot
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=c(3,1,1,1,1,1,1,1),colour=c("#225ea8","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab("") + ylab("Odds ratio (95% CI)") +
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10") +
   theme_bw() +
-  theme(text = element_text(size=25)) 
+  theme(text = element_text(size=15)) 
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_new.png", device="png",

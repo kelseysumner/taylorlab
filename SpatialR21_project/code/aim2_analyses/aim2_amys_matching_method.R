@@ -331,7 +331,41 @@ IQR(csp_all$symp_median_prop_nonzero)
 # sign test
 SIGN.test(csp_all$asymp_median_prop_nonzero, csp_all$symp_median_prop_nonzero,md=0,alternative = "greater")
 
+# create a test data set
+csp_all_nonzero_data$count = rep(1,nrow(csp_all_nonzero_data))
+symptomatic = csp_all_nonzero_data %>% 
+  filter(aim2_exposure == "symptomatic infection") %>%
+  group_by(unq_memID) %>%
+  mutate(num_infections = cumsum(count)) %>%
+  select(-c(village_name,aim2_exposure,sample_id_human,denominator,numerator,count))
+asymptomatic = csp_all_nonzero_data %>% 
+  filter(aim2_exposure == "asymptomatic infection") %>%
+  group_by(unq_memID) %>%
+  mutate(num_infections = cumsum(count)) %>%
+  select(-c(village_name,aim2_exposure,sample_id_human,denominator,numerator,count))
+asymptomatic = data.frame(asymptomatic)
+symptomatic = data.frame(symptomatic)
 
+# make a matrix where column is the person
+asymptomatic_matrix = asymptomatic %>%
+  spread(key=unq_memID,value=prop_nonzero)
+symptomatic_matrix = symptomatic %>%
+  spread(key=unq_memID,value=prop_nonzero)
+
+# now do a test comparing each symptomatic infection to the vector of values of asymptomatic infections
+# data_1 should be the vector of values that you want to know the
+# the percentile location of in the distribution. 
+# you are looking for the location of data_1[i] in column i of the matrix data_2
+get_percentile_locations<- function(data_1, data_2){
+  percentile_location_vector<- matrix(NA,nrow = nrow(data_1),ncol=ncol(data_1))
+  for(i in 1:ncol(data_2)){
+    percentile<- ecdf(data_2[,i])
+    percentile_location_vector[,i]<- percentile(data_1[,i])
+  }
+  return(percentile_location_vector)
+}
+# test out the function
+get_percentile_locations(symptomatic_matrix,asymptomatic_matrix)
 
 
 #### -------- now do plot 3 for ama: compute proportion nonzero pairings with a mosquito ------ ####
