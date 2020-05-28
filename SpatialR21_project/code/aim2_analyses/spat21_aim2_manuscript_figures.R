@@ -27,7 +27,7 @@ library(ggridges)
 #### ---------- read in the data sets ---------- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
+model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 # subset the data set to samples that passed pfcsp sequencing only
 model_data = model_data %>%
   filter(!(is.na(csp_haps_shared)))
@@ -37,11 +37,11 @@ anoph_merged_data = read_rds("/Users/kelseysumner/Desktop/Dissertation Materials
 
 # read in the csp haplotype data
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
-csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+csp_haplotypes <- read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
 # read in the csp haplotype data
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
-ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
+ama_haplotypes <- read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
 
 # read in the full human data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
@@ -1433,6 +1433,19 @@ asymp_human_haps = human_haps %>% filter(aim2_exposure == "asymptomatic infectio
 symp_human_haps = human_haps %>% filter(aim2_exposure == "symptomatic infection")
 asymp_human_haps = asymp_human_haps[,c(4:301)]
 symp_human_haps = symp_human_haps[,c(4:301)]
+
+# pull out number of samples
+sample.names = c(asymp_human_haps$sample_name_dbs,symp_human_haps$sample_name_dbs,abdomen_haps$sample_name_dbs)
+csp_haplotypes_subset = csp_haplotypes_subset[which(csp_haplotypes_subset$sample_name_dbs %in% sample.names),]
+csp_haplotypes_subset = csp_haplotypes_subset[,1:229]
+haplotype_num = rep(NA,length(sample.names))
+haplotype_reads = rep(NA,length(sample.names))
+for (i in 1:nrow(csp_haplotypes_subset)){
+  haplotype_num[i] = length(which(csp_haplotypes_subset[i,] > 0))
+  haplotype_reads[i] = sum(csp_haplotypes_subset[i,])
+}
+haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
+
 
 # summarize the number of samples within each haplotype for the asymp human samples
 haplotype.names = rep(1:ncol(asymp_human_haps))

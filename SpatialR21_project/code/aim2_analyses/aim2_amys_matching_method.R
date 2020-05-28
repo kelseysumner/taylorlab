@@ -13,12 +13,14 @@
 # load in the packages of interest
 library(tidyverse)
 library(BSDA)
+library(glmmTMB)
+
 
 
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
+model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
 # subset the data set to samples that passed pfcsp sequencing only
 csp_data = model_data %>%
@@ -277,6 +279,62 @@ csp_all_nonzero_data$numerator[which(is.na(csp_all_nonzero_data$numerator))] = 0
 # calculate the proportion of infections that are nonzero
 csp_all_nonzero_data$prop_nonzero = csp_all_nonzero_data$numerator/csp_all_nonzero_data$denominator
 
+# create a variable for household ID
+csp_all_nonzero_data$HH_ID_human = rep(NA,nrow(csp_all_nonzero_data))
+for (i in 1:nrow(csp_all_nonzero_data)) {
+  csp_all_nonzero_data$HH_ID_human[i] = str_split(csp_all_nonzero_data$unq_memID[i],"_")[[1]][1]
+}
+table(csp_all_nonzero_data$HH_ID_human, useNA = "always")
+
+# add covarites to the data set for the regression
+colnames(csp_data)
+csp_to_merge_data = csp_data %>% select(sample_id_human,pfr364Q_std_combined_rescaled,age_cat_baseline,mosquito_week_count_cat)
+csp_all_nonzero_data = left_join(csp_all_nonzero_data,csp_to_merge_data,by="sample_id_human")
+csp_all_nonzero_data = unique(csp_all_nonzero_data)
+
+# check the covariates
+str(csp_all_nonzero_data$sample_id_human)
+str(csp_all_nonzero_data$HH_ID_human)
+str(csp_all_nonzero_data$unq_memID)
+str(csp_all_nonzero_data$age_cat_baseline)
+str(csp_all_nonzero_data$village_name)
+csp_all_nonzero_data$village_name = relevel(csp_all_nonzero_data$village_name,ref = "Maruti")
+str(csp_all_nonzero_data$mosquito_week_count_cat)
+str(csp_all_nonzero_data$pfr364Q_std_combined_rescaled)
+str(csp_all_nonzero_data$aim2_exposure)
+
+# do a multi-level logistic regression across symptomatic status
+csp_model = glmmTMB(prop_nonzero ~ aim2_exposure + pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(csp_model)
+exp(confint(csp_model,method="Wald"))
+# OR: 2.60 (95% CI: 1.38 to 4.91)
+
+table1 = exp(confint(csp_model,method="Wald"))
+estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],table1[5,3],NA,table1[6,3],NA,table1[7,3],table1[8,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],table1[5,1],NA,table1[6,1],NA,table1[7,1],table1[8,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],table1[5,2],NA,table1[6,2],NA,table1[7,2],table1[8,2])
+names = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds ratio (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=25)) 
+fp
+
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome_figure3coding.png", device="png",
+       height=9, width=12.5, units="in", dpi=400)
+
+
 # now take the median of that proportion by symptomatic status
 csp_final_data = csp_all_nonzero_data %>%
   group_by(village_name,unq_memID,aim2_exposure) %>%
@@ -317,9 +375,10 @@ csp_plot = ggplot(csp_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_n
   scale_x_continuous(limits=c(0,1)) +
   scale_y_continuous(limits=c(0,1)) +
   scale_color_manual(values = c("#006d2c","#08519c","#cc4c02")) +
-  scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02"))
+  scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02")) +
+  theme(text = element_text(size=12)) 
 ggsave(csp_plot, filename="/Users/kelseysumner/Desktop/csp_matched_prob_plot_alt3.png", device="png",
-       height=5, width=8, units="in", dpi=500)
+       height=5, width=14, units="in", dpi=500)
 
 # check the median of medians by symptomatic status
 # for csp
@@ -366,6 +425,195 @@ get_percentile_locations<- function(data_1, data_2){
 }
 # test out the function
 get_percentile_locations(symptomatic_matrix,asymptomatic_matrix)
+
+
+# now do various cutoffs for what you consider to be a transmission event and rerun models
+# make a binary variable for 0 or >0
+csp_all_nonzero_data$outcome_binary_lessthan0 = ifelse(csp_all_nonzero_data$prop_nonzero > 0,"greater than 0.00","equal to 0.00")
+table(csp_all_nonzero_data$outcome_binary_lessthan0,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0 = factor(csp_all_nonzero_data$outcome_binary_lessthan0)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0)
+csp_all_nonzero_data$outcome_binary_lessthan0 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0,ref = "equal to 0.00")
+
+# make a binary variable for <0.05 or >= 0.05
+csp_all_nonzero_data$outcome_binary_lessthan0.05 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.05,"less than 0.05","greater than 0.05")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.05,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.05, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.05 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.05)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.05)
+csp_all_nonzero_data$outcome_binary_lessthan0.05 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.05,ref = "less than 0.05")
+
+# make a binary variable for <0.1 or >= 0.1
+csp_all_nonzero_data$outcome_binary_lessthan0.1 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.1,"less than 0.1","greater than 0.1")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.1,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.1, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.1 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.1)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.1)
+csp_all_nonzero_data$outcome_binary_lessthan0.1 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.1,ref = "less than 0.1")
+
+# make a binary variable for <0.15 or >= 0.15
+csp_all_nonzero_data$outcome_binary_lessthan0.15 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.15,"less than 0.15","greater than 0.15")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.15,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.15, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.15 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.15)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.15)
+csp_all_nonzero_data$outcome_binary_lessthan0.15 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.15,ref = "less than 0.15")
+
+# make a binary variable for <0.2 or >= 0.2
+csp_all_nonzero_data$outcome_binary_lessthan0.2 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.2,"less than 0.2","greater than 0.2")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.2,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.2, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.2 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.2)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.2)
+csp_all_nonzero_data$outcome_binary_lessthan0.2 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.2,ref = "less than 0.2")
+
+# make a binary variable for <0.25 or >= 0.25
+csp_all_nonzero_data$outcome_binary_lessthan0.25 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.25,"less than 0.25","greater than 0.25")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.25,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.25, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.25 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.25)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.25)
+csp_all_nonzero_data$outcome_binary_lessthan0.25 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.25,ref = "less than 0.25")
+
+# make a binary variable for <0.3 or >= 0.3
+csp_all_nonzero_data$outcome_binary_lessthan0.3 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.3,"less than 0.3","greater than 0.3")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.3,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.3, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.3 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.3)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.3)
+csp_all_nonzero_data$outcome_binary_lessthan0.3 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.3,ref = "less than 0.3")
+
+# make a binary variable for <0.35 or >= 0.35
+csp_all_nonzero_data$outcome_binary_lessthan0.35 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.35,"less than 0.35","greater than 0.35")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.35,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.35, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.35 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.35)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.35)
+csp_all_nonzero_data$outcome_binary_lessthan0.35 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.35,ref = "less than 0.35")
+
+# make a binary variable for <0.4 or >= 0.4
+csp_all_nonzero_data$outcome_binary_lessthan0.4 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.4,"less than 0.4","greater than 0.4")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.4,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.4, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.4 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.4)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.4)
+csp_all_nonzero_data$outcome_binary_lessthan0.4 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.4,ref = "less than 0.4")
+
+# make a binary variable for <0.45 or >= 0.45
+csp_all_nonzero_data$outcome_binary_lessthan0.45 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.45,"less than 0.45","greater than 0.45")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.45,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.45, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.45 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.45)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.45)
+csp_all_nonzero_data$outcome_binary_lessthan0.45 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.45,ref = "less than 0.45")
+
+# make a binary variable for <0.5 or >= 0.5
+csp_all_nonzero_data$outcome_binary_lessthan0.5 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.5,"less than 0.5","greater than 0.5")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.5,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.5, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.5 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.5)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.5)
+csp_all_nonzero_data$outcome_binary_lessthan0.5 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.5,ref = "less than 0.5")
+
+# make a binary variable for <0.55 or >= 0.55
+csp_all_nonzero_data$outcome_binary_lessthan0.55 = ifelse(csp_all_nonzero_data$prop_nonzero < 0.55,"less than 0.55","greater than 0.55")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.55,csp_all_nonzero_data$prop_nonzero,useNA = "always")
+table(csp_all_nonzero_data$outcome_binary_lessthan0.55, useNA = "always")
+csp_all_nonzero_data$outcome_binary_lessthan0.55 = factor(csp_all_nonzero_data$outcome_binary_lessthan0.55)
+levels(csp_all_nonzero_data$outcome_binary_lessthan0.55)
+csp_all_nonzero_data$outcome_binary_lessthan0.55 = relevel(csp_all_nonzero_data$outcome_binary_lessthan0.55,ref = "less than 0.55")
+
+# binary outcome 0 with a logistic model - this is basically a hurdle model
+model0 <- glmmTMB(outcome_binary_lessthan0~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model0)
+exp(confint(model0,method="Wald"))
+
+# binary outcome <0.05 with a logistic model
+model.05 <- glmmTMB(outcome_binary_lessthan0.05~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.05)
+exp(confint(model.05,method="Wald"))
+# converged
+
+# binary outcome <0.1 with a logistic model
+model.1 <- glmmTMB(outcome_binary_lessthan0.1~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.1)
+exp(confint(model.1,method="Wald"))
+# converged
+
+# binary outcome <0.15 with a logistic model
+model.15 <- glmmTMB(outcome_binary_lessthan0.15~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.15)
+exp(confint(model.15,method="Wald"))
+# converged
+
+# binary outcome <0.2 with a logistic model
+model.2 <- glmmTMB(outcome_binary_lessthan0.2~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.2)
+exp(confint(model.2, method="Wald"))
+# converged
+
+# binary outcome <0.25 with a logistic model
+model.25 <- glmmTMB(outcome_binary_lessthan0.25~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.25)
+exp(confint(model.25, method="Wald"))
+# converged
+
+# binary outcome <0.3 with a logistic model
+model.3 <-  glmmTMB(outcome_binary_lessthan0.3~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.3)
+exp(confint(model.3, method="Wald"))
+# converged
+
+# binary outcome <0.35 with a logistic model
+model.35 <- glmmTMB(outcome_binary_lessthan0.35~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.35)
+exp(confint(model.35, method="Wald"))
+# converged
+
+# binary outcome <0.4 with a logistic model
+model.4 <- glmmTMB(outcome_binary_lessthan0.4~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.4)
+exp(confint(model.4, method="Wald")) 
+# converged
+
+# binary outcome <0.45 with a logistic model
+model.45 <- glmmTMB(outcome_binary_lessthan0.45~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.45)
+exp(confint(model.45, method="Wald")) 
+# converged
+
+# binary outcome <0.5 with a logistic model
+model.5 <- glmmTMB(outcome_binary_lessthan0.5~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.5)
+exp(confint(model.5, method="Wald")) 
+# converged
+
+# binary outcome <0.55 with a logistic model
+model.55 <- glmmTMB(outcome_binary_lessthan0.55~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat +village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = csp_all_nonzero_data)
+summary(model.55)
+exp(confint(model.55, method="Wald")) 
+# converged
+
+# read in the model results
+model_results = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/computational_model_materials/aim2_binary_outcome_final_for_figure3coding.csv")
+
+# try another way to make this plot
+model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#006d2c") +
+  geom_line(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#006d2c") +
+  geom_ribbon(data=model_results,aes(x=1:length(binary_outcome),ymin = lower_ci, ymax = upper_ci),alpha=0.2,fill="#006d2c") +
+  theme_bw() +
+  xlab("Cutoff for what is a transmission event") + 
+  ylab("Odds ratio (95% CI)") + 
+  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8),trans="log10") +
+  geom_hline(yintercept=1,linetype="dashed") + 
+  coord_flip() +
+  theme(text = element_text(size=18)) 
+model_plot
+
+ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plot_for_figure3.png", device="png",
+       height=7, width=8, units="in", dpi=500)
+
 
 
 #### -------- now do plot 3 for ama: compute proportion nonzero pairings with a mosquito ------ ####
@@ -455,3 +703,58 @@ IQR(ama_all$symp_median_prop_nonzero)
 
 # sign test
 SIGN.test(ama_all$asymp_median_prop_nonzero, ama_all$symp_median_prop_nonzero,md=0,alternative = "greater")
+
+# add covariates to the data set for the regression
+colnames(ama_data)
+ama_to_merge_data = ama_data %>% select(sample_id_human,pfr364Q_std_combined_rescaled,age_cat_baseline,mosquito_week_count_cat)
+ama_all_nonzero_data = left_join(ama_all_nonzero_data,ama_to_merge_data,by="sample_id_human")
+ama_all_nonzero_data = unique(ama_all_nonzero_data)
+
+# create a variable for household ID
+ama_all_nonzero_data$HH_ID_human = rep(NA,nrow(ama_all_nonzero_data))
+for (i in 1:nrow(ama_all_nonzero_data)) {
+  ama_all_nonzero_data$HH_ID_human[i] = str_split(ama_all_nonzero_data$unq_memID[i],"_")[[1]][1]
+}
+table(ama_all_nonzero_data$HH_ID_human, useNA = "always")
+
+# check the covariates
+str(ama_all_nonzero_data$sample_id_human)
+str(ama_all_nonzero_data$HH_ID_human)
+str(ama_all_nonzero_data$unq_memID)
+str(ama_all_nonzero_data$age_cat_baseline)
+str(ama_all_nonzero_data$village_name)
+ama_all_nonzero_data$village_name = relevel(ama_all_nonzero_data$village_name,ref = "Maruti")
+str(ama_all_nonzero_data$mosquito_week_count_cat)
+str(ama_all_nonzero_data$pfr364Q_std_combined_rescaled)
+str(ama_all_nonzero_data$aim2_exposure)
+
+# do a multi-level logistic regression across symptomatic status
+ama_model = glmmTMB(prop_nonzero ~ aim2_exposure + pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+ (1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = ama_all_nonzero_data)
+summary(ama_model)
+exp(confint(ama_model,method="Wald"))
+# OR: 1.26 (95% CI: 0.61 to 2.62)
+
+table1 = exp(confint(ama_model,method="Wald"))
+estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],table1[5,3],NA,table1[6,3],NA,table1[7,3],table1[8,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],table1[5,1],NA,table1[6,1],NA,table1[7,1],table1[8,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],table1[5,2],NA,table1[6,2],NA,table1[7,2],table1[8,2])
+names = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds ratio (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=25)) 
+fp
+
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome_figure3coding_ama_supplement.png", device="png",
+       height=9, width=12.5, units="in", dpi=400)
