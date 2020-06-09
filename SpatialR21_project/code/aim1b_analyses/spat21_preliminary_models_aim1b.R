@@ -259,7 +259,8 @@ summary(csp_model_crude)
 performance::icc(csp_model_crude)
 
 # run a multi-level logistic regression model
-csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
+csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
+                     data = csp_data, control = glmerControl(optimizer="bobyqa"))
 summary(csp_model_1)
 performance::icc(csp_model_1)
 exp(confint(csp_model_1,method="Wald"))

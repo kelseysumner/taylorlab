@@ -18,17 +18,17 @@ library(tidyverse)
 
 # read in the csp haplotype data
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
-csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+csp_haplotypes <- read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
 # read in the csp haplotype data
 # load in the data set (the haplotypes after chimeras have been removed and haplotypes censored - seqtab_final.rds)
-ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
+ama_haplotypes <- read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
 
 # read in the full human data set
-final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets//Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
+model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 # subset the data set to samples that passed pfcsp sequencing only
 model_data = model_data %>%
   filter(!(is.na(csp_haps_shared)))
@@ -77,7 +77,9 @@ group_by(all_data, type) %>%
     mean = mean(haplotype_number, na.rm = TRUE),
     sd = sd(haplotype_number, na.rm = TRUE),
     median = median(haplotype_number, na.rm = TRUE),
-    IQR = IQR(haplotype_number, na.rm = TRUE)
+    IQR = IQR(haplotype_number, na.rm = TRUE),
+    first_quartile = quantile(haplotype_number, 0.25),
+    third_quartile = quantile(haplotype_number, 0.75)
   )
 
 # test anova assumptions of data be normally distributed and variance equal between groups
@@ -101,6 +103,11 @@ pairwise.wilcox.test(all_data$haplotype_number, all_data$type,
                      p.adjust.method = "bonferroni") # chose bonferroni because more conservative than FDR
 # results show that all pairwise comparisons statistically different
 
+# now adjust p-values for up to 14 infections observed using the bonferroni correction (very conservative)
+2.7e-14*14
+2e-16*14
+8.4e-10*14
+
 
 #### ------- additional statistical comparisons for covariates ------- ####
 
@@ -109,6 +116,8 @@ pairwise.wilcox.test(all_data$haplotype_number, all_data$type,
 tbl = table(model_data$age_cat_baseline,model_data$aim2_exposure)
 # then do a chi-squared test
 chisq.test(tbl)
+# correct for repeated measures
+2.2e-16*14
 
 # look at differences in parasite density
 # first set up the df
@@ -133,12 +142,23 @@ hist(asymp_parasite_density$pfr364Q_std_combined)
 hist(symp_parasite_density$pfr364Q_std_combined)
 # wilcoxon-mann-whitney test
 wilcox.test(pfr364Q_std_combined ~ type,data=all_data)
+# correct for repeated measures
+2.2e-16*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(pfr364Q_std_combined, 0.25),
+    third_quartile = quantile(pfr364Q_std_combined, 0.75)
+  )
 
 # look at differences in mosquitoes collected in week following infection
 # first make a contingency table
 tbl = table(model_data$mosquito_week_count_cat,model_data$aim2_exposure)
 # then do a chi-squared test
 chisq.test(tbl)
+# test for repeated measures
+2.2e-16*14
 
 # look at differences in moi
 # first set up the df
@@ -163,12 +183,23 @@ hist(asymp_moi$csp_moi)
 hist(symp_moi$csp_moi)
 # wilcoxon-mann-whitney test
 wilcox.test(csp_moi ~ type,data=all_data)
+# correct for repeated measures
+2.2e-16*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(csp_moi, 0.25),
+    third_quartile = quantile(csp_moi, 0.75)
+  )
 
 # look at differences in village
 # first make a contingency table
 tbl = table(model_data$village_name,model_data$aim2_exposure)
 # then do a chi-squared test
 chisq.test(tbl)
+# correct for repeated measures
+2.2e-16*14
 
 # look at differences in p_te_all_csp
 # first set up the df
@@ -193,6 +224,15 @@ hist(asymp_all$p_te_all_csp)
 hist(symp_all$p_te_all_csp)
 # wilcoxon-mann-whitney test
 wilcox.test(p_te_all_csp ~ type,data=all_data)
+# correct for repeated measures
+8.521e-15*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(p_te_all_csp, 0.25),
+    third_quartile = quantile(p_te_all_csp, 0.75)
+  )
 
 # look at differences in p_te_d
 # first set up the df
@@ -217,6 +257,15 @@ hist(asymp_all$p_te_d)
 hist(symp_all$p_te_d)
 # wilcoxon-mann-whitney test
 wilcox.test(p_te_d ~ type,data=all_data)
+# correct for repeated measures
+0.8211*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(p_te_d, 0.25),
+    third_quartile = quantile(p_te_d, 0.75)
+  )
 
 # look at differences in p_te_c
 # first set up the df
@@ -241,6 +290,15 @@ hist(asymp_all$p_te_c_alt)
 hist(symp_all$p_te_c_alt)
 # wilcoxon-mann-whitney test
 wilcox.test(p_te_c_alt ~ type,data=all_data)
+# correct for repeated measures
+3.599e-15*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(p_te_c_alt, 0.25),
+    third_quartile = quantile(p_te_c_alt, 0.75)
+  )
 
 # look at differences in p_te_c for those that shared haplotypes
 # first set up the df
@@ -265,6 +323,15 @@ hist(asymp_all$p_te_c_alt)
 hist(symp_all$p_te_c_alt)
 # wilcoxon-mann-whitney test
 wilcox.test(p_te_c_alt ~ type,data=all_data)
+# adjust for repeated measures
+0.1698*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(p_te_c_alt, 0.25),
+    third_quartile = quantile(p_te_c_alt, 0.75)
+  )
 
 # look at differences number of haplotypes shared
 # first set up the df
@@ -289,6 +356,15 @@ hist(asymp_all$csp_haps_shared)
 hist(symp_all$csp_haps_shared)
 # wilcoxon-mann-whitney test
 wilcox.test(csp_haps_shared ~ type,data=all_data)
+# adjust for repeated measures
+2.2e-16*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(csp_haps_shared, 0.25),
+    third_quartile = quantile(csp_haps_shared, 0.75)
+  )
 
 # look at differences number of haplotypes shared
 # first set up the df
@@ -313,5 +389,12 @@ hist(asymp_all$csp_haps_shared)
 hist(symp_all$csp_haps_shared)
 # wilcoxon-mann-whitney test
 wilcox.test(csp_haps_shared ~ type,data=all_data)
-
-
+# adjust for repeated measures
+2.2e-16*14
+# look at IQR
+group_by(all_data, type) %>%
+  summarise(
+    count = n(),
+    first_quartile = quantile(csp_haps_shared, 0.25),
+    third_quartile = quantile(csp_haps_shared, 0.75)
+  )
