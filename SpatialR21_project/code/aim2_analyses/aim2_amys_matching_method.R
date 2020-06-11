@@ -310,29 +310,29 @@ exp(confint(csp_model,method="Wald"))
 # OR: 2.56 (95% CI: 1.36 to 4.81)
 
 table1 = exp(confint(csp_model,method="Wald"))
-estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3])
-lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1])
-upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2])
-names = c("Asymptomatic infection","","Participant asexual parasite density"," ","75-147 mosquitoes")
+estimates = c(table1[2,3],NA,table1[3,3],NA,NA,NA,table1[4,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,NA,NA,table1[4,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,NA,NA,table1[4,2])
+names = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","75-147 mosquitoes"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","75-147 mosquitoes"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High"))
 
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,1,1,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +
   scale_y_continuous(trans="log10") +
   theme_bw() +
-  theme(text = element_text(size=12)) 
+  theme(text = element_text(size=14)) 
 fp
 
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome_figure3coding.png", device="png",
-       height=5, width=6, units="in", dpi=400)
+       height=5, width=7, units="in", dpi=400)
 
 
 # now take the median of that proportion by symptomatic status
@@ -1021,24 +1021,24 @@ exp(confint(ama_model,method="Wald"))
 # OR: 1.30 (95% CI: 0.63 to 2.69)
 
 table1 = exp(confint(ama_model,method="Wald"))
-estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3])
-lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1])
-upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],)
-names = c("Asymptomatic infection","","Participant asexual parasite density"," ","75-147 mosquitoes")
+estimates = c(table1[2,3],NA,table1[3,3],NA,NA,NA,table1[4,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,NA,NA,table1[4,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,NA,NA,table1[4,2])
+names = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","75-147 mosquitoes"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","75-147 mosquitoes"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High"))
 
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,1,1,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +
   scale_y_continuous(trans="log10") +
   theme_bw() +
-  theme(text = element_text(size=12)) 
+  theme(text = element_text(size=14)) 
 fp
 
 # export the plot

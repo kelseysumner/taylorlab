@@ -29,7 +29,7 @@ library(glmmTMB)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-model_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
+model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
 
 
@@ -76,6 +76,7 @@ ggplot(model_data, aes(x = HH_ID_human)) + geom_density() + facet_wrap(~aim2_exp
 table(model_data$HH_ID_human,model_data$aim2_exposure)
 table(model_data$unq_memID,model_data$aim2_exposure)
 table(model_data$sample_id_human,model_data$aim2_exposure)
+ggplot(model_data, aes(x=human_date,y = mosquito_week_count)) + geom_line()
 
 # look more into the distribution of p_te_all_csp
 hist(model_data$p_te_all_csp,breaks=50)
@@ -270,18 +271,18 @@ exp(0.432712)
 exp(confint(model2_all_nmlm,method="Wald"))
 
 table1 = exp(confint(model2,method="Wald"))
-estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],table1[5,3],NA,table1[6,3],NA,table1[7,3],table1[8,3])
-lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],table1[5,1],NA,table1[6,1],NA,table1[7,1],table1[8,1])
-upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],table1[5,2],NA,table1[6,2],NA,table1[7,2],table1[8,2])
-names = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village")
+estimates = c(table1[2,3],NA,table1[3,3],NA,NA,NA,table1[5,3],table1[4,3],NA,NA,NA,table1[6,3],NA,NA,NA,table1[7,3],table1[8,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,NA,NA,table1[5,1],table1[4,1],NA,NA,NA,table1[6,1],NA,NA,NA,table1[7,1],table1[8,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,NA,NA,table1[5,2],table1[4,2],NA,NA,NA,table1[6,2],NA,NA,NA,table1[7,2],table1[8,2])
+names = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","Mosquito abundance        ","Low (REF)","High","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant asexual parasite density"," ","Participant age >15 years","Participant age 5-15 years","  ","75-147 mosquitoes","   ","Kinesamo village","Sitabicha village"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","Mosquito abundance        ","Low (REF)","High","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","Mosquito abundance        ","Low (REF)","High","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha"))
 
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +

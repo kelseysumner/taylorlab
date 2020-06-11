@@ -22,6 +22,8 @@ library(lme4)
 # read in the combined ama and csp data set for mosquito abdomens
 model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
 
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
+
 
 #### ------ check covariate coding ------- ####
 
@@ -67,6 +69,7 @@ table(model_data$outcome_binary_lessthan0, useNA = "always")
 # run the multi-level model with the binary outcome
 model2 <- glmmTMB(outcome_binary_lessthan0~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
 summary(model2)
+exp(confint(model2))
 
 # run the multi-level model with the continuous outcome coding (more conservative)
 model2 <- glmmTMB(p_te_all_csp~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
@@ -77,16 +80,30 @@ exp(confint(model2))
 covariance_matrix = vcov(model2)
 # confint(object, parm, level = 0.95,type = c("vcov"))
 
+
+
+#### ---- calculate the proportion of participants infected each month in the full data set ----- ####
+
+# filter final data to just the infections
+final_data = final_data %>% filter(main_exposure_primary_case_def == "asymptomatic infection" | main_outcome_primary_case_def == "symptomatic infection")
+
+# now create a variable for if it's an asymptomatic or symptomatic infection
+final_data$aim2_exposure = ifelse(final_data$main_exposure_primary_case_def == "asymptomatic infection","asymptomatic infection","symptomatic infection")
+final_data$aim2_exposure[which(is.na(final_data$aim2_exposure))] = "symptomatic infection"
+table(final_data$aim2_exposure, useNA = "always")
+table(final_data$aim2_exposure,final_data$main_exposure_primary_case_def, useNA = "always")
+table(final_data$aim2_exposure,final_data$main_outcome_primary_case_def, useNA = "always")
+
 # add a variable for month
-model_data = model_data %>%
-  mutate(month_human = lubridate::floor_date(human_date, "month"))
-table(model_data$month_human)
-  
+final_data = final_data %>%
+  mutate(month_human = lubridate::floor_date(sample_id_date, "month"))
+table(final_data$month_human)
+
 # calculate the proportion of people that were asymptomatic vs symptomatic each month
-month_summary = model_data %>%
+month_summary = final_data %>%
   group_by(month_human,aim2_exposure) %>%
   summarize(infection_n = n())
-month_summary_2 = model_data %>%
+month_summary_2 = final_data %>%
   group_by(month_human) %>%
   summarize(total_n = n())
 month_summary = data.frame(month_summary)
@@ -175,11 +192,13 @@ ggsave(paf_plot, filename="/Users/kelseysumner/Desktop/paf_plot.png", device="pn
 
 #### ----- calculate contributions to the infectious reservoir ------ ####
 
-# OR value
-exp(0.402469)
+# this is using the 2.66 OR
 
-# Ia = 1.5/2.5
-Ia = exp(0.402469)/(exp(0.402469)+1)
+# OR value
+exp(0.979918)
+
+# Ia = 2.66/3.66
+Ia = exp(0.979918)/(exp(0.979918)+1)
 Is = 1-Ia
 
 # Ca = PaIa/(PaIa + PsIs)
@@ -195,32 +214,21 @@ ca_8_17 = Ca_function(month_summary$prop_asymptomatic[3],(1-month_summary$prop_a
 ca_9_17 = Ca_function(month_summary$prop_asymptomatic[4],(1-month_summary$prop_asymptomatic[4]))
 ca_10_17 = Ca_function(month_summary$prop_asymptomatic[5],(1-month_summary$prop_asymptomatic[5]))
 ca_11_17 = Ca_function(month_summary$prop_asymptomatic[6],(1-month_summary$prop_asymptomatic[6]))
-ca_1_18 = Ca_function(month_summary$prop_asymptomatic[7],(1-month_summary$prop_asymptomatic[7]))
-ca_2_18 = Ca_function(month_summary$prop_asymptomatic[8],(1-month_summary$prop_asymptomatic[8]))
-ca_3_18 = Ca_function(month_summary$prop_asymptomatic[9],(1-month_summary$prop_asymptomatic[9]))
-ca_4_18 = Ca_function(month_summary$prop_asymptomatic[10],(1-month_summary$prop_asymptomatic[10]))
-ca_5_18 = Ca_function(month_summary$prop_asymptomatic[11],(1-month_summary$prop_asymptomatic[11]))
-ca_6_18 = Ca_function(month_summary$prop_asymptomatic[12],(1-month_summary$prop_asymptomatic[12]))
-ca_7_18 = Ca_function(month_summary$prop_asymptomatic[13],(1-month_summary$prop_asymptomatic[13]))
+ca_12_17 = Ca_function(month_summary$prop_asymptomatic[7],(1-month_summary$prop_asymptomatic[7]))
+ca_1_18 = Ca_function(month_summary$prop_asymptomatic[8],(1-month_summary$prop_asymptomatic[8]))
+ca_2_18 = Ca_function(month_summary$prop_asymptomatic[9],(1-month_summary$prop_asymptomatic[9]))
+ca_3_18 = Ca_function(month_summary$prop_asymptomatic[10],(1-month_summary$prop_asymptomatic[10]))
+ca_4_18 = Ca_function(month_summary$prop_asymptomatic[11],(1-month_summary$prop_asymptomatic[11]))
+ca_5_18 = Ca_function(month_summary$prop_asymptomatic[12],(1-month_summary$prop_asymptomatic[12]))
+ca_6_18 = Ca_function(month_summary$prop_asymptomatic[13],(1-month_summary$prop_asymptomatic[13]))
+ca_7_18 = Ca_function(month_summary$prop_asymptomatic[14],(1-month_summary$prop_asymptomatic[14]))
 
 # make a data frame
-month_1 = c("2017-06-01","2017-07-01","2017-08-01","2017-09-01","2017-10-01","2017-11-01")
-month_2 = c("2017-12-01")
-month_3 = c("2018-01-01","2018-02-01","2018-03-01","2018-04-01","2018-05-01","2018-06-01","2018-07-01")
-cas_1 = c(ca_6_17,ca_7_17,ca_8_17,ca_9_17,ca_10_17,ca_11_17)
-cas_2 = c(0)
-cas_3 = c(ca_1_18,ca_2_18,ca_3_18,ca_4_18,ca_5_18,ca_6_18,ca_7_18)
-month_df_1 = data.frame(month_1,cas_1)
-month_df_2 = data.frame(month_2,cas_2)
-month_df_3 = data.frame(month_3,cas_3)
+month_1 = c("2017-06-01","2017-07-01","2017-08-01","2017-09-01","2017-10-01","2017-11-01","2017-12-01","2018-01-01","2018-02-01","2018-03-01","2018-04-01","2018-05-01","2018-06-01","2018-07-01")
+cas_1 = c(ca_6_17,ca_7_17,ca_8_17,ca_9_17,ca_10_17,ca_11_17,ca_12_17,ca_1_18,ca_2_18,ca_3_18,ca_4_18,ca_5_18,ca_6_18,ca_7_18)
+month_df_1 = data.frame(month_1,cas_1,month_summary$prop_asymptomatic)
 month_df_1$cas_1 = month_df_1$cas_1*100
-month_df_2$cas_2 = month_df_2$cas_2*100
-month_df_3$cas_3 = month_df_3$cas_3*100
-
-# set up the data set for the grey rectangle
-month_subset = c("2017-11-01","2017-12-01","2018-1-01")
-case = c(100,100,100)
-month_subset_df = data.frame(month_subset,case)
+month_df_1$month_summary.prop_asymptomatic = month_df_1$month_summary.prop_asymptomatic*100
 
 # symptomatic (blue): #3B9AB2
 # asymptomatic (yellow): #E1AF00
@@ -230,23 +238,64 @@ month_subset_df = data.frame(month_subset,case)
 # make a line plot of the different paf values 
 ca_plot = ggplot() +
   geom_line(data=month_df_1,aes(x=month_1,y=cas_1),size=1.5,group=1,colour="black") +
-  geom_line(data=month_df_2,aes(x=month_2,y=cas_2),size=1.5,group=1,colour="black") +
-  geom_line(data=month_df_3,aes(x=month_3,y=cas_3),size=1.5,group=1,colour="black") +
   theme_bw() +
-  scale_y_continuous(limits = c(0,100)) +
   xlab("Month") +
-  ylab("Contribution to infectious reservoir (%)") +
   theme(axis.text.x = element_text(angle = 90)) +
   theme(text = element_text(size=12)) +
   geom_area(data=month_df_1,aes(x=month_1,y=cas_1),group=1, fill="#E1AF00",alpha=0.8) +
-  geom_area(data=month_df_3,aes(x=month_3,y=cas_3), group=1, fill="#E1AF00",alpha=0.8) +
   geom_ribbon(data=month_df_1,aes(ymin=pmin(cas_1,100), ymax=100,x=month_1), fill="#3B9AB2", alpha=0.8,group=1) +
-  geom_ribbon(data=month_df_3,aes(ymin=pmin(cas_3,100), ymax=100,x=month_3), fill="#3B9AB2", alpha=0.8,group=1) +
-  geom_rect(data=month_subset_df,aes(xmin="2017-11-01",xmax="2018-01-01",ymin=0,ymax=100),fill="#D3DDDC",alpha=0.8,group=1)+
-  geom_segment(aes(x="2017-11-01",xend="2017-11-01",y=0,yend=100),size=1.5,alpha=0.2) +
-  geom_segment(aes(x="2018-01-01",xend="2018-01-01",y=0,yend=100),size=1.5,alpha=0.2) 
+  geom_line(data=month_df_1,aes(x=month_1,y=month_summary.prop_asymptomatic),group=1,colour="#081d58",size=1.5,alpha=0.7) +
+  scale_y_continuous(limits = c(0,100),name="Contribution to infectious reservoir (%)",sec.axis = sec_axis(~.*1,name="Percent of asymptomatic infections (%)"))
 ca_plot
 ggsave(ca_plot, filename="/Users/kelseysumner/Desktop/ca_plot.png", device="png",
        height=5, width=10, units="in", dpi=500)
 
 
+#### -------- calculate cas across all months ------- ####
+
+# calculate the proportion of people that were asymptomatic vs symptomatic across the entire study follow-up
+all_summary = final_data %>%
+  group_by(aim2_exposure) %>%
+  summarize(infection_n = n())
+asymp_prop = 902/1039
+
+# OR value - using the 2.66 OR
+exp(0.979918)
+
+# Ia = 2.66/3.66
+Ia = exp(0.979918)/(exp(0.979918)+1)
+Is = 1-Ia
+
+# Ca = PaIa/(PaIa + PsIs)
+Ca_function = function(Pa,Ps){
+  Ca = (Pa*Ia)/(Pa*Ia + Ps*Is)
+  return(Ca)
+}
+
+# calculate ca across all study follow-up
+cas_all = Ca_function(asymp_prop,(1-asymp_prop))
+
+# now calculate cas for the lower ci
+Ia = 2.0479305/(2.0479305+1)
+Is = 1-Ia
+# Ca = PaIa/(PaIa + PsIs)
+Ca_function = function(Pa,Ps){
+  Ca = (Pa*Ia)/(Pa*Ia + Ps*Is)
+  return(Ca)
+}
+cas_lower = Ca_function(asymp_prop,(1-asymp_prop))
+
+# now calculate cas for the upper ci
+Ia = 3.4660177/(3.4660177+1)
+Is = 1-Ia
+# Ca = PaIa/(PaIa + PsIs)
+Ca_function = function(Pa,Ps){
+  Ca = (Pa*Ia)/(Pa*Ia + Ps*Is)
+  return(Ca)
+}
+cas_upper = Ca_function(asymp_prop,(1-asymp_prop))
+
+# summarize the values
+cas_all
+cas_lower
+cas_upper
