@@ -8,11 +8,10 @@
 
 
 #### ------- load libraries -------- ####
-library(R2OpenBUGS)
-library(rjags)
-library(coda)
-library(MCMCvis)
-library(readr)
+# load the library
+library(rstanarm)
+library(rstan)
+library(tidyverse)
 
 
 ### ------ load in the data sets ------ ####
@@ -21,98 +20,65 @@ library(readr)
 csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_csp_data_spat21_aim1b_11JUN2020.rds")
 
 
-#### ------ now try the logit model for rjags ----- ####
 
-#  http://stephenrho.github.io/rjags-model.html
+#### ------ set up the bayesian model ------- ####
 
-### set up the model
-modelString = "
-  model {
-    for (i in 1:n){
-      y[i] ~ dbern(y.hat[i])
-      y.hat[i] <- max(0, min(1,P[i]))
-      logit(P[i]) <- B0 + inprod(B, X[i,]) + s[id[i]]
-    }
-    # grand mean
-    B0 ~ dt(0, 1/2.5^2, 1)
-    # deflections from grand mean (fixed effects)
-    for (b in 1:nEff){
-      B[b] ~ dt(0, 1/2.5^2, 1) # cauchy(0, 2.5) prior (Gelman et al., 2008)
-    }
-    # participant random effect
-    for (ppt in 1:S){
-      s[ppt] ~ dnorm(0, sTau)
-    }
-    sTau <- 1/pow(sSD, 2)
-    sSD ~ dgamma(1.01005, 0.1005012) # mode = .1, SD = 10 (v. vague)
-  }
-"
+# link to rstanarm tutorial: http://biostat.mc.vanderbilt.edu/wiki/pub/Main/StatisticalComputingSeries/bayes_reg_rstanarm.html
 
+# this option uses multiple cores if they're available - can do but slows down my computer
+# options(mc.cores = parallel::detectCores())
 
-### set up the parameters
-params = c('B0', 'B', 's', 'sSD')
+# set up the data
+csp_data$symptomatic_status = ifelse(csp_data$symptomatic_status=="asymptomatic infection",0,1)
 
-
-### create a variable for whether or not the person had a new haplotype or not
-csp_data$new_haplotype_present = ifelse(csp_data$count_new_haplotypes > 0,"yes","no")
-table(csp_data$new_haplotype_present,csp_data$count_new_haplotypes,useNA = "always")
-csp_data$new_haplotype_present = as.factor(csp_data$new_haplotype_present)
-
-# make age count baseline a factor
-csp_data$age_cat_baseline = as.factor(csp_data$age_cat_baseline)
-levels(csp_data$age_cat_baseline)
-
-# make number of prior infections a factor
+# set up the covariates
+# number prior infections
 csp_data$add_cat_number_prior_infections = ifelse(csp_data$number_prior_infections < 4,"3 infections or less","more than 3 infections")
 table(csp_data$number_prior_infections,csp_data$add_cat_number_prior_infections)
 csp_data$add_cat_number_prior_infections = as.factor(csp_data$add_cat_number_prior_infections)
-
-# make mosquito week count a factor
+# number mosquitoes collected
 csp_data$mosquito_week_count_cat_add = ifelse(csp_data$mosquito_week_count <= 50,"50 or less mosquitoes","more than 50 mosquitoes")
 table(csp_data$mosquito_week_count,csp_data$mosquito_week_count_cat_add)
 csp_data$mosquito_week_count_cat_add = as.factor(csp_data$mosquito_week_count_cat_add)
 
-# here we use sum-to-zero effects coding to set up contrasts
-options(contrasts=c('contr.sum', 'contr.sum'))
-contrasts(csp_data$new_haplotype_present)
-contrasts(csp_data$age_cat_baseline)
-contrasts(csp_data$add_cat_number_prior_infections)
-contrasts(csp_data$mosquito_week_count_cat_add)
+# take out the infections with persistent haplotypes
+no_persistent_data = csp_data[which(!(str_detect(csp_data$haplotype_category,"persistent"))),]
+table(no_persistent_data$haplotype_category, useNA = "always")
+no_persistent_data$haplotype_category = as.character(no_persistent_data$haplotype_category)
+no_persistent_data$haplotype_category = as.factor(no_persistent_data$haplotype_category)
+levels(no_persistent_data$haplotype_category)
+no_persistent_data$haplotype_category = relevel(no_persistent_data$haplotype_category,ref="all recurrent")
 
-### create the design matrix - take out age for now because three levels
-X <- model.matrix(~new_haplotype_present*add_cat_number_prior_infections*mosquito_week_count_cat_add,data = csp_data)[,2:4] # don't include intercept (dealt with via B0 parameter)
+# set up the priors
+t_prior <- student_t(df = 7, location = 0, scale = 2.5)
 
-# put data in a list
-datal <- list(
-  y = csp_data$symptomatic_status,
-  n = nrow(csp_data),
-  X = X,
-  nEff = ncol(X),
-  id = csp_data$unq_memID,
-  S = length(unique(csp_data$unq_memID))
-)
+# run the bayesian model
+glm_pos1 = stan_glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + 
+                      mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link="logit"),prior = t_prior,prior_intercept = t_prior,
+                    data=no_persistent_data)
+summary(glm_pos1)
 
-# settings
-nAdapt = 1000
-nBurn = 1000
-nChains = 4 # as JAGS has 4 random number generators
-nSave = 10^4 # may want to increase
-nThin = 1
-nIter = ceiling((nSave*nThin)/nChains)
+# evaluate the model by making trace plots
+stan_trace(glm_pos1)
+stan_plot(glm_pos1)
 
-# create JAGS model
-mod = jags.model(textConnection(modelString), data = datal, n.chains = nChains, n.adapt = nAdapt)
+# check the output
+pp_check(glm_pos1)
 
-# burn in
-update(mod, n.iter = nBurn)
+# make a histogram
+stan_hist(glm_pos1)
+stan_dens(glm_pos1)
 
-# MCMC samples
-samp = coda.samples(mod, variable.names=params, n.iter=nIter, thin=nThin)
+# check the priors
+prior_summary(glm_pos1)
 
+# juxtapose the posterior and prior distributions to see how the observed data has changed
+posterior_vs_prior(glm_pos1, group_by_parameter = TRUE)
 
-
-
-
+# you can compare models using an apporximation to leave-one-out (loo) cross-validation
+# method for estimating out of sample predictive performance
+# library(loo)
+# compare_models(glm_pos1,glm_pos2)
 
 
 

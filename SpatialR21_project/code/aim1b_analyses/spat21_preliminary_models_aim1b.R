@@ -18,10 +18,10 @@ library(glmmTMB)
 #### ------ read in the data sets ------- ####
 
 # read in the ama data set
-ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_without_first_infection/without_first_infection_ama_data_spat21_aim1b_28APR2020.rds")
+ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_ama_data_spat21_aim1b_11JUN2020.rds")
 
 # read in the csp data set
-csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/data_without_first_infection/without_first_infection_csp_data_spat21_aim1b_28APR2020.rds")
+csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_csp_data_spat21_aim1b_11JUN2020.rds")
 
 # read in the full human demographic data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
@@ -53,14 +53,24 @@ ama_data$rescaled_number_prior_infections = scale(ama_data$number_prior_infectio
 csp_data$rescaled_moi = scale(csp_data$haplotype_number)
 ama_data$rescaled_moi = scale(ama_data$haplotype_number)
 
+# make a three haplotype category variable
+# for csp
+csp_data$three_hap_category = ifelse(csp_data$haplotype_category == "all new","all new",
+                                     ifelse(str_detect(csp_data$haplotype_category,"persistent"),"any persistent","recurrent or new"))
+table(csp_data$haplotype_category,csp_data$three_hap_category,useNA = "always")
+table(csp_data$three_hap_category,useNA = "always")
+# for ama
+ama_data$three_hap_category = ifelse(ama_data$haplotype_category == "all new","all new",
+                                     ifelse(str_detect(ama_data$haplotype_category,"persistent"),"any persistent","recurrent or new"))
+table(ama_data$haplotype_category,ama_data$three_hap_category,useNA = "always")
+table(ama_data$three_hap_category,useNA = "always")
+
+
 # now clean up the variables to be in the proper str
 # for csp
 str(csp_data$sample_name_dbs)
 str(csp_data$unq_memID)
 str(csp_data$HH_ID)
-csp_data$any_new_categories = as.factor(csp_data$any_new_categories)
-levels(csp_data$any_new_categories)
-csp_data$any_new_categories = relevel(csp_data$any_new_categories,ref="none new")
 str(csp_data$symptomatic_status)
 csp_data$symptomatic_status = as.factor(csp_data$symptomatic_status)
 levels(csp_data$symptomatic_status)
@@ -72,14 +82,12 @@ csp_data$village_name = as.factor(csp_data$village_name)
 csp_data$village_name = relevel(csp_data$village_name,ref="Maruti")
 str(csp_data$month)
 csp_data$haplotype_category = as.factor(csp_data$haplotype_category)
-csp_data$haplotype_category = relevel(csp_data$haplotype_category,ref="all old")
+csp_data$three_hap_category = as.factor(csp_data$three_hap_category)
+csp_data$three_hap_category = relevel(csp_data$three_hap_category,ref="any persistent")
 # for ama
 str(ama_data$sample_name_dbs)
 str(ama_data$unq_memID)
 str(ama_data$HH_ID)
-ama_data$any_new_categories = as.factor(ama_data$any_new_categories)
-levels(ama_data$any_new_categories)
-ama_data$any_new_categories = relevel(ama_data$any_new_categories,ref="none new")
 str(ama_data$symptomatic_status)
 ama_data$symptomatic_status = as.factor(ama_data$symptomatic_status)
 levels(ama_data$symptomatic_status)
@@ -91,7 +99,8 @@ ama_data$village_name = as.factor(ama_data$village_name)
 ama_data$village_name = relevel(ama_data$village_name,ref="Maruti")
 str(ama_data$month)
 ama_data$haplotype_category = as.factor(ama_data$haplotype_category)
-ama_data$haplotype_category = relevel(ama_data$haplotype_category,ref="all old")
+ama_data$three_hap_category = as.factor(ama_data$three_hap_category)
+ama_data$three_hap_category = relevel(ama_data$three_hap_category,ref="any persistent")
 
 
 #### ----- quickly do a functional form assessment for continuous variables ------ ####
@@ -251,19 +260,107 @@ ggplot(ama_data, aes(x = mosquito_week_count_cat_add)) + geom_density() + facet_
 #### -------- look at all three haplotype categories ------ ####
 
 # look at a summary of the three haplotype categories
-table(csp_data$haplotype_category,useNA = "always")
+table(csp_data$three_hap_category,useNA = "always")
 
 # run a crude multilevel model
-csp_model_crude <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
+csp_model_crude <- glmer(symptomatic_status ~ three_hap_category + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
 summary(csp_model_crude)
 performance::icc(csp_model_crude)
 
 # run a multi-level logistic regression model
+csp_data$haplotype_category = relevel(csp_data$haplotype_category,ref="all new")
+levels(csp_data$haplotype_category)
 csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
                      data = csp_data, control = glmerControl(optimizer="bobyqa"))
 summary(csp_model_1)
 performance::icc(csp_model_1)
 exp(confint(csp_model_1,method="Wald"))
+# make a forest plot of results
+table1 = exp(confint(csp_model_1,method="Wald"))
+summary(csp_model_1)
+estimates = c(exp(0.8263),exp(-0.8574),exp(-0.2176),exp(-1.8150),exp(-1.8118),exp(-17.9210),NA,exp(-0.1949),exp(-1.1434),NA,exp(-0.2089),NA,exp(0.7332))
+lower_ci = c(table1[3,1],table1[4,1],table1[5,1],table1[6,1],table1[7,1],table1[8,1],NA,table1[10,1],table1[9,1],NA,table1[11,1],NA,table1[12,1])
+upper_ci = c(table1[3,2],table1[4,2],table1[5,2],table1[6,2],table1[7,2],table1[8,2],NA,table1[10,2],table1[9,2],NA,table1[11,2],NA,table1[12,2])
+names = c("All persistent vs. all new haplotypes","All recurrent vs. all new haplotypes","New and persistent vs. all new haplotypes","New and recurrent vs. all new haplotypes","New/Recurrent/Persistent vs. all new haplotypes","Recurrent and persistent vs. all new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All persistent vs. all new haplotypes","All recurrent vs. all new haplotypes","New and persistent vs. all new haplotypes","New and recurrent vs. all new haplotypes","New/Recurrent/Persistent vs. all new haplotypes","Recurrent and persistent vs. all new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All persistent vs. all new haplotypes","All recurrent vs. all new haplotypes","New and persistent vs. all new haplotypes","New and recurrent vs. all new haplotypes","New/Recurrent/Persistent vs. all new haplotypes","Recurrent and persistent vs. all new haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(2,2,2,2,2,2,1,1,1,1,1,1,1),colour=c("#54278f","#9e9ac8","#54278f","#9e9ac8","#54278f","#9e9ac8","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=15)) 
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_categories.png", device="png",
+       height=6, width=10, units="in", dpi=400)
+# now make the forest plot removing the wide confidence interval for recurrent and persistent
+# make a forest plot of results
+estimates = c(exp(0.8263),exp(-0.8574),exp(-0.2176),exp(-1.8150),exp(-1.8118),NA,exp(-0.1949),exp(-1.1434),NA,exp(-0.2089),NA,exp(0.7332))
+lower_ci = c(table1[3,1],table1[4,1],table1[5,1],table1[6,1],table1[7,1],NA,table1[10,1],table1[9,1],NA,table1[11,1],NA,table1[12,1])
+upper_ci = c(table1[3,2],table1[4,2],table1[5,2],table1[6,2],table1[7,2],NA,table1[10,2],table1[9,2],NA,table1[11,2],NA,table1[12,2])
+names =  c("All persistent vs. all new haplotypes","All recurrent vs. all new haplotypes","New and persistent vs. all new haplotypes","New and recurrent vs. all new haplotypes","New/Recurrent/Persistent vs. all new haplotypes","    ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All persistent vs. all new haplotypes","All recurrent vs. all new haplotypes","New and persistent vs. all new haplotypes","New and recurrent vs. all new haplotypes","New/Recurrent/Persistent vs. all new haplotypes","    ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All persistent vs. all new haplotypes","All recurrent vs. all new haplotypes","New and persistent vs. all new haplotypes","New and recurrent vs. all new haplotypes","New/Recurrent/Persistent vs. all new haplotypes","    ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(2,2,2,2,2,1,1,1,1,1,1,1),colour=c("#54278f","#9e9ac8","#54278f","#9e9ac8","#54278f","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=15)) 
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_categories_minus_bigci.png", device="png",
+       height=6, width=10, units="in", dpi=400)
+
+# take out the infections with persistent haplotypes
+no_persistent_data = csp_data[which(!(str_detect(csp_data$haplotype_category,"persistent"))),]
+table(no_persistent_data$haplotype_category, useNA = "always")
+no_persistent_data$haplotype_category = as.character(no_persistent_data$haplotype_category)
+no_persistent_data$haplotype_category = as.factor(no_persistent_data$haplotype_category)
+levels(no_persistent_data$haplotype_category)
+no_persistent_data$haplotype_category = relevel(no_persistent_data$haplotype_category,ref="all recurrent")
+# now rerun the model
+csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
+                     data = no_persistent_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_1)
+performance::icc(csp_model_1)
+exp(confint(csp_model_1,method="Wald"))
+# make a forest plot of results
+table1 = exp(confint(csp_model_1,method="Wald"))
+summary(csp_model_1)
+estimates = c(exp(1.05926),exp(-1.00540),NA,exp(-0.76494),exp(-1.76790),NA,exp(-0.06387),NA,exp(1.08654))
+lower_ci = c(table1[3,1],table1[4,1],NA,table1[6,1],table1[5,1],NA,table1[7,1],NA,table1[8,1])
+upper_ci = c(table1[3,2],table1[4,2],NA,table1[6,2],table1[5,2],NA,table1[7,2],NA,table1[8,2])
+names = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1),colour=c("#54278f","#9e9ac8","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8),trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=15))
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_3_categories_no_persistent.png", device="png",
+       height=6, width=10, units="in", dpi=400)
+
 
 # run a multi-level logistic regression model with an interaction term for age
 csp_model_1b <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + haplotype_category*age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = csp_data, control = glmerControl(optimizer="bobyqa"))
