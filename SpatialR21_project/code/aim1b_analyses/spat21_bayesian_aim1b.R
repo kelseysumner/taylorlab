@@ -12,6 +12,8 @@
 library(rstanarm)
 library(rstan)
 library(tidyverse)
+library(bayesplot)
+theme_set(bayesplot::theme_default())
 
 
 ### ------ load in the data sets ------ ####
@@ -60,8 +62,8 @@ summary(glm_pos1)
 
 # evaluate the model by making trace plots
 stan_trace(glm_pos1)
+stan_plot(glm_pos1,pars=c("haplotype_categoryall new","haplotype_categorynew and recurrent","age_cat_baseline5-15 years","age_cat_baseline>15 years","add_cat_number_prior_infectionsmore than 3 infections","mosquito_week_count_cat_addmore than 50 mosquitoes"))
 stan_plot(glm_pos1)
-
 # check the output
 pp_check(glm_pos1)
 
@@ -79,6 +81,4 @@ posterior_vs_prior(glm_pos1, group_by_parameter = TRUE)
 # method for estimating out of sample predictive performance
 # library(loo)
 # compare_models(glm_pos1,glm_pos2)
-
-
 

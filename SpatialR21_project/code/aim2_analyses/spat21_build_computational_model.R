@@ -23,7 +23,7 @@ library(ggplot2)
 #### ----- read in the data sets ----- ####
 
 # read in the combined ama and csp data set for mosquito abdomens
-edgelist_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/final/spat21_aim2_merged_data_with_weights_4FEB2020.rds")
+edgelist_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/full data/spat21_aim2_merged_data_with_weights_full_data_5MAR2020.rds")
 
 # read in the full human data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
@@ -32,10 +32,10 @@ final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dis
 mosquito_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 
 # read in the clean ama haplotype data
-ama_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
+ama_haplotypes <- read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA/spat21_AMA_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_15OCT2019.rds")
 
 # read in the clean csp haplotype data
-csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
+csp_haplotypes <- read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/CSP/spat21_CSP_haplotype_table_censored_final_version_with_moi_and_ids_CLEANVERSION_30SEPT2019.rds")
 
 
 
@@ -134,6 +134,12 @@ edgelist_data = edgelist_data[-which(edgelist_data$sample_name_final == "K05-230
 length(unique(edgelist_data$sample_name_final))
 length(unique(edgelist_data$sample_id_human))
 # 6 weren't removed - 4 didn't pass genotyping and 2 were censored out in processing
+
+
+# create a distance file
+distance_data = edgelist_data %>% select(HH_ID_human,HH_ID_mosquito,distance_km)
+distance_data = unique(distance_data)
+write_csv(distance_data,"Desktop/distance_data.csv")
 
 
 #### --------- set up the data ---------- ####

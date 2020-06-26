@@ -21,7 +21,7 @@ library(glmmTMB)
 ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_ama_data_spat21_aim1b_11JUN2020.rds")
 
 # read in the csp data set
-csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_csp_data_spat21_aim1b_11JUN2020.rds")
+csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_all_data_spat21_aim1b_11JUN2020.rds")
 
 # read in the full human demographic data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
@@ -813,5 +813,50 @@ performance::icc(ama_model_age_over15)
 exp(confint(ama_model_age_over15,method="Wald"))
 
 
+
+#### ---- look more into persistent infections ----- ####
+
+# just look at persistent infections
+persistent_only = csp_data[which(str_detect(csp_data$haplotype_category,"persistent")),]
+
+# now look at the participant level in all infections
+test = csp_data %>%
+  select(unq_memID,sample_id_date,haplotype_category)
+
+# read in the csp data set for potential pre-symptomatic infections
+pre_symp_data = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/CSP_subsets/pre_symptomatic/spat_1b_pre_symptomatic_data_csp_24MAR2020.csv")
+pre_symp_data_p2 = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/CSP_subsets/pre_symptomatic/spat_1b_pre_symptomatic_data_csp_26MAR2020.csv")
+
+# merge the two pre_symp_data sets together
+pre_symp_data_p2 = pre_symp_data_p2 %>% select(haps_shared_btwn_pairs,unq_memID,sample_id_date,proportion_haps_shared)
+all_pre_symp_data = left_join(pre_symp_data,pre_symp_data_p2,by=c("unq_memID","sample_id_date"))
+
+# figure out how many participants had possible pre-symptomatic infections
+all_pre_symp_data$pre_symptomatic = ifelse(all_pre_symp_data$haps_shared_btwn_pairs > 0 & all_pre_symp_data$symptomatic_status == "asymptomatic infection","yes",NA)
+table(all_pre_symp_data$pre_symptomatic, useNA = "always")
+
+# now merge in the pre-symptomatic infections and remove them
+all_pre_symp_data = all_pre_symp_data %>% select(sample_name_dbs,pre_symptomatic,proportion_haps_shared)
+all_data = left_join(csp_data,all_pre_symp_data,by="sample_name_dbs")
+
+# now remove pre-symptomatic infections
+all_data = all_data %>% filter(is.na(pre_symptomatic))
+
+# now rerun the models
+# run a multi-level logistic regression model
+all_data$haplotype_category = as.factor(all_data$haplotype_category)
+all_data$haplotype_category = relevel(all_data$haplotype_category,ref="all new")
+levels(all_data$haplotype_category)
+csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
+                     data = all_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_1)
+performance::icc(csp_model_1)
+exp(confint(csp_model_1,method="Wald"))
+
+# now run a model with moi added in
+csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + 
+                       haplotype_number + (1|unq_memID),family=binomial(link = "logit"), 
+                     data = csp_data, control = glmerControl(optimizer="bobyqa"))
+summary(csp_model_1)
 
 
