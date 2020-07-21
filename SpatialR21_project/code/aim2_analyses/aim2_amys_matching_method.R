@@ -310,29 +310,29 @@ exp(confint(csp_model,method="Wald"))
 # OR: 2.56 (95% CI: 1.36 to 4.81)
 
 table1 = exp(confint(csp_model,method="Wald"))
-estimates = c(table1[2,3],NA,table1[3,3],NA,NA,NA,table1[4,3])
-lower_ci = c(table1[2,1],NA,table1[3,1],NA,NA,NA,table1[4,1])
-upper_ci = c(table1[2,2],NA,table1[3,2],NA,NA,NA,table1[4,2])
-names = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High")
+estimates = c(table1[2,3],table1[3,3],table1[4,3])
+lower_ci = c(table1[2,1],table1[3,1],table1[4,1])
+upper_ci = c(table1[2,2],table1[3,2],table1[4,2])
+names = c("Asymptomatic infection","Parasite density (parasite/uL whole blood)","High mosquito abundance")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Mosquito abundance          ","Low (REF)","High"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","Parasite density (parasite/uL whole blood)","High mosquito abundance"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","Parasite density (parasite/uL whole blood)","High mosquito abundance"))
 
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1),colour=c("#006d2c","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,1,1),colour=c("#006d2c","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +
   scale_y_continuous(trans="log10") +
   theme_bw() +
-  theme(text = element_text(size=14)) 
+  theme(text = element_text(size=14))
 fp
 
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome_figure3coding.png", device="png",
-       height=5, width=7, units="in", dpi=400)
+       height=3, width=7, units="in", dpi=400)
 
 
 # now take the median of that proportion by symptomatic status
@@ -366,19 +366,17 @@ csp_all = unique(csp_all)
 
 # now make a plot of the average probability of p_te_all by symptomatic status
 csp_plot = ggplot(csp_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_nonzero)) +
-  geom_point(aes(color=age_cat_baseline,fill=age_cat_baseline,size=total_infections),pch=21,alpha=0.5) + 
+  geom_point(aes(size=total_infections),pch=21,alpha=0.75,color="black",fill="#8AAF9D") + 
   theme_bw() +
   geom_abline(intercept = 0, slope = 1,linetype="dashed") +
-  xlab("Median likelihood transmission for symptomatic infections") +
-  ylab("Median likelihood transmission for asymptomatic infections") +
-  labs(color="Participant age category",fill="Participant age category",size="Number of malaria infections") +
+  xlab("Median proportion infected mosquitoes with parasites matching a symptomatic infection") +
+  ylab("Median proportion infected mosquitoes with \n parasites matching an asymptomatic infection") +
+  labs(size="Number of malaria infections") +
   scale_x_continuous(limits=c(0,1)) +
   scale_y_continuous(limits=c(0,1)) +
-  scale_color_manual(values = c("#006d2c","#08519c","#cc4c02")) +
-  scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02")) +
-  theme(text = element_text(size=12)) 
+  theme(text = element_text(size=14), legend.position = c(0.85,0.25), legend.box.background = element_rect(colour = "black")) 
 ggsave(csp_plot, filename="/Users/kelseysumner/Desktop/csp_matched_prob_plot_alt3.png", device="png",
-       height=5, width=8, units="in", dpi=500)
+       height=5, width=11, units="in", dpi=500)
 
 # check the median of medians by symptomatic status
 # for csp
@@ -967,18 +965,17 @@ ama_all = unique(ama_all)
 
 # now make a plot of the average probability of p_te_all by symptomatic status
 ama_plot = ggplot(ama_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_nonzero)) +
-  geom_point(aes(color=age_cat_baseline,fill=age_cat_baseline,size=total_infections),pch=21,alpha=0.5) + 
+  geom_point(aes(size=total_infections),pch=21,alpha=0.75,color="black",fill="#8AAF9D") + 
   theme_bw() +
   geom_abline(intercept = 0, slope = 1,linetype="dashed") +
-  xlab("Median likelihood transmission for symptomatic infections") +
-  ylab("Median likelihood transmission for asymptomatic infections") +
-  labs(color="Participant age category",fill="Participant age category",size="Number of malaria infections") +
+  xlab("Median proportion infected mosquitoes for symptomatic infections") +
+  ylab("Median proportion infected mosquitoes for asymptomatic infections") +
+  labs(size="Number of malaria infections") +
   scale_x_continuous(limits=c(0,1)) +
   scale_y_continuous(limits=c(0,1)) +
-  scale_color_manual(values = c("#006d2c","#08519c","#cc4c02")) +
-  scale_fill_manual(values = c("#006d2c","#08519c","#cc4c02"))
+  theme(text = element_text(size=12)) 
 ggsave(ama_plot, filename="/Users/kelseysumner/Desktop/ama_matched_prob_plot_alt3.png", device="png",
-       height=5, width=8, units="in", dpi=500)
+       height=5.5, width=8, units="in", dpi=500)
 
 # check the median of medians by symptomatic status
 # for ama

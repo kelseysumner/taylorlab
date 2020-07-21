@@ -271,18 +271,18 @@ exp(0.432712)
 exp(confint(model2_all_nmlm,method="Wald"))
 
 table1 = exp(confint(model2,method="Wald"))
-estimates = c(table1[2,3],NA,table1[3,3],NA,NA,NA,table1[5,3],table1[4,3],NA,NA,NA,table1[6,3],NA,NA,NA,table1[7,3],table1[8,3])
-lower_ci = c(table1[2,1],NA,table1[3,1],NA,NA,NA,table1[5,1],table1[4,1],NA,NA,NA,table1[6,1],NA,NA,NA,table1[7,1],table1[8,1])
-upper_ci = c(table1[2,2],NA,table1[3,2],NA,NA,NA,table1[5,2],table1[4,2],NA,NA,NA,table1[6,2],NA,NA,NA,table1[7,2],table1[8,2])
-names = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","Mosquito abundance        ","Low (REF)","High","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha")
+estimates = c(table1[2,3],NA,table1[3,3],NA,NA,NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,NA,NA,table1[7,3],table1[8,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,NA,NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,NA,NA,table1[7,1],table1[8,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,NA,NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,NA,NA,table1[7,2],table1[8,2])
+names = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","High mosquito abundance","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","Mosquito abundance        ","Low (REF)","High","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","Mosquito abundance        ","Low (REF)","High","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","High mosquito abundance","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Parasite density (parasite/uL whole blood)"," ","Participant age           ","<5 years (REF)","5-15 years",">15 years","  ","High mosquito abundance","   ","Village                ","Maruti (REF)","Kinesamo","Sitabicha"))
 
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1,1,1,1,1),colour=c("#E1AF00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +
@@ -293,7 +293,7 @@ fp
 
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome.png", device="png",
-       height=9, width=12.5, units="in", dpi=400)
+       height=10, width=12.5, units="in", dpi=400)
 
 
 
@@ -736,13 +736,13 @@ model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),
   scale_y_continuous(breaks=c(0,1,2,3),trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip() +
-  theme(text = element_text(size=18)) 
+  theme(text = element_text(size=16)) 
 model_plot
 
 
 
 ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plot.png", device="png",
-       height=7, width=8, units="in", dpi=500)
+       height=7, width=5, units="in", dpi=500)
 
 
 

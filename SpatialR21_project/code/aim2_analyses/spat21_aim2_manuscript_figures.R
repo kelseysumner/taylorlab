@@ -1418,7 +1418,6 @@ human_haps = csp_haplotypes %>%
   filter(sample_type=="Human")
 abdomen_haps = csp_haplotypes %>%
   filter(sample_type=="Abdomen")
-abdomen_haps = abdomen_haps[,c(4:301)]
 
 # merge the final_data info for symptomatic status with the human haps
 cut_data = final_data %>%
@@ -1431,20 +1430,23 @@ table(human_haps$aim2_exposure, useNA = "always")
 colnames(human_haps)
 asymp_human_haps = human_haps %>% filter(aim2_exposure == "asymptomatic infection")
 symp_human_haps = human_haps %>% filter(aim2_exposure == "symptomatic infection")
+
+# set up data set
+sample.names = c(asymp_human_haps$sample_name_dbs,symp_human_haps$sample_name_dbs,abdomen_haps$sample_name_dbs)
+csp_haplotypes_subset = csp_haplotypes[which(csp_haplotypes$sample_name_dbs %in% sample.names),]
 asymp_human_haps = asymp_human_haps[,c(4:301)]
 symp_human_haps = symp_human_haps[,c(4:301)]
+abdomen_haps = abdomen_haps[,c(4:301)]
 
-# pull out number of samples
-sample.names = c(asymp_human_haps$sample_name_dbs,symp_human_haps$sample_name_dbs,abdomen_haps$sample_name_dbs)
-csp_haplotypes_subset = csp_haplotypes_subset[which(csp_haplotypes_subset$sample_name_dbs %in% sample.names),]
-csp_haplotypes_subset = csp_haplotypes_subset[,1:229]
-haplotype_num = rep(NA,length(sample.names))
-haplotype_reads = rep(NA,length(sample.names))
-for (i in 1:nrow(csp_haplotypes_subset)){
-  haplotype_num[i] = length(which(csp_haplotypes_subset[i,] > 0))
-  haplotype_reads[i] = sum(csp_haplotypes_subset[i,])
-}
-haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
+# # pull out number of samples
+# csp_haplotypes_subset = csp_haplotypes_subset[,1:229]
+# haplotype_num = rep(NA,length(sample.names))
+# haplotype_reads = rep(NA,length(sample.names))
+# for (i in 1:nrow(csp_haplotypes_subset)){
+#   haplotype_num[i] = length(which(csp_haplotypes_subset[i,] > 0))
+#   haplotype_reads[i] = sum(csp_haplotypes_subset[i,])
+# }
+# haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 
 
 # summarize the number of samples within each haplotype for the asymp human samples
@@ -1527,10 +1529,11 @@ length(unique(combined_hap_summary_subset_10$haplotype_ids)) # 39, correct
 # no infection (light grey): #D3DDDC
 
 # now try to make a pyramid plot
+combined_hap_summary_subset_0$type = factor(combined_hap_summary_subset_0$type, levels = c("Infected mosquitoes","Symptomatic infected participants","Asymptomatic infected participants"))
 pyramid_plot_csp = ggplot(combined_hap_summary_subset_0, aes(x = haplotype_ids, y = haplotypes_across_samples, fill = type)) +   # Fill column
   geom_bar(stat = "identity", width = .6,color="black") +   # draw the bars
   coord_flip() +  # Flip axes
-  scale_fill_manual(values=c("#E1AF00","#F21A00","#3B9AB2")) +
+  scale_fill_manual(values=c("#F21A00","#3B9AB2","#E1AF00")) +
   theme_bw() +
   scale_y_continuous(breaks=c(-150,-100,-50,0,50,100,150,200,250,300,350,400),limits=c(-150,400)) +
   labs(fill = "Sample type") +
@@ -1618,4 +1621,5 @@ ggsave(control_plot_2, filename="/Users/kelseysumner/Desktop/control_plot_2.png"
 # have 1 x axis and same y axis
 
 
-
+# calculate moi
+colnames(csp_haplotypes)
