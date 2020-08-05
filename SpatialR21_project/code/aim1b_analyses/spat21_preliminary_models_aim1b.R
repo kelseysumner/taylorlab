@@ -21,7 +21,7 @@ library(glmmTMB)
 ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_ama_data_spat21_aim1b_11JUN2020.rds")
 
 # read in the csp data set
-csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_all_data_spat21_aim1b_11JUN2020.rds")
+csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/without_first_infection_csp_data_spat21_aim1b_11JUN2020.rds")
 
 # read in the full human demographic data set
 final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
@@ -197,6 +197,13 @@ ama_data$add_cat_number_prior_infections = as.factor(ama_data$add_cat_number_pri
 ama_data$mosquito_week_count_cat_add = ifelse(ama_data$mosquito_week_count <= 50,"50 or less mosquitoes","more than 50 mosquitoes")
 ama_data$mosquito_week_count_cat_add = as.factor(ama_data$mosquito_week_count_cat_add)
 ama_data$mosquito_week_count_cat_add = relevel(ama_data$mosquito_week_count_cat_add,ref="50 or less mosquitoes")
+
+# export final data set
+write_csv(ama_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_ama_final_model_data_21JUL2020.csv")
+write_rds(ama_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_ama_final_model_data_21JUL2020.rds")
+write_csv(csp_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_csp_final_model_data_21JUL2020.csv")
+write_rds(csp_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_csp_final_model_data_21JUL2020.rds")
+
 
 
 #### ------ relook at summaries of the data sets ------ ####
