@@ -11,6 +11,7 @@
 
 #### ------- load libraries -------- ####
 library(tidyverse)
+library(car)
 
 
 
@@ -68,6 +69,22 @@ csp_data$days_btwn_infxns = days_btwn_infxns
 ama_persistent_data = ama_data %>% filter(str_detect(haplotype_category,"persistent"))
 csp_persistent_data = csp_data %>% filter(str_detect(haplotype_category,"persistent"))
 
+
+# run an anova on days between infections for each of the persistent categories
+# first make a box plot
+csp_boxplot = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + geom_boxplot(aes(fill=haplotype_category)) + theme_bw()
+ama_boxplot = ggplot(data=ama_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + geom_boxplot(aes(fill=haplotype_category)) + theme_bw()
+ggsave(csp_boxplot, filename="/Users/kelseysumner/Desktop/csp_boxplot.png", device="png",
+       height=4, width=9, units="in", dpi=400)
+ggsave(ama_boxplot, filename="/Users/kelseysumner/Desktop/ama_boxplot.png", device="png",
+       height=4, width=9, units="in", dpi=400)
+# note: observations not really independent so this assumption violated
+# check normalcy
+leveneTest(csp_persistent_data$days_btwn_infxns,csp_persistent_data$haplotype_category) # not normal
+leveneTest(ama_persistent_data$days_btwn_infxns,ama_persistent_data$haplotype_category) # not normal
+# do kruskal-wallis test instead
+kruskal.test(days_btwn_infxns ~ haplotype_category, data=csp_persistent_data)
+kruskal.test(days_btwn_infxns ~ haplotype_category, data=ama_persistent_data)
 
 # now make plots of interval in days between infections with persistent haplotypes
 # ama

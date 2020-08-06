@@ -266,3 +266,31 @@ performance::icc(model_1)
 anova(model_1_interxn,model_1) # model 1 better
 
 
+
+#### ----- look at a subset of haplotypes that are only in infections after taking AL ------- ####
+
+# first organize the data sets by person and then date
+ama_data = arrange(ama_data,unq_memID,sample_id_date)
+csp_data = arrange(csp_data,unq_memID,sample_id_date)
+
+# now loop through each person and see if they were prescribed AL in the study
+unq_memID_start_date = ama_data[match(unique(ama_data$unq_memID), ama_data$unq_memID),]
+after_al = rep(NA,nrow(ama_data))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(ama_data)){
+    if (unq_memID_start_date$unq_memID[i] == ama_data$unq_memID[j]){
+      if (ama_data$prescription[j-1]=="prescribed"){
+        after_al[j] = "yes"
+      } else {
+        after_al[j] = "no"
+      }
+    }
+  }
+}
+summary(after_al)  
+ama_data$after_al = after_al
+
+
+
+
+
