@@ -43,10 +43,17 @@ ama_pre_symptomatic = ama_pre_symptomatic %>%
 # this is the number haplotypes shared between asymptomatic and symptomatic infections 
 # divided by the total number of haplotypes in asymptomatic infections
 
-
-
-
-
+# calculate the average proportion haplotypes in asymptomatic infections that became symptomatic for each row
+# for csp
+summary(csp_pre_symptomatic$proportion_haps_shared)
+length(which(csp_pre_symptomatic$proportion_haps_shared == 1))
+length(which(csp_pre_symptomatic$proportion_haps_shared == 0))
+length(which(csp_pre_symptomatic$proportion_haps_shared > 0)) # 20/27
+# for ama
+summary(ama_pre_symptomatic$proportion_haps_shared)
+length(which(ama_pre_symptomatic$proportion_haps_shared == 1))
+length(which(ama_pre_symptomatic$proportion_haps_shared == 0))
+length(which(ama_pre_symptomatic$proportion_haps_shared > 0)) # 17/21
 
 
 

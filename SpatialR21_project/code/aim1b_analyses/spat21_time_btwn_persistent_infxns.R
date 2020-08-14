@@ -12,6 +12,7 @@
 #### ------- load libraries -------- ####
 library(tidyverse)
 library(car)
+library(ggbeeswarm)
 
 
 
@@ -85,6 +86,47 @@ leveneTest(ama_persistent_data$days_btwn_infxns,ama_persistent_data$haplotype_ca
 # do kruskal-wallis test instead
 kruskal.test(days_btwn_infxns ~ haplotype_category, data=csp_persistent_data)
 kruskal.test(days_btwn_infxns ~ haplotype_category, data=ama_persistent_data)
+
+# relabel the categories
+# for csp
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "recurrent and persistent")] = "Recurrent and persistent"
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "new, recurrent, and persistent")] = "New, recurrent, and persistent"
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "new and persistent")] = "New and persistent"
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "all persistent")] = "All persistent"
+csp_persistent_data$haplotype_category = factor(csp_persistent_data$haplotype_category,levels=c("All persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
+# for ama
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "recurrent and persistent")] = "Recurrent and persistent"
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "new, recurrent, and persistent")] = "New, recurrent, and persistent"
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "new and persistent")] = "New and persistent"
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "all persistent")] = "All persistent"
+ama_persistent_data$haplotype_category = factor(ama_persistent_data$haplotype_category,levels=c("All persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
+
+# make a beeswarm plot of the days between infections for persistent categories
+csp_bees = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(color=haplotype_category)) + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous infection") +
+  scale_color_manual(values = c("#ca0020","#f4a582","#92c5de","#0571b0")) +
+  coord_flip() +
+  theme(legend.position = "none")
+csp_bees
+ama_bees = ggplot(data=ama_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(color=haplotype_category)) + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous infection") +
+  scale_color_manual(values = c("#ca0020","#f4a582","#92c5de","#0571b0")) +
+  coord_flip() +
+  theme(legend.position = "none")
+ama_bees
+ggsave(csp_bees, filename="/Users/kelseysumner/Desktop/csp_beeswarm_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+ggsave(ama_bees, filename="/Users/kelseysumner/Desktop/ama_beeswarm_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+
 
 # now make plots of interval in days between infections with persistent haplotypes
 # ama

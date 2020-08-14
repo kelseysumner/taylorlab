@@ -149,19 +149,19 @@ over15_csp = no_persistent_data_csp %>%
   filter(age_cat_baseline == ">15 years")
 
 # run the model for <5 year
-csp_model_age_under5 <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = under5_csp, control = glmerControl(optimizer="bobyqa"))
+csp_model_age_under5 <- glmer(symptomatic_status ~ haplotype_category + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = under5_csp, control = glmerControl(optimizer="bobyqa"))
 summary(csp_model_age_under5)
 performance::icc(csp_model_age_under5)
 exp(confint(csp_model_age_under5,method="Wald"))
 
 # run the model for 5-15 year
-csp_model_age_5to15 <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = from5to15_csp, control = glmerControl(optimizer="bobyqa"))
+csp_model_age_5to15 <- glmer(symptomatic_status ~ haplotype_category + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = from5to15_csp, control = glmerControl(optimizer="bobyqa"))
 summary(csp_model_age_5to15)
 performance::icc(csp_model_age_5to15)
 exp(confint(csp_model_age_5to15,method="Wald"))
 
 # run the model for >15 year
-csp_model_age_over15 <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = over15_csp, control = glmerControl(optimizer="bobyqa"))
+csp_model_age_over15 <- glmer(symptomatic_status ~ haplotype_category + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = over15_csp, control = glmerControl(optimizer="bobyqa"))
 summary(csp_model_age_over15)
 performance::icc(csp_model_age_over15)
 exp(confint(csp_model_age_over15,method="Wald"))
@@ -169,9 +169,9 @@ exp(confint(csp_model_age_over15,method="Wald"))
 
 # create a plot
 names = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes")
-estimate = c(NA,exp(1.211),exp(-1.499),NA,NA,exp(1.1767),exp(-0.7150),NA,NA,exp(1.3959),exp(-0.7419))
-lower_ci = c(NA,0.06984692,0.00818501,NA,NA,1.19108882,0.11332282,NA,NA,0.473774438,0.028794117)
-upper_ci = c(NA,161.178548,6.094928,NA,NA,8.8336888,2.1116154,NA,NA,34.4239338,7.8751353)
+estimate = c(NA,exp(3.875),exp(-7.697),NA,NA,exp(1.0393),exp(-0.6695),NA,NA,exp(1.3564),exp(-0.7853))
+lower_ci = c(NA,7.755690e-04,2.550684e-09,NA,NA,0.9456347,0.1125433,NA,NA,0.432740510,0.027267847)
+upper_ci = c(NA,2.991038e+06,8.093816e+01,NA,NA,8.4522226,2.3287741,NA,NA,34.8285770,7.6257975)
 forest_plot_df = data.frame(names,estimate,lower_ci,upper_ci)
 forest_plot_df$names = factor(forest_plot_df$names, levels = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes"))
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes"))
@@ -183,7 +183,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_c
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
   theme_bw() +
   theme(text = element_text(size=15),axis.text.y = element_text(face=c("plain","plain","bold","plain","plain","plain","bold","plain","plain","plain","bold"))) +
-  scale_y_continuous(labels = comma,trans="log10")
+  scale_y_continuous(trans="log10")
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_new_age_stratified.png", device="png",
@@ -191,11 +191,11 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_new_age_str
 
 # now compare nested models 
 # model with interaction term
-model_1_interxn <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + haplotype_category*age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_csp, control = glmerControl(optimizer="bobyqa"))
+model_1_interxn <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + haplotype_category*age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_csp, control = glmerControl(optimizer="bobyqa"))
 summary(model_1_interxn)
 performance::icc(model_1_interxn)
 # model without interaction term
-model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_csp, control = glmerControl(optimizer="bobyqa"))
+model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_csp, control = glmerControl(optimizer="bobyqa"))
 summary(model_1)
 performance::icc(model_1)
 anova(model_1_interxn,model_1) # model 1 better
@@ -214,29 +214,30 @@ over15_ama = no_persistent_data_ama %>%
   filter(age_cat_baseline == ">15 years")
 
 # run the model for <5 year
-ama_model_age_under5 <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = under5_ama, control = glmerControl(optimizer="bobyqa"))
+ama_model_age_under5 <- glmer(symptomatic_status ~ haplotype_category + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = under5_ama, control = glmerControl(optimizer="bobyqa"))
 summary(ama_model_age_under5)
 performance::icc(ama_model_age_under5)
 exp(confint(ama_model_age_under5,method="Wald"))
+# model would not converge
 
 # run the model for 5-15 year
-ama_model_age_5to15 <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = from5to15_ama, control = glmerControl(optimizer="bobyqa"))
+ama_model_age_5to15 <- glmer(symptomatic_status ~ haplotype_category + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = from5to15_ama, control = glmerControl(optimizer="bobyqa"))
 summary(ama_model_age_5to15)
 performance::icc(ama_model_age_5to15)
 exp(confint(ama_model_age_5to15,method="Wald"))
 
 # run the model for >15 year
-ama_model_age_over15 <- glmer(symptomatic_status ~ haplotype_category + (1|unq_memID),family=binomial(link = "logit"), data = over15_ama, control = glmerControl(optimizer="bobyqa"))
+ama_model_age_over15 <- glmer(symptomatic_status ~ haplotype_category + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = over15_ama, control = glmerControl(optimizer="bobyqa"))
 summary(ama_model_age_over15)
 performance::icc(ama_model_age_over15)
 exp(confint(ama_model_age_over15,method="Wald"))
-
+# this model didn't converge either
 
 # create a plot
 names = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes")
-estimate = c(NA,exp(0.5554),exp(-2.0709),NA,NA,exp(0.87926),exp(-0.06679),NA,NA,exp(9.00688),exp(5.00628))
-lower_ci = c(NA,2.514864e-02,4.461510e-04,NA,NA,0.63142099,0.18487844,NA,NA,6.174115e+02,1.454258e+02)
-upper_ci = c(NA,120.75800,35.62332,NA,NA,9.1916379,4.7326445,NA,NA,1.078197e+05,1.533766e+02)
+estimate = c(NA,NA,NA,NA,NA,exp(0.3970),exp(-0.2360),NA,NA,NA,NA)
+lower_ci = c(NA,NA,NA,NA,NA,0.36773203,0.14893821,NA,NA,NA,NA)
+upper_ci = c(NA,NA,NA,NA,NA,6.0155249,4.1883646,NA,NA,NA,NA)
 forest_plot_df = data.frame(names,estimate,lower_ci,upper_ci)
 forest_plot_df$names = factor(forest_plot_df$names, levels = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes"))
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes"))
@@ -248,7 +249,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_c
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
   theme_bw() +
   theme(text = element_text(size=15),axis.text.y = element_text(face=c("plain","plain","bold","plain","plain","plain","bold","plain","plain","plain","bold"))) +
-  scale_y_continuous(labels = comma,trans="log10")
+  scale_y_continuous(trans="log10")
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_model_all_new_age_stratified.png", device="png",
@@ -256,41 +257,211 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_model_all_new_age_str
 
 # now compare nested models 
 # model with interaction term
-model_1_interxn <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + haplotype_category*age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_ama, control = glmerControl(optimizer="bobyqa"))
+model_1_interxn <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + haplotype_category*age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_ama, control = glmerControl(optimizer="bobyqa"))
 summary(model_1_interxn)
 performance::icc(model_1_interxn)
 # model without interaction term
-model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_ama, control = glmerControl(optimizer="bobyqa"))
+model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), data = no_persistent_data_ama, control = glmerControl(optimizer="bobyqa"))
 summary(model_1)
 performance::icc(model_1)
 anova(model_1_interxn,model_1) # model 1 better
 
 
 
-#### ----- look at a subset of haplotypes that are only in infections after taking AL ------- ####
 
-# first organize the data sets by person and then date
-ama_data = arrange(ama_data,unq_memID,sample_id_date)
-csp_data = arrange(csp_data,unq_memID,sample_id_date)
+#### --------- make table 1 of covariates across symptomatic status -------- ####
 
-# now loop through each person and see if they were prescribed AL in the study
-unq_memID_start_date = ama_data[match(unique(ama_data$unq_memID), ama_data$unq_memID),]
-after_al = rep(NA,nrow(ama_data))
-for (i in 1:nrow(unq_memID_start_date)){
-  for (j in 1:nrow(ama_data)){
-    if (unq_memID_start_date$unq_memID[i] == ama_data$unq_memID[j]){
-      if (ama_data$prescription[j-1]=="prescribed"){
-        after_al[j] = "yes"
-      } else {
-        after_al[j] = "no"
-      }
-    }
-  }
-}
-summary(after_al)  
-ama_data$after_al = after_al
+# create table 1: distribution of symptomatic status across covariates
+# below shows model covariates to include and data set to use
+# csp_model_1 <- glmer(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
+# data = no_persistent_data_csp, control = glmerControl(optimizer="bobyqa"))
+
+## ------ do for csp first 
+
+# make separate data sets for asymptomatic and symptomatic infections
+asymp_data = no_persistent_data_csp %>%
+  filter(symptomatic_status == "asymptomatic infection")
+symp_data = no_persistent_data_csp %>%
+  filter(symptomatic_status == "symptomatic infection")
+
+# check the maximum number of csp infections included in this data set with no persistent haplotypes
+length(unique(no_persistent_data_csp$unq_memID))
+max_infections = no_persistent_data_csp %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+max(max_infections$n)
+
+# haplotype category
+table(no_persistent_data_csp$haplotype_category,no_persistent_data_csp$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_csp$haplotype_category,no_persistent_data_csp$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+1.168e-05*6
+
+# age
+table(no_persistent_data_csp$age_cat_baseline,no_persistent_data_csp$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_csp$age_cat_baseline,no_persistent_data_csp$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.003954*6
+
+# number of prior malaria infections
+table(no_persistent_data_csp$add_cat_number_prior_infections,no_persistent_data_csp$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_csp$add_cat_number_prior_infections,no_persistent_data_csp$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.3063*6
+
+# transmission season (based on mosquitoes)
+table(no_persistent_data_csp$mosquito_week_count_cat_add,no_persistent_data_csp$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_csp$mosquito_week_count_cat_add,no_persistent_data_csp$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.0006907*6
 
 
 
+## ------ now do for ama
 
+# make separate data sets for asymptomatic and symptomatic infections
+asymp_data = no_persistent_data_ama %>%
+  filter(symptomatic_status == "asymptomatic infection")
+symp_data = no_persistent_data_ama %>%
+  filter(symptomatic_status == "symptomatic infection")
+
+# check the maximum number of ama infections included in this data set with no persistent haplotypes
+length(unique(no_persistent_data_ama$unq_memID))
+max_infections = no_persistent_data_ama %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+max(max_infections$n)
+
+# haplotype category
+table(no_persistent_data_ama$haplotype_category,no_persistent_data_ama$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_ama$haplotype_category,no_persistent_data_ama$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.02874*8
+
+# age
+table(no_persistent_data_ama$age_cat_baseline,no_persistent_data_ama$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_ama$age_cat_baseline,no_persistent_data_ama$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.02576*8
+
+# number of prior malaria infections
+table(no_persistent_data_ama$add_cat_number_prior_infections,no_persistent_data_ama$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_ama$add_cat_number_prior_infections,no_persistent_data_ama$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.05845*8
+
+# transmission season (based on mosquitoes)
+table(no_persistent_data_ama$mosquito_week_count_cat_add,no_persistent_data_ama$symptomatic_status, useNA = "always")
+# first make a contingency table
+tbl = table(no_persistent_data_ama$mosquito_week_count_cat_add,no_persistent_data_ama$symptomatic_status)
+# then do a chi-squared test
+chisq.test(tbl)
+# correct for repeated measures
+0.03777*8
+
+
+
+#### ------ now re-rerun the multilevel models but comparing new vs persistent haplotypes ------- ####
+
+# run the new vs persistent model for csp
+# take out the infections with recurrent haplotypes
+no_recurrent_data_csp = csp_data[which(!(str_detect(csp_data$haplotype_category,"recurrent"))),]
+table(no_recurrent_data_csp$haplotype_category, useNA = "always")
+no_recurrent_data_csp$haplotype_category = as.character(no_recurrent_data_csp$haplotype_category)
+no_recurrent_data_csp$haplotype_category = as.factor(no_recurrent_data_csp$haplotype_category)
+levels(no_recurrent_data_csp$haplotype_category)
+no_recurrent_data_csp$haplotype_category = relevel(no_recurrent_data_csp$haplotype_category,ref="all persistent")
+# now rerun the model
+csp_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
+                     data = no_recurrent_data_csp)
+summary(csp_model_1)
+performance::icc(csp_model_1)
+exp(confint(csp_model_1,method="Wald"))
+# all new: OR 0.47 (95% CI 0.24 to 0.94)
+# new and persistent: OR 0.38 (95% CI 0.17 to 0.88)
+# make a forest plot of results
+table1 = exp(confint(csp_model_1,method="Wald"))
+summary(csp_model_1)
+estimates = c(table1[2,3],table1[3,3],NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,table1[7,3])
+lower_ci = c(table1[2,1],table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1])
+upper_ci = c(table1[2,2],table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2])
+names = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1),colour=c("#2166ac","#67a9cf","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8),trans="log10") +
+  theme_bw()
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_3_categories_no_recurrent.png", device="png",
+       height=4, width=7, units="in", dpi=400)
+
+
+# run the new vs persistent model for ama
+# take out the infections with recurrent haplotypes
+no_recurrent_data_ama = ama_data[which(!(str_detect(ama_data$haplotype_category,"recurrent"))),]
+table(no_recurrent_data_ama$haplotype_category, useNA = "always")
+no_recurrent_data_ama$haplotype_category = as.character(no_recurrent_data_ama$haplotype_category)
+no_recurrent_data_ama$haplotype_category = as.factor(no_recurrent_data_ama$haplotype_category)
+levels(no_recurrent_data_ama$haplotype_category)
+no_recurrent_data_ama$haplotype_category = relevel(no_recurrent_data_ama$haplotype_category,ref="all persistent")
+# now rerun the model
+ama_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + (1|unq_memID),family=binomial(link = "logit"), 
+                       data = no_recurrent_data_ama)
+summary(ama_model_1)
+performance::icc(ama_model_1)
+exp(confint(ama_model_1,method="Wald"))
+# all new: OR 0.12 (95% CI 0.04 to 0.38)
+# new and recurrent: OR 0.15 (95% CI 0.05 to 0.52)
+# make a forest plot of results
+table1 = exp(confint(ama_model_1,method="Wald"))
+summary(ama_model_1)
+estimates = c(table1[2,3],table1[3,3],NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,table1[7,3])
+lower_ci = c(table1[2,1],table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1])
+upper_ci = c(table1[2,2],table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2])
+names = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+# create a forest plot
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1),colour=c("#2166ac","#67a9cf","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8),trans="log10") +
+  theme_bw()
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_model_all_3_categories_no_recurrent.png", device="png",
+       height=4, width=7, units="in", dpi=400)
 
