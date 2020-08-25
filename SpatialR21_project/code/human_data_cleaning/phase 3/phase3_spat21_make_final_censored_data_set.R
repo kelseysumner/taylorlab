@@ -154,7 +154,7 @@ total_follow_up_df = final_merged_data %>%
 
 # now order and tabulate the consecutive follow-up
 consecutive_follow_up_ordered_df = final_merged_data %>%
-  filter(visit_type == "monthly visit" | visit_type == "monthly and sick visit") %>%
+  filter(visit_type == "monthly visit") %>%
   select(unq_memID,sample_id_date) %>%
   group_by(unq_memID) %>%
   mutate(id = paste0(as.character(lubridate::month(sample_id_date)),"-",as.character(lubridate::year(sample_id_date)))) %>%
