@@ -331,11 +331,399 @@ table(survival_data_secondary_stringent$visit_type,survival_data_secondary_strin
 table(survival_data_secondary_permissive$visit_type,survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,useNA = "always")
 
 # export the new data sets
-write_rds(survival_data_primary,"Desktop/survival_data_primary_24AUG2020.rds")
-write_rds(survival_data_secondary_stringent,"Desktop/survival_data_secondary_stringent_24AUG2020.rds")
-write_rds(survival_data_secondary_permissive,"Desktop/survival_data_secondary_permissive_24AUG2020.rds")
-write_csv(survival_data_primary,"Desktop/survival_data_primary_24AUG2020.csv")
-write_csv(survival_data_secondary_stringent,"Desktop/survival_data_secondary_stringent_24AUG2020.csv")
-write_csv(survival_data_secondary_permissive,"Desktop/survival_data_secondary_permissive_24AUG2020.csv")
+# write_rds(survival_data_primary,"Desktop/survival_data_primary_24AUG2020.rds")
+# write_rds(survival_data_secondary_stringent,"Desktop/survival_data_secondary_stringent_24AUG2020.rds")
+# write_rds(survival_data_secondary_permissive,"Desktop/survival_data_secondary_permissive_24AUG2020.rds")
+# write_csv(survival_data_primary,"Desktop/survival_data_primary_24AUG2020.csv")
+# write_csv(survival_data_secondary_stringent,"Desktop/survival_data_secondary_stringent_24AUG2020.csv")
+# write_csv(survival_data_secondary_permissive,"Desktop/survival_data_secondary_permissive_24AUG2020.csv")
+
+# look at exposure and outcome tables across the three case definitions
+table(survival_data_primary$main_exposure_primary_case_def,survival_data_primary$main_outcome_primary_case_def, useNA = "always")
+table(survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def, useNA = "always")
+table(survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def, useNA = "always")
+
+
+#### ---- make a new consectuive follow-up table post-imputation ------ ####
+
+# now order and tabulate the consecutive follow-up once imputation is added
+consecutive_follow_up_ordered_df = survival_data_primary %>%
+  filter(visit_type == "monthly visit") %>%
+  select(unq_memID,sample_id_date) %>%
+  group_by(unq_memID) %>%
+  mutate(id = paste0(as.character(lubridate::month(sample_id_date)),"-",as.character(lubridate::year(sample_id_date)))) %>%
+  spread(key=id,value=sample_id_date)
+
+# reorder consecutive follow-up columns
+consecutive_follow_up_ordered_df <- consecutive_follow_up_ordered_df[,c("unq_memID","6-2017", "7-2017", "8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018","8-2018","9-2018","10-2018","11-2018","12-2018","1-2019","2-2019","3-2019","4-2019","5-2019","6-2019","7-2019","8-2019","9-2019","10-2019","11-2019")]
+
+# export correct consecutive follow-up measures
+# write_csv(consecutive_follow_up_ordered_df,"Desktop/phase3_aim1a_consecutive_follow_up_order_df_after_imputation_25AUG2020.csv")
+
+
+#### ----------- now calculate the event indicator ------------- ####
+
+## ---- survival_data_primary
+
+# first remove all sick visits that did not have a symptomatic infection
+survival_data_primary = survival_data_primary %>% filter(!(is.na(survival_data_primary$main_outcome_primary_case_def) &
+                                                           (survival_data_primary$visit_type=="sick visit" | survival_data_primary$visit_type=="monthly and sick visit")))
+
+# first order the data set by date
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
+
+# pull out a list of the different unique ids to censor 
+# set up a for loop of follow up dates to identify which you need to impute
+old_date_to_add = c()
+new_date_to_add = c()
+id_to_add = c()
+for (i in 1:nrow(consecutive_follow_up_ordered_df)){
+  for (j in 1:(ncol(consecutive_follow_up_ordered_df))-1){
+    if (j>2){
+      if (is.na(consecutive_follow_up_ordered_df[i,j]) & !(is.na(consecutive_follow_up_ordered_df[i,j-1]))){
+        
+        # pull out the id
+        id_to_add = c(id_to_add,consecutive_follow_up_ordered_df$unq_memID[i])
+        
+        # pull out old date
+        split_up = str_split(colnames(consecutive_follow_up_ordered_df)[j-1],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          old_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          old_date = paste0(split_up[1],"01",split_up[2])
+        }
+        old_date_to_add = c(old_date_to_add,old_date)
+        
+        # add in the new month-year date for having an imputed monthly follow-up visit
+        split_up = str_split(colnames(consecutive_follow_up_ordered_df)[j],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          new_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          new_date = paste0(split_up[1],"01",split_up[2])
+        }
+        new_date_to_add = c(new_date_to_add,new_date)
+        
+      }
+      
+    }
+    
+  }
+}
+# make a data frame of the ids and date to impute
+censoring_df = data.frame(id_to_add,old_date_to_add,new_date_to_add)
+censoring_df$old_date_to_add=lubridate::mdy(censoring_df$old_date_to_add)
+censoring_df$new_date_to_add=lubridate::mdy(censoring_df$new_date_to_add)
+
+
+# now determine when each participant was censored
+# 0 = censored
+# 1 = event observed
+event_indicator = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_primary)){
+    if (j > 1){
+      if (survival_data_primary$main_outcome_primary_case_def[j]=="symptomatic infection" &
+          !(is.na(survival_data_primary$main_outcome_primary_case_def[j])) & unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j]){
+        event_indicator[j] = 1
+      }
+      if (survival_data_primary$main_outcome_primary_case_def[j-1] =="symptomatic infection" & 
+          !(is.na(survival_data_primary$main_outcome_primary_case_def[j-1])) &
+          unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j] & 
+          survival_data_primary$sample_id_date[j]-survival_data_primary$sample_id_date[j-1] <= 14){
+        event_indicator[j] = 0
+      }
+    }
+  }
+}
+summary(event_indicator)  
+survival_data_primary$event_indicator = event_indicator
+table(survival_data_primary$event_indicator,survival_data_primary$main_exposure_primary_case_def,useNA = "always")
+table(survival_data_primary$event_indicator,survival_data_primary$main_outcome_primary_case_def,useNA = "always")
+survival_data_primary %>%
+  filter(main_outcome_primary_case_def=="symptomatic infection" & event_indicator == 0) %>%
+  View()
+
+# now add the censoring for LTFU
+table(survival_data_primary$event_indicator,survival_data_primary$main_exposure_primary_case_def,useNA = "always")
+table(survival_data_primary$event_indicator,survival_data_primary$main_outcome_primary_case_def,useNA = "always")
+for (i in 1:nrow(censoring_df)){
+  for (j in 1:nrow(survival_data_primary)){
+      if (survival_data_primary$unq_memID[j] == censoring_df$id_to_add[i] & survival_data_primary$month_year[j] == censoring_df$old_date_to_add[i] & survival_data_primary$visit_type[j]=="monthly visit"){
+        survival_data_primary$event_indicator[j] = 0
+    }
+  }
+}
+table(survival_data_primary$event_indicator,survival_data_primary$main_exposure_primary_case_def,useNA = "always")
+table(survival_data_primary$event_indicator,survival_data_primary$main_outcome_primary_case_def,useNA = "always")
+
+
+## ---- survival_data_secondary_stringent
+
+# first remove all sick visits that did not have a symptomatic infection
+survival_data_secondary_stringent = survival_data_secondary_stringent %>% filter(!(is.na(survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def) &
+                                                             (survival_data_secondary_stringent$visit_type=="sick visit" | survival_data_secondary_stringent$visit_type=="monthly and sick visit")))
+
+# first order the data set by date
+survival_data_secondary_stringent = dplyr::arrange(survival_data_secondary_stringent,unq_memID,sample_id_date)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_secondary_stringent[match(unique(survival_data_secondary_stringent$unq_memID), survival_data_secondary_stringent$unq_memID),]
+
+# pull out a list of the different unique ids to censor 
+# set up a for loop of follow up dates to identify which you need to impute
+old_date_to_add = c()
+new_date_to_add = c()
+id_to_add = c()
+for (i in 1:nrow(consecutive_follow_up_ordered_df)){
+  for (j in 1:(ncol(consecutive_follow_up_ordered_df))-1){
+    if (j>2){
+      if (is.na(consecutive_follow_up_ordered_df[i,j]) & !(is.na(consecutive_follow_up_ordered_df[i,j-1]))){
+        
+        # pull out the id
+        id_to_add = c(id_to_add,consecutive_follow_up_ordered_df$unq_memID[i])
+        
+        # pull out old date
+        split_up = str_split(colnames(consecutive_follow_up_ordered_df)[j-1],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          old_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          old_date = paste0(split_up[1],"01",split_up[2])
+        }
+        old_date_to_add = c(old_date_to_add,old_date)
+        
+        # add in the new month-year date for having an imputed monthly follow-up visit
+        split_up = str_split(colnames(consecutive_follow_up_ordered_df)[j],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          new_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          new_date = paste0(split_up[1],"01",split_up[2])
+        }
+        new_date_to_add = c(new_date_to_add,new_date)
+        
+      }
+      
+    }
+    
+  }
+}
+# make a data frame of the ids and date to impute
+censoring_df = data.frame(id_to_add,old_date_to_add,new_date_to_add)
+censoring_df$old_date_to_add=lubridate::mdy(censoring_df$old_date_to_add)
+censoring_df$new_date_to_add=lubridate::mdy(censoring_df$new_date_to_add)
+
+
+# now determine when each participant was censored
+# 0 = censored
+# 1 = event observed
+event_indicator = rep(NA,nrow(survival_data_secondary_stringent))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_secondary_stringent)){
+    if (j > 1){
+      if (survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j]=="symptomatic infection" &
+          !(is.na(survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j])) & unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j]){
+        event_indicator[j] = 1
+      }
+      if (survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j-1] =="symptomatic infection" & 
+          !(is.na(survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j-1])) &
+          unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j] & 
+          survival_data_secondary_stringent$sample_id_date[j]-survival_data_secondary_stringent$sample_id_date[j-1] <= 14){
+        event_indicator[j] = 0
+      }
+    }
+  }
+}
+summary(event_indicator)  
+survival_data_secondary_stringent$event_indicator = event_indicator
+table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,useNA = "always")
+table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def,useNA = "always")
+survival_data_secondary_stringent %>%
+  filter(main_outcome_secondary_stringent_case_def=="symptomatic infection" & event_indicator == 0) %>%
+  View()
+
+# now add the censoring for LTFU
+table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,useNA = "always")
+table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def,useNA = "always")
+for (i in 1:nrow(censoring_df)){
+  for (j in 1:nrow(survival_data_secondary_stringent)){
+    if (survival_data_secondary_stringent$unq_memID[j] == censoring_df$id_to_add[i] & survival_data_secondary_stringent$month_year[j] == censoring_df$old_date_to_add[i] & survival_data_secondary_stringent$visit_type[j]=="monthly visit"){
+      survival_data_secondary_stringent$event_indicator[j] = 0
+    }
+  }
+}
+table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,useNA = "always")
+table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def,useNA = "always")
+
+
+## ---- survival_data_secondary_permissive
+
+# first remove all sick visits that did not have a symptomatic infection
+survival_data_secondary_permissive = survival_data_secondary_permissive %>% filter(!(is.na(survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def) &
+                                                                                     (survival_data_secondary_permissive$visit_type=="sick visit" | survival_data_secondary_permissive$visit_type=="monthly and sick visit")))
+
+# first order the data set by date
+survival_data_secondary_permissive = dplyr::arrange(survival_data_secondary_permissive,unq_memID,sample_id_date)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_secondary_permissive[match(unique(survival_data_secondary_permissive$unq_memID), survival_data_secondary_permissive$unq_memID),]
+
+# pull out a list of the different unique ids to censor 
+# set up a for loop of follow up dates to identify which you need to impute
+old_date_to_add = c()
+new_date_to_add = c()
+id_to_add = c()
+for (i in 1:nrow(consecutive_follow_up_ordered_df)){
+  for (j in 1:(ncol(consecutive_follow_up_ordered_df))-1){
+    if (j>2){
+      if (is.na(consecutive_follow_up_ordered_df[i,j]) & !(is.na(consecutive_follow_up_ordered_df[i,j-1]))){
+        
+        # pull out the id
+        id_to_add = c(id_to_add,consecutive_follow_up_ordered_df$unq_memID[i])
+        
+        # pull out old date
+        split_up = str_split(colnames(consecutive_follow_up_ordered_df)[j-1],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          old_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          old_date = paste0(split_up[1],"01",split_up[2])
+        }
+        old_date_to_add = c(old_date_to_add,old_date)
+        
+        # add in the new month-year date for having an imputed monthly follow-up visit
+        split_up = str_split(colnames(consecutive_follow_up_ordered_df)[j],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          new_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          new_date = paste0(split_up[1],"01",split_up[2])
+        }
+        new_date_to_add = c(new_date_to_add,new_date)
+        
+      }
+      
+    }
+    
+  }
+}
+# make a data frame of the ids and date to impute
+censoring_df = data.frame(id_to_add,old_date_to_add,new_date_to_add)
+censoring_df$old_date_to_add=lubridate::mdy(censoring_df$old_date_to_add)
+censoring_df$new_date_to_add=lubridate::mdy(censoring_df$new_date_to_add)
+
+
+# now determine when each participant was censored
+# 0 = censored
+# 1 = event observed
+event_indicator = rep(NA,nrow(survival_data_secondary_permissive))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_secondary_permissive)){
+    if (j > 1){
+      if (survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j]=="symptomatic infection" &
+          !(is.na(survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j])) & unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j]){
+        event_indicator[j] = 1
+      }
+      if (survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j-1] =="symptomatic infection" & 
+          !(is.na(survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j-1])) &
+          unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j] & 
+          survival_data_secondary_permissive$sample_id_date[j]-survival_data_secondary_permissive$sample_id_date[j-1] <= 14){
+        event_indicator[j] = 0
+      }
+    }
+  }
+}
+summary(event_indicator)  
+survival_data_secondary_permissive$event_indicator = event_indicator
+table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,useNA = "always")
+table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def,useNA = "always")
+survival_data_secondary_permissive %>%
+  filter(main_outcome_secondary_permissive_case_def=="symptomatic infection" & event_indicator == 0) %>%
+  View()
+
+# now add the censoring for LTFU
+table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,useNA = "always")
+table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def,useNA = "always")
+for (i in 1:nrow(censoring_df)){
+  for (j in 1:nrow(survival_data_secondary_permissive)){
+    if (survival_data_secondary_permissive$unq_memID[j] == censoring_df$id_to_add[i] & survival_data_secondary_permissive$month_year[j] == censoring_df$old_date_to_add[i] & survival_data_secondary_permissive$visit_type[j]=="monthly visit"){
+      survival_data_secondary_permissive$event_indicator[j] = 0
+    }
+  }
+}
+table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,useNA = "always")
+table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def,useNA = "always")
+
+
+
+
+#### ------ add in information for the days since first infection ------- ####
+
+## ---- survival_data_primary
+
+# first order the data set by date
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+days_in_study = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_primary)){
+    if (unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j]){
+      days_in_study[j] = survival_data_primary$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
+    }
+  }
+}
+summary(days_in_study)  
+survival_data_primary$days_in_study = days_in_study
+
+
+## ---- survival_data_secondary_stringent
+
+# first order the data set by date
+survival_data_secondary_stringent = dplyr::arrange(survival_data_secondary_stringent,unq_memID,sample_id_date)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_secondary_stringent[match(unique(survival_data_secondary_stringent$unq_memID), survival_data_secondary_stringent$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+days_in_study = rep(NA,nrow(survival_data_secondary_stringent))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_secondary_stringent)){
+    if (unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j]){
+      days_in_study[j] = survival_data_secondary_stringent$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
+    }
+  }
+}
+summary(days_in_study)  
+survival_data_secondary_stringent$days_in_study = days_in_study
+
+
+## ---- survival_data_secondary_permissive
+
+# first order the data set by date
+survival_data_secondary_permissive = dplyr::arrange(survival_data_secondary_permissive,unq_memID,sample_id_date)
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_secondary_permissive[match(unique(survival_data_secondary_permissive$unq_memID), survival_data_secondary_permissive$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+days_in_study = rep(NA,nrow(survival_data_secondary_permissive))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_secondary_permissive)){
+    if (unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j]){
+      days_in_study[j] = survival_data_secondary_permissive$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
+    }
+  }
+}
+summary(days_in_study)  
+survival_data_secondary_permissive$days_in_study = days_in_study
+
+
+
+
+
+
 
 

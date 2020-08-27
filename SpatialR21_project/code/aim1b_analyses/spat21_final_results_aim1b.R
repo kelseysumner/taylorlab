@@ -74,10 +74,10 @@ summary(csp_model_1)
 estimates = c(exp(1.05926),exp(-1.00540),NA,exp(-0.76494),exp(-1.76790),NA,exp(-0.06387),NA,exp(1.08654))
 lower_ci = c(table1[3,1],table1[4,1],NA,table1[6,1],table1[5,1],NA,table1[7,1],NA,table1[8,1])
 upper_ci = c(table1[3,2],table1[4,2],NA,table1[6,2],table1[5,2],NA,table1[7,2],NA,table1[8,2])
-names = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+names = c("Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
@@ -114,10 +114,10 @@ summary(ama_model_1)
 estimates = c(exp(0.6811),exp(-0.2676),NA,exp(-0.1784),exp(-1.4490),NA,exp(-0.8799),NA,exp(0.7391))
 lower_ci = c(table1[3,1],table1[4,1],NA,table1[6,1],table1[5,1],NA,table1[7,1],NA,table1[8,1])
 upper_ci = c(table1[3,2],table1[4,2],NA,table1[6,2],table1[5,2],NA,table1[7,2],NA,table1[8,2])
-names = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+names = c("Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
@@ -168,13 +168,13 @@ exp(confint(csp_model_age_over15,method="Wald"))
 
 
 # create a plot
-names = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes")
+names = c("Participant age <5 years","Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes","","Participant age 5-15 years"," Only new vs. only recurrent haplotypes"," New and recurrent vs. only recurrent haplotypes"," ","Participant age >15 years","  Only new vs. only recurrent haplotypes","  New and recurrent vs. only recurrent haplotypes")
 estimate = c(NA,exp(3.875),exp(-7.697),NA,NA,exp(1.0393),exp(-0.6695),NA,NA,exp(1.3564),exp(-0.7853))
 lower_ci = c(NA,7.755690e-04,2.550684e-09,NA,NA,0.9456347,0.1125433,NA,NA,0.432740510,0.027267847)
 upper_ci = c(NA,2.991038e+06,8.093816e+01,NA,NA,8.4522226,2.3287741,NA,NA,34.8285770,7.6257975)
 forest_plot_df = data.frame(names,estimate,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Participant age <5 years","All new vs. all recurrent haplotypes","New and recurrent vs. all recurrent haplotypes","","Participant age 5-15 years"," All new vs. all recurrent haplotypes"," New and recurrent vs. all recurrent haplotypes"," ","Participant age >15 years","  All new vs. all recurrent haplotypes","  New and recurrent vs. all recurrent haplotypes"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Participant age <5 years","Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes","","Participant age 5-15 years"," Only new vs. only recurrent haplotypes"," New and recurrent vs. only recurrent haplotypes"," ","Participant age >15 years","  Only new vs. only recurrent haplotypes","  New and recurrent vs. only recurrent haplotypes"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Participant age <5 years","Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes","","Participant age 5-15 years"," Only new vs. only recurrent haplotypes"," New and recurrent vs. only recurrent haplotypes"," ","Participant age >15 years","  Only new vs. only recurrent haplotypes","  New and recurrent vs. only recurrent haplotypes"))
 # create a forest plot
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(colour=c(NA,"#2166ac","#67a9cf",NA,NA,"#2166ac","#67a9cf",NA,NA,"#2166ac","#67a9cf"),size=c(2,2,2,2,2,2,2,2,2,2,2)) + 
@@ -406,10 +406,10 @@ summary(csp_model_1)
 estimates = c(table1[2,3],table1[3,3],NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,table1[7,3])
 lower_ci = c(table1[2,1],table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1])
 upper_ci = c(table1[2,2],table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2])
-names = c("All new vs. all persistent haplotypes","New and persistent vs. all persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+names = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all persistent haplotypes","New and persistent vs. all persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all persistent haplotypes","New and persistent vs. all persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
@@ -447,10 +447,10 @@ summary(ama_model_1)
 estimates = c(table1[2,3],table1[3,3],NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,table1[7,3])
 lower_ci = c(table1[2,1],table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1])
 upper_ci = c(table1[2,2],table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2])
-names = c("All new vs. all persistent haplotypes","New and persistent vs. all persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
+names = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("All new vs. all persistent haplotypes","New and persistent vs. all persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("All new vs. all persistent haplotypes","New and persistent vs. all persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season"))
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +

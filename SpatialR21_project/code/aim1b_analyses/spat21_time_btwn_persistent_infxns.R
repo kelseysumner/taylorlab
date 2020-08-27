@@ -92,14 +92,14 @@ kruskal.test(days_btwn_infxns ~ haplotype_category, data=ama_persistent_data)
 csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "recurrent and persistent")] = "Recurrent and persistent"
 csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "new, recurrent, and persistent")] = "New, recurrent, and persistent"
 csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "new and persistent")] = "New and persistent"
-csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "all persistent")] = "All persistent"
-csp_persistent_data$haplotype_category = factor(csp_persistent_data$haplotype_category,levels=c("All persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "all persistent")] = "Only persistent"
+csp_persistent_data$haplotype_category = factor(csp_persistent_data$haplotype_category,levels=c("Only persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
 # for ama
 ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "recurrent and persistent")] = "Recurrent and persistent"
 ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "new, recurrent, and persistent")] = "New, recurrent, and persistent"
 ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "new and persistent")] = "New and persistent"
-ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "all persistent")] = "All persistent"
-ama_persistent_data$haplotype_category = factor(ama_persistent_data$haplotype_category,levels=c("All persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "all persistent")] = "Only persistent"
+ama_persistent_data$haplotype_category = factor(ama_persistent_data$haplotype_category,levels=c("Only persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
 
 # make a beeswarm plot of the days between infections for persistent categories
 csp_bees = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
