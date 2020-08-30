@@ -183,11 +183,45 @@ csp_data$mosquito_week_count_cat <- NULL
 csp_data$quad_mosquito_week_count <- NULL
 csp_data$cub_mosquito_week_count <- NULL
 
+
+# multiplicity of infection
+# plot the lowess graph 
+ggplot(data=csp_data) + geom_smooth(aes(x=haplotype_number,y=dummy_symptomatic_status),method="loess")
+# look at the moi by month
+ggplot(data=csp_data) + geom_smooth(aes(y=haplotype_number,x=sample_id_date),method="loess") # looks very seasonal
+# look at linear coding
+model1=glmer(symptomatic_status~rescaled_moi + (1|unq_memID),family=binomial(link = "logit"),data=csp_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model1) # AIC: 481.6
+# look at quadratic coding
+csp_data$quad_moi = csp_data$rescaled_moi*csp_data$rescaled_moi
+model2=glmer(symptomatic_status~rescaled_moi + quad_moi + (1|unq_memID),family=binomial(link = "logit"),data=csp_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model2) # AIC: 482.9
+anova(model1,model2) # model 1 better
+# look at cubic coding
+csp_data$cub_moi = csp_data$rescaled_moi*csp_data$rescaled_moi*csp_data$rescaled_moi
+model3=glmer(symptomatic_status~rescaled_moi + quad_moi + cub_moi + (1|unq_memID),family=binomial(link = "logit"),data=csp_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model3) # AIC: 484.7
+anova(model1,model3) # model 1 better
+# look at categorical coding
+table(csp_data$haplotype_number)
+summary(csp_data$haplotype_number)
+csp_data$moi_cat = ifelse(csp_data$haplotype_number < 3,"2 or less","3 or more")
+table(csp_data$haplotype_number,csp_data$moi_cat)
+table(csp_data$moi_cat)
+csp_data$moi_cat = as.factor(csp_data$moi_cat)
+model4=glmer(symptomatic_status~moi_cat + (1|unq_memID),family=binomial(link = "logit"),data=csp_data,control = glmerControl(optimizer="bobyqa")) 
+summary(model4) # AIC: 489.1
+# remove variables you don't need
+csp_data$cub_moi <- NULL
+csp_data$quad_moi <- NULL
+
+
 # make sure the variables are coded correctly
 colnames(csp_data)
 str(csp_data$add_cat_number_prior_infections)
 str(csp_data$mosquito_week_count_cat_add)
 csp_data$mosquito_week_count_cat_add = relevel(csp_data$mosquito_week_count_cat_add,ref="50 or less mosquitoes")
+str(csp_data$moi_cat)
 
 # now add these variables for ama
 # number of prior infections
@@ -197,6 +231,13 @@ ama_data$add_cat_number_prior_infections = as.factor(ama_data$add_cat_number_pri
 ama_data$mosquito_week_count_cat_add = ifelse(ama_data$mosquito_week_count <= 50,"50 or less mosquitoes","more than 50 mosquitoes")
 ama_data$mosquito_week_count_cat_add = as.factor(ama_data$mosquito_week_count_cat_add)
 ama_data$mosquito_week_count_cat_add = relevel(ama_data$mosquito_week_count_cat_add,ref="50 or less mosquitoes")
+# haplotype number
+ama_data$moi_cat = ifelse(ama_data$haplotype_number < 3,"2 or less","3 or more")
+ama_data$moi_cat = as.factor(ama_data$moi_cat)
+
+# check the output
+colnames(csp_data)
+colnames(ama_data)
 
 # export final data set
 write_csv(ama_data,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_ama_final_model_data_21JUL2020.csv")
