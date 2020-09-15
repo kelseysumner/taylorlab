@@ -217,8 +217,80 @@ abdomen_m_collection_df = counter_function(abdomen_m)
 head_m_collection_df = counter_function(head_m)
 human_m_collection_df = counter_function(human_m)
 
+# decided to use 30 day moving intervals
+
 
 
 #### ---- now pull out the data that will be used for the moving model ------ ####
 
+# create a data set that looks at the number of haplotypes in each population at different time intervals
 
+# use data set that is just for the high transmission season
+# subset kinesamo and maruti data
+kinesamo_data = csp_haplotype_summary %>% filter(village_name == "Kinesamo")
+maruti_data = csp_haplotype_summary %>% filter(village_name == "Maruti")
+
+# create an empty data set that is the first day in each data set to the last day minus 30
+kinesamo_length = c(1:max(kinesamo_data$date) - min(kinesamo_data$date) - 30)
+maruti_length = c(1:max(maruti_data$date) - min(maruti_data$date) - 30)
+
+# now create a function for different time windows for data collection
+# set up the empty vectors
+k_human_haplotypes = rep(NA,length(kinesamo_length))  
+k_head_haplotypes = rep(NA,length(kinesamo_length))
+k_abdomen_haplotypes = rep(NA,length(kinesamo_length))
+starting_date = rep(NA,length(kinesamo_length))
+ending_date = rep(NA,length(kinesamo_length))
+  
+# start the for loop
+for (i in 1:kinesamo_length){
+    
+    # set up the first start and end dates
+    start_date = min(kinesamo_data$date)
+    end_date = start_date + 30
+    
+    # set up an empty vector
+    k_human_haplotypes_list=c()
+    k_head_haplotypes_list=c()
+    k_abdomen_haplotypes_list=c()
+      
+    # create a while loop to go through every date
+      while (end_date <= max(kinesamo_data$date)){
+    
+      # subset data to just the data between the start and end dates
+      human_k_subset = human_k[which(human_k$date >= start_date & human_k$date <= end_date),]
+      head_k_subset = human_k[which(head_k$date >= start_date & head_k$date <= end_date),]
+      abdomen_k_subset = human_k[which(abdomen_k$date >= start_date & abdomen_k$date <= end_date),]
+      
+      # loop through that subset data set
+      for (j in 1:length(human_k_subset)){
+        k_human_haplotypes_list = c(k_human_haplotypes_list,human_k_subset$haplotype_list[j])
+      }
+      for (k in 1:length(head_k_subset)){
+        k_head_haplotypes_list = c(k_head_haplotypes_list,head_k_subset$haplotype_list[k])
+      }
+      for (l in 1:length(abdomen_k_subset)){
+        k_abdomen_haplotypes_list = c(k_abdomen_haplotypes_list,abdomen_k_subset$haplotype_list[l])
+      }
+
+      
+    }
+
+    # export total number of samples in each category for that time frame
+    k_human_haplotypes[i] = unique(k_human_haplotypes_list)
+    k_head_haplotypes[i] = unique(k_head_haplotypes_list)
+    k_abdomen_haplotypes[i] = unique(k_abdomen_haplotypes_list)
+    starting_date[i] = as.character(start_date)
+    ending_date[i] = as.character(end_date)
+    
+    # add a count
+    start_date = start_date + 1
+    end_date = end_date + 1
+   
+}
+
+  
+# create a data frame
+df_all_k = data.frame(starting_date,ending_date,k_human_haplotypes,k_head_haplotypes,k_abdomen_haplotypes)
+df_all_k$starting_date = lubridate::ymd(df_all_k$starting_date)
+df_all_k$ending_date = lubridate::ymd(df_all_k$ending_date)

@@ -1,4 +1,3 @@
-
 # --------------------------------------- #
 # Look at time between persistent infxns  #
 #             Mozzie phase 1              #
@@ -65,6 +64,94 @@ for (i in 1:nrow(unq_memID_start_date)){
 summary(days_btwn_infxns)  
 csp_data$days_btwn_infxns = days_btwn_infxns
 
+
+#### ------ look at the days before infections for symptomatic infections ------- ####
+
+# this is a way to look at pre-symptomatic infections
+
+# first order the data set by date
+symptomatic_csp_data = dplyr::arrange(csp_data,unq_memID,sample_id_date)
+symptomatic_ama_data = dplyr::arrange(ama_data,unq_memID,sample_id_date)
+
+# look at how many infections each participant had
+num_infections_before = symptomatic_csp_data %>%
+  group_by(unq_memID) %>%
+  summarize (n= n())
+num_infections_before = symptomatic_ama_data %>%
+  group_by(unq_memID) %>%
+  summarize (n= n())
+
+# looks like this worked correctly so apply to everything
+symptomatic_csp_data = slice(group_by(symptomatic_csp_data, unq_memID), -1)
+symptomatic_ama_data = slice(group_by(symptomatic_ama_data, unq_memID), -1)
+
+# now look at the difference in time between haplotype categories stratified by symptomatic status
+csp_boxplot = ggplot(data=symptomatic_csp_data,aes(x=haplotype_category,y=days_btwn_infxns)) + facet_wrap(~symptomatic_status) + geom_boxplot() + theme_bw()
+ama_boxplot = ggplot(data=symptomatic_ama_data,aes(x=haplotype_category,y=days_btwn_infxns)) + facet_wrap(~symptomatic_status) + geom_boxplot() + theme_bw()
+
+# first subset the data set to just asymptomatic infections
+asymptomatic_csp_data = symptomatic_csp_data %>% filter(symptomatic_status == "asymptomatic infection")
+asymptomatic_ama_data = symptomatic_ama_data %>% filter(symptomatic_status == "asymptomatic infection")
+# then subset to just symptomatic infections
+symptomatic_csp_data = symptomatic_csp_data %>% filter(symptomatic_status == "symptomatic infection")
+symptomatic_ama_data = symptomatic_ama_data %>% filter(symptomatic_status == "symptomatic infection")
+
+# make a variable for having persistent haplotypes for the symptomatic infections
+symptomatic_csp_data$has_persistent = ifelse(str_detect(symptomatic_csp_data$haplotype_category,"persistent"),"Infections with persistent haplotypes","Infections without persistent haplotypes")
+symptomatic_ama_data$has_persistent = ifelse(str_detect(symptomatic_ama_data$haplotype_category,"persistent"),"Infections with persistent haplotypes","Infections without persistent haplotypes")
+table(symptomatic_csp_data$has_persistent,symptomatic_csp_data$haplotype_category, useNA = "always")
+table(symptomatic_ama_data$has_persistent,symptomatic_ama_data$haplotype_category, useNA = "always")
+table(symptomatic_csp_data$has_persistent)
+table(symptomatic_ama_data$has_persistent)
+
+# now compare the time between infections with persistent haplotypes compared to those without
+# first make a box plot
+csp_boxplot = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + geom_boxplot(aes(fill=has_persistent)) + theme_bw()
+ama_boxplot = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + geom_boxplot(aes(fill=has_persistent)) + theme_bw()
+# note: observations not really independent so this assumption violated
+# check normalcy
+leveneTest(symptomatic_csp_data$days_btwn_infxns,symptomatic_csp_data$has_persistent) # not normal
+leveneTest(symptomatic_ama_data$days_btwn_infxns,symptomatic_ama_data$has_persistent) # not normal
+# do kruskal-wallis test instead
+kruskal.test(days_btwn_infxns ~ has_persistent, data=symptomatic_csp_data)
+kruskal.test(days_btwn_infxns ~ has_persistent, data=symptomatic_ama_data)
+symptomatic_csp_data %>%
+  group_by(has_persistent) %>%
+  summarize(min=min(days_btwn_infxns),max=max(days_btwn_infxns),mean=mean(days_btwn_infxns),median(days_btwn_infxns))
+symptomatic_ama_data %>%
+  group_by(has_persistent) %>%
+  summarize(min=min(days_btwn_infxns),max=max(days_btwn_infxns),mean=mean(days_btwn_infxns),median(days_btwn_infxns))
+
+# now make a figure
+# make a beeswarm plot of the days between infections for persistent categories
+csp_pre_symp = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(color=has_persistent)) + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous infection") +
+  scale_color_manual(values = c("#0571b0","#ca0020")) +
+  coord_flip() +
+  theme(legend.position = "none")
+csp_pre_symp
+ama_pre_symp = ggplot(data=symptomatic_ama_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(color=has_persistent)) + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous infection") +
+  scale_color_manual(values = c("#0571b0","#ca0020")) +
+  coord_flip() +
+  theme(legend.position = "none")
+ama_pre_symp
+ggsave(csp_pre_symp, filename="/Users/kelseysumner/Desktop/csp_pre_symptomatic_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+ggsave(ama_pre_symp, filename="/Users/kelseysumner/Desktop/ama_pre_symptomatic_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+
+
+
+#### ----- subset to just the persistent haplotypes ------ ####
 
 # subset to just infections with persistent haplotypes
 ama_persistent_data = ama_data %>% filter(str_detect(haplotype_category,"persistent"))

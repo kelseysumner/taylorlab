@@ -548,6 +548,9 @@ csp_data %>%
 csp_data %>%
   group_by(haplotype_category) %>%
   summarize(mean_count_new = mean(count_new_haplotypes),median_count_new = median(count_new_haplotypes),min_new = min(count_new_haplotypes),max_new = max(count_new_haplotypes))
+csp_data %>%
+  group_by(haplotype_category) %>%
+  summarize(mean_count_new = mean(number_prior_infections),median_count_new = median(number_prior_infections),min_new = min(number_prior_infections),max_new = max(number_prior_infections))
 
 
 
