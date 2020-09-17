@@ -231,55 +231,87 @@ kinesamo_data = csp_haplotype_summary %>% filter(village_name == "Kinesamo")
 maruti_data = csp_haplotype_summary %>% filter(village_name == "Maruti")
 
 # create an empty data set that is the first day in each data set to the last day minus 30
-kinesamo_length = c(1:max(kinesamo_data$date) - min(kinesamo_data$date) - 30)
-maruti_length = c(1:max(maruti_data$date) - min(maruti_data$date) - 30)
+maximum_date_k = max(kinesamo_data$date)-30
+kinesamo_length = seq(as.Date(min(kinesamo_data$date)),as.Date(maximum_date_k),by="days")
+maximum_date_m = max(maruti_data$date)-30
+maruti_length = seq(as.Date(min(maruti_data$date)),as.Date(maximum_date_m),by="days")
+
+
+### -- first do for Kinesamo
 
 # now create a function for different time windows for data collection
 # set up the empty vectors
-k_human_haplotypes = rep(NA,length(kinesamo_length))  
-k_head_haplotypes = rep(NA,length(kinesamo_length))
-k_abdomen_haplotypes = rep(NA,length(kinesamo_length))
+human_haplotypes = rep(NA,length(kinesamo_length))  
+head_haplotypes = rep(NA,length(kinesamo_length))
+abdomen_haplotypes = rep(NA,length(kinesamo_length))
+human_num_unique = rep(NA,length(kinesamo_length))  
+head_num_unique = rep(NA,length(kinesamo_length))
+abdomen_num_unique = rep(NA,length(kinesamo_length))
+human_infections = rep(NA,length(kinesamo_length))  
+head_infections = rep(NA,length(kinesamo_length))
+abdomen_infections = rep(NA,length(kinesamo_length))
+human_id_list = rep(NA,length(kinesamo_length))  
+head_id_list = rep(NA,length(kinesamo_length))
+abdomen_id_list = rep(NA,length(kinesamo_length))
 starting_date = rep(NA,length(kinesamo_length))
 ending_date = rep(NA,length(kinesamo_length))
   
 # start the for loop
-for (i in 1:kinesamo_length){
+for (i in 1:length(kinesamo_length)){
     
     # set up the first start and end dates
-    start_date = min(kinesamo_data$date)
+    start_date = kinesamo_length[i]
     end_date = start_date + 30
     
     # set up an empty vector
     k_human_haplotypes_list=c()
     k_head_haplotypes_list=c()
     k_abdomen_haplotypes_list=c()
-      
-    # create a while loop to go through every date
-      while (end_date <= max(kinesamo_data$date)){
+    k_human_id_list=c()
+    k_head_id_list=c()
+    k_abdomen_id_list=c()
     
       # subset data to just the data between the start and end dates
       human_k_subset = human_k[which(human_k$date >= start_date & human_k$date <= end_date),]
-      head_k_subset = human_k[which(head_k$date >= start_date & head_k$date <= end_date),]
-      abdomen_k_subset = human_k[which(abdomen_k$date >= start_date & abdomen_k$date <= end_date),]
+      head_k_subset = head_k[which(head_k$date >= start_date & head_k$date <= end_date),]
+      abdomen_k_subset = abdomen_k[which(abdomen_k$date >= start_date & abdomen_k$date <= end_date),]
       
       # loop through that subset data set
-      for (j in 1:length(human_k_subset)){
-        k_human_haplotypes_list = c(k_human_haplotypes_list,human_k_subset$haplotype_list[j])
+      for (j in 1:nrow(human_k_subset)){
+        # pull out haplotypes
+        haps_human = str_split(human_k_subset$haplotype_list[j],",")[[1]]
+        k_human_haplotypes_list = c(k_human_haplotypes_list,haps_human)
+        # pull out unique ids
+        k_human_id_list = c(k_human_id_list,human_k_subset$sample_name_dbs[j])
       }
-      for (k in 1:length(head_k_subset)){
-        k_head_haplotypes_list = c(k_head_haplotypes_list,head_k_subset$haplotype_list[k])
+      for (k in 1:nrow(head_k_subset)){
+        # pull out haplotypes
+        haps_head = str_split(head_k_subset$haplotype_list[k],",")[[1]]
+        k_head_haplotypes_list = c(k_head_haplotypes_list,haps_head)
+        # pull out unique ids
+        k_head_id_list = c(k_head_id_list,head_k_subset$sample_name_dbs[k])
       }
-      for (l in 1:length(abdomen_k_subset)){
-        k_abdomen_haplotypes_list = c(k_abdomen_haplotypes_list,abdomen_k_subset$haplotype_list[l])
+      for (l in 1:nrow(abdomen_k_subset)){
+        # pull out haplotypes
+        haps_abdomen = str_split(abdomen_k_subset$haplotype_list[l],",")[[1]]
+        k_abdomen_haplotypes_list = c(k_abdomen_haplotypes_list,haps_abdomen)
+        # pull out unique ids
+        k_abdomen_id_list = c(k_abdomen_id_list,abdomen_k_subset$sample_name_dbs[l])
       }
-
-      
-    }
 
     # export total number of samples in each category for that time frame
-    k_human_haplotypes[i] = unique(k_human_haplotypes_list)
-    k_head_haplotypes[i] = unique(k_head_haplotypes_list)
-    k_abdomen_haplotypes[i] = unique(k_abdomen_haplotypes_list)
+    human_haplotypes[i] = paste(unique(k_human_haplotypes_list),collapse=",")
+    head_haplotypes[i] = paste(unique(k_head_haplotypes_list),collapse=",")
+    abdomen_haplotypes[i] = paste(unique(k_abdomen_haplotypes_list),collapse=",")
+    human_num_unique[i] = length(unique(k_human_haplotypes_list))
+    head_num_unique[i] = length(unique(k_head_haplotypes_list))
+    abdomen_num_unique[i] = length(unique(k_abdomen_haplotypes_list))
+    human_infections[i] = nrow(human_k_subset)
+    head_infections[i] = nrow(head_k_subset)
+    abdomen_infections[i] = nrow(abdomen_k_subset)
+    human_id_list[i] = paste(k_human_id_list,collapse=",")
+    head_id_list[i] = paste(k_head_id_list,collapse=",")
+    abdomen_id_list[i] = paste(k_abdomen_id_list,collapse=",")
     starting_date[i] = as.character(start_date)
     ending_date[i] = as.character(end_date)
     
@@ -289,8 +321,108 @@ for (i in 1:kinesamo_length){
    
 }
 
-  
 # create a data frame
-df_all_k = data.frame(starting_date,ending_date,k_human_haplotypes,k_head_haplotypes,k_abdomen_haplotypes)
+df_all_k = data.frame(starting_date,ending_date,human_haplotypes,human_num_unique,human_id_list,human_infections,head_haplotypes,head_num_unique,head_id_list,head_infections,abdomen_haplotypes,abdomen_num_unique,abdomen_id_list,abdomen_infections)
 df_all_k$starting_date = lubridate::ymd(df_all_k$starting_date)
 df_all_k$ending_date = lubridate::ymd(df_all_k$ending_date)
+
+# export the data frame
+write_csv(df_all_k,"Desktop/tricem_model_data_kinesamo_first_season_17SEP2020.csv")
+write_rds(df_all_k,"Desktop/tricem_model_data_kinesamo_first_season_17SEP2020.rds")
+
+
+
+### -- now do for Maruti
+
+# now create a function for different time windows for data collection
+# set up the empty vectors
+human_haplotypes = rep(NA,length(maruti_length))  
+head_haplotypes = rep(NA,length(maruti_length))
+abdomen_haplotypes = rep(NA,length(maruti_length))
+human_num_unique = rep(NA,length(maruti_length))  
+head_num_unique = rep(NA,length(maruti_length))
+abdomen_num_unique = rep(NA,length(maruti_length))
+human_infections = rep(NA,length(maruti_length))  
+head_infections = rep(NA,length(maruti_length))
+abdomen_infections = rep(NA,length(maruti_length))
+human_id_list = rep(NA,length(maruti_length))  
+head_id_list = rep(NA,length(maruti_length))
+abdomen_id_list = rep(NA,length(maruti_length))
+starting_date = rep(NA,length(maruti_length))
+ending_date = rep(NA,length(maruti_length))
+
+# start the for loop
+for (i in 1:length(maruti_length)){
+  
+  # set up the first start and end dates
+  start_date = maruti_length[i]
+  end_date = start_date + 30
+  
+  # set up an empty vector
+  m_human_haplotypes_list=c()
+  m_head_haplotypes_list=c()
+  m_abdomen_haplotypes_list=c()
+  m_human_id_list=c()
+  m_head_id_list=c()
+  m_abdomen_id_list=c()
+  
+  # subset data to just the data between the start and end dates
+  human_m_subset = human_m[which(human_m$date >= start_date & human_m$date <= end_date),]
+  head_m_subset = head_m[which(head_m$date >= start_date & head_m$date <= end_date),]
+  abdomen_m_subset = abdomen_m[which(abdomen_m$date >= start_date & abdomen_m$date <= end_date),]
+  
+  # loop through that subset data set
+  for (j in 1:nrow(human_m_subset)){
+    # pull out haplotypes
+    haps_human = str_split(human_m_subset$haplotype_list[j],",")[[1]]
+    m_human_haplotypes_list = c(m_human_haplotypes_list,haps_human)
+    # pull out unique ids
+    m_human_id_list = c(m_human_id_list,human_m_subset$sample_name_dbs[j])
+  }
+  for (k in 1:nrow(head_m_subset)){
+    # pull out haplotypes
+    haps_head = str_split(head_m_subset$haplotype_list[k],",")[[1]]
+    m_head_haplotypes_list = c(m_head_haplotypes_list,haps_head)
+    # pull out unique ids
+    m_head_id_list = c(m_head_id_list,head_m_subset$sample_name_dbs[k])
+  }
+  for (l in 1:nrow(abdomen_m_subset)){
+    # pull out haplotypes
+    haps_abdomen = str_split(abdomen_m_subset$haplotype_list[l],",")[[1]]
+    m_abdomen_haplotypes_list = c(m_abdomen_haplotypes_list,haps_abdomen)
+    # pull out unique ids
+    m_abdomen_id_list = c(m_abdomen_id_list,abdomen_m_subset$sample_name_dbs[l])
+  }
+  
+  # export total number of samples in each category for that time frame
+  human_haplotypes[i] = paste(unique(m_human_haplotypes_list),collapse=",")
+  head_haplotypes[i] = paste(unique(m_head_haplotypes_list),collapse=",")
+  abdomen_haplotypes[i] = paste(unique(m_abdomen_haplotypes_list),collapse=",")
+  human_num_unique[i] = length(unique(m_human_haplotypes_list))
+  head_num_unique[i] = length(unique(m_head_haplotypes_list))
+  abdomen_num_unique[i] = length(unique(m_abdomen_haplotypes_list))
+  human_infections[i] = nrow(human_m_subset)
+  head_infections[i] = nrow(head_m_subset)
+  abdomen_infections[i] = nrow(abdomen_m_subset)
+  human_id_list[i] = paste(m_human_id_list,collapse=",")
+  head_id_list[i] = paste(m_head_id_list,collapse=",")
+  abdomen_id_list[i] = paste(m_abdomen_id_list,collapse=",")
+  starting_date[i] = as.character(start_date)
+  ending_date[i] = as.character(end_date)
+  
+  # add a count
+  start_date = start_date + 1
+  end_date = end_date + 1
+  
+}
+
+# create a data frame
+df_all_m = data.frame(starting_date,ending_date,human_haplotypes,human_num_unique,human_id_list,human_infections,head_haplotypes,head_num_unique,head_id_list,head_infections,abdomen_haplotypes,abdomen_num_unique,abdomen_id_list,abdomen_infections)
+df_all_m$starting_date = lubridate::ymd(df_all_m$starting_date)
+df_all_m$ending_date = lubridate::ymd(df_all_m$ending_date)
+
+# export the data frame
+write_csv(df_all_m,"Desktop/tricem_model_data_maruti_first_season_17SEP2020.csv")
+write_rds(df_all_m,"Desktop/tricem_model_data_maruti_first_season_17SEP2020.rds")
+
+
