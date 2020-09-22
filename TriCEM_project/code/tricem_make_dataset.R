@@ -76,13 +76,26 @@ csp_haplotype_summary$date[which(csp_haplotype_summary$sample_name_dbs == "K01 H
 csp_haplotype_summary$date[which(csp_haplotype_summary$sample_name_dbs == "K01 A00047")] = "2017-08-21"
 csp_haplotype_summary$date[which(csp_haplotype_summary$sample_name_dbs == "K01 H00047")] = "2017-08-21"
 
+# add a variable for unq_memID
+unq_memID = rep(NA,nrow(csp_haplotype_summary))
+for (i in 1:nrow(csp_haplotype_summary)){
+  if (str_detect(csp_haplotype_summary$sample_name_dbs[i],"-")){
+    first_split=str_split(csp_haplotype_summary$sample_name_dbs[i],"-")[[1]]
+    unq_memID[i] = paste(first_split[1],first_split[3],collapse="_")
+  }
+}
+csp_haplotype_summary$unq_memID = unq_memID
+
 
 # cut down the data set to just the high transmission season 
 # this is a way to have enough mosquitoes collected
 # csp_haplotype_summary = csp_haplotype_summary %>% filter((date >= "2017-06-01" & date < "2017-10-01") | 
                                                            # (date >= "2018-04-01" & date < "2018-08-01"))
 # just restrict to the first high transmission season for now
-csp_haplotype_summary = csp_haplotype_summary %>% filter((date >= "2017-06-01" & date < "2017-10-01"))
+csp_haplotype_summary = csp_haplotype_summary %>% filter((date >= "2017-06-01" & date < "2017-10-16"))
+# now restrict to the second high transmission season - looks like there won't be enough mosquitoes collected in this second period to use
+# csp_haplotype_summary = csp_haplotype_summary %>% filter((date >= "2018-04-01" & date < "2018-08-01"))
+# note that both are 4 months long
 
 # create separate data sets based on the sample type
 abdomen_data = csp_haplotype_summary %>%
