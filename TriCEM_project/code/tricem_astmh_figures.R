@@ -8,6 +8,7 @@
 #### ------- load libraries -------- ####
 library(tidyverse)
 library(lme4)
+library(ggbeeswarm)
 
 
 
@@ -187,7 +188,7 @@ small_all_df = all_df %>%
 # set the colors
 # human (green): #b2df8a
 # mosquito abdomen (dark blue): #1f78b4
-# mosquitoe head (pink): #fb9a99
+# mosquito head (pink): #fb9a99
 # no infection (light grey): #D3DDDC
 small_all_df$color = rep(NA,nrow(small_all_df))
 small_all_df$color[which(small_all_df$sample_type=="Human" & small_all_df$pf_pcr_infection_status=="positive")] = "#b2df8a"
@@ -215,3 +216,39 @@ ggsave(density_all_plot, filename="/Users/kelseysumner/Desktop/tricem_sampling_p
 
 
 
+#### ------ make a figure of the number of infections in each sample type ------ ####
+
+# for kinesamo
+sample_order = c("Mosquito Head","Mosquito Abdomen","Human")
+kinesamo_data_long <- within(kinesamo_data_long,sample_type <- factor(sample_type,levels=sample_order))
+str(kinesamo_data_long$sample_type)
+plot_2 = ggplot(data=kinesamo_data_long,aes(y=num_infections,x=sample_type,group=sample_type)) +
+  geom_boxplot() +
+  geom_quasirandom(aes(color=sample_type),groupOnX = T) +
+  theme_bw() +
+  ylab("Number of infections within each time window") +
+  labs(fill="Sample type") +
+  scale_color_manual(values = c("#fb9a99","#1f78b4","#b2df8a")) +
+  xlab("")+
+  theme(legend.position = "none") + 
+  coord_flip()
+plot_2
+ggsave(plot_2, filename="/Users/kelseysumner/Desktop/number_infections_beeswarm_kinesamo.png", device="png",
+       height=4, width=6, units="in", dpi=400)
+
+# for maruti
+sample_order = c("Mosquito Head","Mosquito Abdomen","Human")
+maruti_data_long <- within(maruti_data_long,sample_type <- factor(sample_type,levels=sample_order))
+plot_2 = ggplot(data=maruti_data_long,aes(y=num_infections,x=sample_type,group=sample_type)) +
+  geom_boxplot() +
+  geom_quasirandom(aes(color=sample_type),groupOnX = T) +
+  theme_bw() +
+  ylab("Number of infections within each time window") +
+  labs(fill="Sample type") +
+  scale_color_manual(values = c("#fb9a99","#1f78b4","#b2df8a")) +
+  xlab("")+
+  theme(legend.position = "none") + 
+  coord_flip()
+plot_2
+ggsave(plot_2, filename="/Users/kelseysumner/Desktop/number_infections_beeswarm_maruti.png", device="png",
+       height=4, width=6, units="in", dpi=400)

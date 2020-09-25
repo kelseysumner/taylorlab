@@ -2,7 +2,7 @@
 #       Spat21 Haplotype Output Cleaning    #
 #       All Samples (Human and Mosquito)    #
 #         FINAL CENSORING VERSION           #
-#           September 24, 2020              #
+#           September 24, 2019              #
 #                K. Sumner                  #
 # ----------------------------------------- #
 
