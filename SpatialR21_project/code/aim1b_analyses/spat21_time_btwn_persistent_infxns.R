@@ -12,6 +12,8 @@
 library(tidyverse)
 library(car)
 library(ggbeeswarm)
+library(lme4)
+library(glmmTMB)
 
 
 
@@ -339,5 +341,118 @@ all_persistent_plot = ggplot(data=csp_all_persistent_data,aes(x=days_btwn_infxns
 all_persistent_plot
 ggsave(all_persistent_plot, filename="/Users/kelseysumner/Desktop/csp_new_recurrent_and_persistent_plot.png", device="png",
        height=4, width=4, units="in", dpi=400)
+
+
+#### ------- run a regression model for persistent infections removing those with infections < 15 days prior ------ ####
+
+# first subset the data set to infections that occurred >= 15 days apart
+# for csp
+csp_infxn_time_data = symptomatic_csp_data %>% filter(days_btwn_infxns >= 15)
+summary(csp_infxn_time_data$days_btwn_infxns)
+# for ama
+ama_infxn_time_data = symptomatic_ama_data %>% filter(days_btwn_infxns >= 15)
+summary(ama_infxn_time_data$days_btwn_infxns)
+
+# for csp
+# take out the infections with recurrent haplotypes
+no_recurrent_data_csp = csp_infxn_time_data[which(!(str_detect(csp_infxn_time_data$haplotype_category,"recurrent"))),]
+table(no_recurrent_data_csp$haplotype_category, useNA = "always")
+no_recurrent_data_csp$haplotype_category = as.character(no_recurrent_data_csp$haplotype_category)
+no_recurrent_data_csp$haplotype_category = as.factor(no_recurrent_data_csp$haplotype_category)
+levels(no_recurrent_data_csp$haplotype_category)
+no_recurrent_data_csp$haplotype_category = relevel(no_recurrent_data_csp$haplotype_category,ref="all persistent")
+# merge in covariates
+csp_cov_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_csp_final_model_data_21JUL2020.rds")
+csp_cov_data = csp_cov_data %>% select(sample_name_dbs,add_cat_number_prior_infections,mosquito_week_count_cat_add,moi_cat)
+no_recurrent_data_csp = left_join(no_recurrent_data_csp,csp_cov_data,by="sample_name_dbs")
+no_recurrent_data_csp = rename(no_recurrent_data_csp,unq_memID = unq_memID.x)
+no_recurrent_data_csp$unq_memID.y <- NULL
+length(which(is.na(no_recurrent_data_csp$moi_cat)))
+no_recurrent_data_csp$symptomatic_status = as.factor(no_recurrent_data_csp$symptomatic_status)
+levels(no_recurrent_data_csp$symptomatic_status)
+# now rerun the model
+csp_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + moi_cat + (1|unq_memID),family=binomial(link = "logit"), 
+                       data = no_recurrent_data_csp)
+summary(csp_model_1)
+performance::icc(csp_model_1)
+exp(confint(csp_model_1,method="Wald"))
+# all new: OR 1.55 (95% CI 0.58 to 4.09)
+# new and persistent: OR 1.36 (95% CI 0.37 to 4.93)
+# make a forest plot of results
+table1 = exp(confint(csp_model_1,method="Wald"))
+summary(csp_model_1)
+estimates = c(table1[2,3],table1[3,3],NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,table1[7,3],NA,table1[8,3])
+lower_ci = c(table1[2,1],table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1],NA,table1[8,1])
+upper_ci = c(table1[2,2],table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2],NA,table1[8,2])
+names = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+# create a forest plot
+library(forcats)
+library(ggplot2)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1,1),colour=c("#2166ac","#67a9cf","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(breaks=c(0,1,2,3,4,5),trans="log10") +
+  theme_bw()
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_3_categories_no_recurrent_15infxns.png", device="png",
+       height=4.5, width=7, units="in", dpi=400)
+
+
+# for ama
+# take out the infections with recurrent haplotypes
+no_recurrent_data_ama = ama_infxn_time_data[which(!(str_detect(ama_infxn_time_data$haplotype_category,"recurrent"))),]
+table(no_recurrent_data_ama$haplotype_category, useNA = "always")
+no_recurrent_data_ama$haplotype_category = as.character(no_recurrent_data_ama$haplotype_category)
+no_recurrent_data_ama$haplotype_category = as.factor(no_recurrent_data_ama$haplotype_category)
+levels(no_recurrent_data_ama$haplotype_category)
+no_recurrent_data_ama$haplotype_category = relevel(no_recurrent_data_ama$haplotype_category,ref="all persistent")
+# merge in covariates
+ama_cov_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_ama_final_model_data_21JUL2020.rds")
+ama_cov_data = ama_cov_data %>% select(sample_name_dbs,add_cat_number_prior_infections,mosquito_week_count_cat_add,moi_cat)
+no_recurrent_data_ama = left_join(no_recurrent_data_ama,ama_cov_data,by="sample_name_dbs")
+no_recurrent_data_ama = rename(no_recurrent_data_ama,unq_memID = unq_memID.x)
+no_recurrent_data_ama$unq_memID.y <- NULL
+length(which(is.na(no_recurrent_data_ama$moi_cat)))
+no_recurrent_data_ama$symptomatic_status = as.factor(no_recurrent_data_ama$symptomatic_status)
+levels(no_recurrent_data_ama$symptomatic_status)
+# now rerun the model
+ama_model_1 <- glmmTMB(symptomatic_status ~ haplotype_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + moi_cat + (1|unq_memID),family=binomial(link = "logit"), 
+                       data = no_recurrent_data_ama)
+summary(ama_model_1)
+performance::icc(ama_model_1)
+exp(confint(ama_model_1,method="Wald"))
+# all new: OR 0.52 (95% CI 0.12 to 2.26)
+# new and persistent: OR 0.55 (95% CI 0.10 to 2.96)
+# make a forest plot of results
+table1 = exp(confint(ama_model_1,method="Wald"))
+summary(ama_model_1)
+estimates = c(table1[2,3],table1[3,3],NA,table1[5,3],table1[4,3],NA,table1[6,3],NA,table1[7,3],NA,table1[8,3])
+lower_ci = c(table1[2,1],table1[3,1],NA,table1[5,1],table1[4,1],NA,table1[6,1],NA,table1[7,1],NA,table1[8,1])
+upper_ci = c(table1[2,2],table1[3,2],NA,table1[5,2],table1[4,2],NA,table1[6,2],NA,table1[7,2],NA,table1[8,2])
+names = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. only persistent haplotypes","New and persistent vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+# create a forest plot
+library(forcats)
+library(ggplot2)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1,1),colour=c("#2166ac","#67a9cf","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(breaks=c(0,1,2,4,6,8,10,12),trans="log10") +
+  theme_bw()
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_model_all_3_categories_no_recurrent_15infxns.png", device="png",
+       height=4.5, width=8, units="in", dpi=400)
+
 
 

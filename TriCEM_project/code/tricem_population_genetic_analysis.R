@@ -281,8 +281,6 @@ maruti_data_long = rbind(m_human,m_head,m_abdomen)
 
 ## ---- make a model for Kinesamo
 
-## --- now do for Maruti
-
 # set up a linear regression
 # with a random intercept for the date
 model_1 = lmer(avg_snp_tot ~ as.factor(sample_type) + (1|starting_date),data=kinesamo_data_long)
@@ -290,8 +288,8 @@ summary(model_1)
 performance::icc(model_1)
 confint(model_1,method="Wald")
 
-# lets create ipw weights for the number of infections
-exposureModel <- glmer(factor(sample_type) ~ num_infections + (1|starting_date), data = kinesamo_data_long, family = binomial(link="logit"))
+# lets create ipw weights for the number of haplotypes
+exposureModel <- glmer(factor(sample_type) ~ num_haplotypes +(1|starting_date), data = kinesamo_data_long, family = binomial(link="logit"))
 pA = predict(exposureModel, type = "response")
 IPW = 1/pA
 summary(exposureModel)
@@ -302,7 +300,7 @@ summary(kinesamo_data_long$IPW)
 
 # set up a linear regression
 # with a random intercept for the date
-# and IPW weights for the number of infections
+# and IPW weights for the number of haplotypes
 model_1 = lmer(avg_snp_tot ~ as.factor(sample_type) + (1|starting_date), weights = IPW, data=kinesamo_data_long)
 summary(model_1)
 performance::icc(model_1)
@@ -310,7 +308,7 @@ confint(model_1,method="Wald")
 
 # now make a forest plot of the model results
 table1 = confint(model_1,method="Wald")
-estimates = c(0.37464,0.24501)
+estimates = c(0.51121,0.34683)
 lower_ci = c(table1[4,1],table1[5,1])
 upper_ci = c(table1[4,2],table1[5,2])
 names = c("Mosquito abdomen vs. human","Mosquito head vs. human")
@@ -319,11 +317,11 @@ forest_plot_df$names = factor(forest_plot_df$names, levels = c("Mosquito abdomen
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mosquito abdomen vs. human","Mosquito head vs. human"))
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(1,1),colour = c("#1f78b4","#b2df8a")) + 
+  geom_pointrange(size=c(2,2),colour = c("#1f78b4","#b2df8a")) + 
   geom_hline(yintercept=0, lty=2) +  # add a dotted line at x=0 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Risk difference (95% CI)") +
-  scale_y_continuous(limits=c(-0.2,1)) +
+  scale_y_continuous(limits=c(-0.1,1)) +
   theme_bw()
 fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_kinesamo_population_diversity.png", device="png",
@@ -339,8 +337,8 @@ summary(model_1)
 performance::icc(model_1)
 confint(model_1,method="Wald")
 
-# lets create ipw weights for the number of infections
-exposureModel <- glmer(factor(sample_type) ~ num_infections + (1|starting_date), data = maruti_data_long, family = binomial(link="logit"))
+# lets create ipw weights for the number of haplotypes
+exposureModel <- glmer(factor(sample_type) ~ num_haplotypes + (1|starting_date), data = maruti_data_long, family = binomial(link="logit"))
 pA = predict(exposureModel, type = "response")
 IPW = 1/pA
 summary(exposureModel)
@@ -351,7 +349,7 @@ summary(maruti_data_long$IPW)
 
 # set up a linear regression
 # with a random intercept for the date
-# and IPW weights for the number of infections
+# and IPW weights for the number of haplotypes
 model_1 = lmer(avg_snp_tot ~ as.factor(sample_type) + (1|starting_date), weights = IPW, data=maruti_data_long)
 summary(model_1)
 performance::icc(model_1)
@@ -359,7 +357,7 @@ confint(model_1,method="Wald")
 
 # now make a forest plot of the model results
 table1 = confint(model_1,method="Wald")
-estimates = c(0.62838,0.30314)
+estimates = c(0.59720,0.15081)
 lower_ci = c(table1[4,1],table1[5,1])
 upper_ci = c(table1[4,2],table1[5,2])
 names = c("Mosquito abdomen vs. human","Mosquito head vs. human")
@@ -368,11 +366,11 @@ forest_plot_df$names = factor(forest_plot_df$names, levels = c("Mosquito abdomen
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mosquito abdomen vs. human","Mosquito head vs. human"))
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(1,1),colour = c("#1f78b4","#b2df8a")) + 
+  geom_pointrange(size=c(1.5,1.5),colour = c("#1f78b4","#b2df8a")) + 
   geom_hline(yintercept=0, lty=2) +  # add a dotted line at x=0 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Risk difference (95% CI)") +
-  scale_y_continuous(limits=c(-0.2,1)) +
+  scale_y_continuous(limits=c(-0.1,1)) +
   theme_bw()
 fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_maruti_population_diversity.png", device="png",
@@ -413,31 +411,45 @@ plot_6 = ggplot() +
   labs(shape="Sample type",colour="Sample type") +
   xlab("Starting date for each 30-day time window") +
   theme(legend.position = c(0.2,0.2),legend.box.background = element_rect(colour = "black"),axis.text.x = element_text(angle = 90)) +
-  scale_x_date(date_breaks = "1 week",)
+  scale_x_date(date_breaks = "1 week")
 plot_6
 ggsave(plot_6, filename="/Users/kelseysumner/Desktop/maruti_number_snps_fancy.png", device="png",
        height=5, width=8, units="in", dpi=400)
 
 
+#### ----- make a beeswarm plot for the snp diversity over time ------ ####
 
+# for kinesamo
+sample_order = c("Mosquito Head","Mosquito Abdomen","Human")
+kinesamo_data_long <- within(kinesamo_data_long,sample_type <- factor(sample_type,levels=sample_order))
+str(kinesamo_data_long$sample_type)
+plot_2 = ggplot(data=kinesamo_data_long,aes(y=avg_snp_tot,x=sample_type,group=sample_type)) +
+  geom_boxplot() +
+  geom_quasirandom(aes(color=sample_type),groupOnX = T) +
+  theme_bw() +
+  ylab("Average number of SNPs within each time window") +
+  scale_color_manual(values = c("#fb9a99","#1f78b4","#b2df8a")) +
+  xlab("")+
+  theme(legend.position = "none") + 
+  coord_flip()
+plot_2
+ggsave(plot_2, filename="/Users/kelseysumner/Desktop/snp_boxplot_kinesamo.png", device="png",
+       height=4, width=5, units="in", dpi=400)
 
-#### ------- vignette for population structure from sequencing data ------- ####
-
-## the pipeline is set up for two gene targets so doing the workflow for ama and csp
-
-# first make a plot of the haplotype fasta file
-plot(haplotype_fasta,cex=.2)
-
-# now check the file name format - looks good
-getLocusNames(haplotype_fasta)
-
-# creating genind object by multilocus sequence types
-haplotype_fasta.gid <- multidna2genind(haplotype_fasta, mlst = TRUE)
-haplotype_fasta.gid
-
-# set the population strata
-# not sure how to set this up well
-
-
-
+# for kinesamo
+sample_order = c("Mosquito Head","Mosquito Abdomen","Human")
+maruti_data_long <- within(maruti_data_long,sample_type <- factor(sample_type,levels=sample_order))
+str(maruti_data_long$sample_type)
+plot_2 = ggplot(data=maruti_data_long,aes(y=avg_snp_tot,x=sample_type,group=sample_type)) +
+  geom_boxplot() +
+  geom_quasirandom(aes(color=sample_type),groupOnX = T) +
+  theme_bw() +
+  ylab("Average number of SNPs within each time window") +
+  scale_color_manual(values = c("#fb9a99","#1f78b4","#b2df8a")) +
+  xlab("")+
+  theme(legend.position = "none") + 
+  coord_flip()
+plot_2
+ggsave(plot_2, filename="/Users/kelseysumner/Desktop/snp_boxplot_maruti.png", device="png",
+       height=4, width=5, units="in", dpi=400)
 
