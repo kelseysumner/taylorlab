@@ -476,7 +476,7 @@ plot_2 = ggplot(data=kinesamo_data_long,aes(y=num_haplotypes,x=sample_type,group
   geom_boxplot() +
   geom_quasirandom(aes(color=sample_type),groupOnX = T) +
   theme_bw() +
-  ylab("Number of unique haplotypes within each time window") +
+  ylab("Number of haplotypes within each time window") +
   labs(fill="Sample type") +
   scale_color_manual(values = c("#fb9a99","#1f78b4","#b2df8a")) +
   xlab("")+
@@ -493,7 +493,7 @@ plot_2 = ggplot(data=maruti_data_long,aes(y=num_haplotypes,x=sample_type,group=s
   geom_boxplot() +
   geom_quasirandom(aes(color=sample_type),groupOnX = T) +
   theme_bw() +
-  ylab("Number of unique haplotypes within each time window") +
+  ylab("Number of haplotypes within each time window") +
   labs(fill="Sample type") +
   scale_color_manual(values = c("#fb9a99","#1f78b4","#b2df8a")) +
   xlab("")+

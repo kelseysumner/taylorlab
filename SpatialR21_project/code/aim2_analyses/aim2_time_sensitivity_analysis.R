@@ -4,7 +4,7 @@
 #                 Aim 2                  #
 #            Mozzie Phase 1              #
 #               K. Sumner                #
-#           January 31, 2020             #
+#           October 15, 2020             #
 # -------------------------------------- #
 
 # good resource for trouble shooting convergence problems
@@ -21,265 +21,341 @@ library(lme4)
 #### ------- load in the data sets ----------- ####
 
 # read in the edgelist data set before p(TEt) and P(TEd) were added
-merged_data = read_rds("Desktop/clean_ids_haplotype_results/AMA_and_CSP/interim/spat21_merged_data_interim.rds")
+model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/full data/spat21_aim2_merged_data_with_weights_full_data_5MAR2020.rds")
 
 # read in the mosquito demographic data
 mosquito_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Mosquito data/clean data/merged_data/spat21_mosquito_anopheles_merged_data_18JAN2019.RDS")
 
 # read in the full human data set
-final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1OCT2019.rds")
+final_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Final Cohort data June 2017 to July 2018/Human data/spat21_clean_human_files/merged_files/final merged data/final_recoded_data_set/spat21_human_final_censored_data_for_dissertation_with_exposure_outcome_1MAR2020.rds")
 
-
-#### ------ look at the original variable codings and set up variables needed for model ------- ####
-
-# create a formula for the P(TE) across time
-
-# set up the variables
-summary(merged_data$date_difference)
-merged_data$date_difference = as.numeric(merged_data$date_difference)
-merged_data$date_difference_flipped = merged_data$date_difference*-1
-summary(merged_data$date_difference_flipped)
-
-
-# first look at the distribution created by the original equation
-# calculate p(TE) using the logistic function - original equation
-# equation: Y = 1/(1+0.6e^(-x-16)))
-p_te_t = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$date_difference_flipped[i] >= -18 & merged_data$date_difference_flipped[i] <= 0){
-    p_te_t[i] = 1/(1+0.6*exp(-merged_data$date_difference_flipped[i]-16))
-  } else {
-    p_te_t[i] = 0
-  }
-}
-p_te_t_no_zeroes = p_te_t[which(p_te_t != 0)]
-summary(p_te_t_no_zeroes)
-hist(p_te_t_no_zeroes)
-merged_data$p_te_t = p_te_t
-p_te_t_df = merged_data %>%
-  filter(p_te_t != 0)
-time_plot = ggplot(data=p_te_t_df) +
-  geom_line(aes(x=date_difference_flipped,y=p_te_t),linetype = "dashed") +
-  xlab("Days between human infection and mosquito collection") +
-  ylab("Probability of tranmission for time") +
-  geom_vline(xintercept = -14,color="dark red") + 
-  theme_bw() +
-  theme(text = element_text(size=25)) +
-  scale_x_continuous(limits=c(-18,0),breaks=c(-18,-15,-12,-9,-6,-3,0))
-time_plot
-ggsave(time_plot, filename="/Users/kelseysumner/Desktop/theoretical_time_distribution_plot.png", device="png",
-       height=8, width=12, units="in", dpi=500)
-# this distribution keeps the probability >0.9 until past day 14 but also allows the distribution to drop down below <0.2 by day 18
-
-
-# now calculate p_te_d to use for sensitivity analysis
-# make distance in km
-merged_data$distance_km = merged_data$distance/1000
-summary(merged_data$distance_km)
-# calculate using the exponential decay formula but over distance (what we use) - this is testing out the equation
-# our actual equation is y=e^(-3x)
-p_te_d = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$distance_km[i] >= 0 & merged_data$distance_km[i] <= 3){
-    p_te_d[i] = exp(-merged_data$distance_km[i]*3)
-  } else {
-    p_te_d[i] = 0
-  }
-}
-summary(p_te_d)
-hist(p_te_d)
-p_te_d_no_zeroes = p_te_d[which(p_te_d != 0)]
-summary(p_te_d_no_zeroes)
-hist(p_te_d_no_zeroes)
-merged_data$p_te_d = p_te_d
-p_te_d_df = merged_data %>%
-  filter(p_te_d != 0)
-distance_plot = ggplot(data=p_te_d_df) +
-  geom_line(aes(x=distance_km,y=p_te_d),linetype = "dashed") +
-  xlab("Distance between human infection and mosquito collection (Km)") +
-  ylab("Probability of tranmission for distance") +
-  geom_vline(xintercept = 0.661,color="dark red") + 
-  scale_x_continuous(limits = c(0,3)) +
-  theme_bw() +
-  theme(text = element_text(size=25))
-distance_plot
-ggsave(distance_plot, filename="/Users/kelseysumner/Desktop/theoretical_distance_distribution_plot.png", device="png",
-       height=8, width=12, units="in", dpi=500)
-
-
-# then combine p_te_a and p_te_c and rescale
-p_te_a_c_combo = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$p_te_a[i] != 0 & merged_data$p_te_c[i] != 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_a[i])*(1-merged_data$p_te_c[i])
-  } else if (merged_data$p_te_a[i] != 0 & merged_data$p_te_c[i] == 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_a[i])
-  } else if (merged_data$p_te_a[i] == 0 & merged_data$p_te_c[i] != 0){
-    p_te_a_c_combo[i] = 1-(1-merged_data$p_te_c[i])
-  } else{
-    p_te_a_c_combo[i] = 0
-  }
-}
-summary(p_te_a_c_combo)
-merged_data$p_te_a_c_combo = p_te_a_c_combo
-length(which(p_te_a_c_combo == 0)) # 60797
-length(which(merged_data$p_te_a == 0 & merged_data$p_te_c == 0)) # 60797
-# rescale for p_te_a_c_combo to be between 0 and 1
-merged_data$rescaled_p_te_a_c_combo = (merged_data$p_te_a_c_combo-min(merged_data$p_te_a_c_combo))/(max(merged_data$p_te_a_c_combo)-min(merged_data$p_te_a_c_combo))
-hist(merged_data$p_te_a_c_combo)
-hist(merged_data$rescaled_p_te_a_c_combo)
-summary(merged_data$rescaled_p_te_a_c_combo)
-
-
-# make the original final variable that is P(TEall)
-# have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
-p_te_all = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  if (merged_data$p_te_t[i] != 0 & merged_data$p_te_d[i] != 0 & merged_data$rescaled_p_te_a_c_combo[i] != 0){
-    p_te_all[i] = merged_data$p_te_t[i]*merged_data$p_te_d[i]*merged_data$rescaled_p_te_a_c_combo[i]
-  } else {
-    p_te_all[i] = 0
-  }
-}
-summary(p_te_all)
-merged_data$p_te_all = p_te_all
-length(which(p_te_all == 0)) # 168392
-length(which(p_te_all > 0)) # 2262
-
-
-# first create a count of whether or not mosquitoes collected within 7 days of the human sample
-mosquito_week_count = rep(NA,nrow(merged_data))
-for (i in 1:nrow(merged_data)){
-  count = 0
-  for (j in 1:nrow(mosquito_data)){
-    if ((mosquito_data$collection_date[j]-merged_data$human_date[i] <= 7) & (mosquito_data$collection_date[j]-merged_data$human_date[i] >= 0)){
-      count = count + 1
-    }
-  }
-  mosquito_week_count[i] = count
-}
-# add the new variable to the data set
-merged_data$mosquito_week_count = mosquito_week_count
-summary(merged_data$mosquito_week_count)
-# remember: this variable looks at all mosquitoes collected across all three villages within that week
-
-
-# check the covariates
-str(merged_data$sample_id_human)
-str(merged_data$HH_ID_human)
-str(merged_data$unq_memID)
-str(merged_data$p_te_all)
-str(merged_data$age_cat_baseline)
-merged_data$age_cat_baseline = as.factor(merged_data$age_cat_baseline)
-str(merged_data$village_name)
-merged_data$village_name = as.factor(merged_data$village_name)
-merged_data$village_name = relevel(merged_data$village_name,ref = "Maruti")
-str(merged_data$aim2_exposure)
-merged_data$aim2_exposure = as.factor(merged_data$aim2_exposure)
-merged_data$aim2_exposure = relevel(merged_data$aim2_exposure,ref = "symptomatic infection")
-
-# create a variable for parasite density cubed
-merged_data$pfr364Q_std_combined_rescaled = scale(merged_data$pfr364Q_std_combined)
-summary(merged_data$pfr364Q_std_combined_rescaled)
-merged_data$pfr364Q_std_combined_cubic = merged_data$pfr364Q_std_combined_rescaled*merged_data$pfr364Q_std_combined_rescaled*merged_data$pfr364Q_std_combined_rescaled
-summary(merged_data$pfr364Q_std_combined_cubic)
-
-# make a variable for the rescaled, centered cubic form of the mosquito week counts
-merged_data$mosquito_week_count_rescaled = scale(merged_data$mosquito_week_count)
-merged_data$mosquito_week_count_cubic_rescaled = merged_data$mosquito_week_count_rescaled*merged_data$mosquito_week_count_rescaled*merged_data$mosquito_week_count_rescaled
-summary(merged_data$mosquito_week_count_cubic_rescaled)
-hist(merged_data$mosquito_week_count_cubic_rescaled)
-merged_data$mosquito_week_count_quad_rescaled = merged_data$mosquito_week_count_rescaled*merged_data$mosquito_week_count_rescaled
-summary(merged_data$mosquito_week_count_quad_rescaled)
-summary(merged_data$mosquito_week_count_rescaled)
-
-# write out the data set 
-# write_rds(merged_data,"spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
-merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/time sensitivity analysis data sets/spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
 
 #### --------- create a function to look at different time codings ----------- ####
 
-# now write the function to calculate P_te_t between -30 and 0 days
-p_te_t_sensivity_analysis = function(x) {
-  
-  # step 1: calculate p_te_t
-  p_te_t = rep(NA,nrow(merged_data))
-  for (i in 1:nrow(merged_data)){
-    if (merged_data$date_difference_flipped[i] >= -30 & merged_data$date_difference_flipped[i] <= 0){
-      p_te_t[i] = 1/(1+0.6*exp(-merged_data$date_difference_flipped[i]-x))
-    } else {
-      p_te_t[i] = 0
-    }
+# make new variable for coding time
+# 15
+p_te_t_15 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -15 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_15[i] = 1
+  } else {
+    p_te_t_15[i] = 0
   }
-  
-  # step 2: make a final variable that is P(TEall)
-  # have that variable conditioned so you only calculate the probability of transmission if p_te is non-zero for all 4 variables
-  p_te_all = rep(NA,nrow(merged_data))
-  for (i in 1:nrow(merged_data)){
-    if (p_te_t[i] != 0 & merged_data$p_te_d[i] != 0 & merged_data$rescaled_p_te_a_c_combo[i] != 0){
-      p_te_all[i] = p_te_t[i]*merged_data$p_te_d[i]*merged_data$rescaled_p_te_a_c_combo[i]
-    } else {
-      p_te_all[i] = 0
-    }
-  }
-  return(p_te_all)
 }
-
-
-# rewrite the function to have it export just the p_te_t values
-p_te_t_sensivity_analysis_part2 = function(x) {
-  
-  # step 1: calculate p_te_t
-  p_te_t = rep(NA,nrow(merged_data))
-  for (i in 1:nrow(merged_data)){
-    if (merged_data$date_difference_flipped[i] >= -30 & merged_data$date_difference_flipped[i] <= 0){
-      p_te_t[i] = 1/(1+0.6*exp(-merged_data$date_difference_flipped[i]-x))
-    } else {
-      p_te_t[i] = 0
-    }
+model_data$p_te_t_15 = p_te_t_15
+# 16
+p_te_t_16 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -16 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_16[i] = 1
+  } else {
+    p_te_t_16[i] = 0
   }
-  return(p_te_t)
 }
+model_data$p_te_t_16 = p_te_t_16
+# 17
+p_te_t_17 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -17 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_17[i] = 1
+  } else {
+    p_te_t_17[i] = 0
+  }
+}
+model_data$p_te_t_17 = p_te_t_17
+# 18
+p_te_t_18 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -18 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_18[i] = 1
+  } else {
+    p_te_t_18[i] = 0
+  }
+}
+model_data$p_te_t_18 = p_te_t_18
+# 19
+p_te_t_19 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -19 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_19[i] = 1
+  } else {
+    p_te_t_19[i] = 0
+  }
+}
+model_data$p_te_t_19 = p_te_t_19
+# 20
+p_te_t_20 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -20 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_20[i] = 1
+  } else {
+    p_te_t_20[i] = 0
+  }
+}
+model_data$p_te_t_20 = p_te_t_20
+# 21
+p_te_t_21 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -21 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_21[i] = 1
+  } else {
+    p_te_t_21[i] = 0
+  }
+}
+model_data$p_te_t_21 = p_te_t_21
+# 22
+p_te_t_22 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -22 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_22[i] = 1
+  } else {
+    p_te_t_22[i] = 0
+  }
+}
+model_data$p_te_t_22 = p_te_t_22
+# 23
+p_te_t_23 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -23 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_23[i] = 1
+  } else {
+    p_te_t_23[i] = 0
+  }
+}
+model_data$p_te_t_23 = p_te_t_23
+# 24
+p_te_t_24 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -24 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_24[i] = 1
+  } else {
+    p_te_t_24[i] = 0
+  }
+}
+model_data$p_te_t_24 = p_te_t_24
+# 25
+p_te_t_25 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -25 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_25[i] = 1
+  } else {
+    p_te_t_25[i] = 0
+  }
+}
+model_data$p_te_t_25 = p_te_t_25
+# 26
+p_te_t_26 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -26 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_26[i] = 1
+  } else {
+    p_te_t_26[i] = 0
+  }
+}
+model_data$p_te_t_26 = p_te_t_26
+# 27
+p_te_t_27 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -27 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_27[i] = 1
+  } else {
+    p_te_t_27[i] = 0
+  }
+}
+model_data$p_te_t_27 = p_te_t_27
+# 28
+p_te_t_28 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -28 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_28[i] = 1
+  } else {
+    p_te_t_28[i] = 0
+  }
+}
+model_data$p_te_t_28 = p_te_t_28
+# 29
+p_te_t_29 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -29 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_29[i] = 1
+  } else {
+    p_te_t_29[i] = 0
+  }
+}
+model_data$p_te_t_29 = p_te_t_29
+# 30
+p_te_t_30 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$date_difference_flipped[i] >= -30 & model_data$date_difference_flipped[i] <= 7){
+    p_te_t_30[i] = 1
+  } else {
+    p_te_t_30[i] = 0
+  }
+}
+model_data$p_te_t_30 = p_te_t_30
 
 
-#### -------- now run the function to do a sensitivity analysis of time -------- ####
-
-# slowly flatten the line going from -14 to -30 to return p_te_all
-merged_data$p_te_all_17 = p_te_t_sensivity_analysis(17)
-merged_data$p_te_all_18 = p_te_t_sensivity_analysis(18)
-merged_data$p_te_all_19 = p_te_t_sensivity_analysis(19)
-merged_data$p_te_all_20 = p_te_t_sensivity_analysis(20)
-merged_data$p_te_all_21 = p_te_t_sensivity_analysis(21)
-merged_data$p_te_all_22 = p_te_t_sensivity_analysis(22)
-merged_data$p_te_all_23 = p_te_t_sensivity_analysis(23)
-merged_data$p_te_all_24 = p_te_t_sensivity_analysis(24)
-merged_data$p_te_all_25 = p_te_t_sensivity_analysis(25)
-merged_data$p_te_all_26 = p_te_t_sensivity_analysis(26)
-merged_data$p_te_all_27 = p_te_t_sensivity_analysis(27)
-merged_data$p_te_all_28 = p_te_t_sensivity_analysis(28)
-merged_data$p_te_all_29 = p_te_t_sensivity_analysis(29)
-merged_data$p_te_all_30 = p_te_t_sensivity_analysis(30)
-merged_data$p_te_all_31 = p_te_t_sensivity_analysis(31)
-merged_data$p_te_all_32 = p_te_t_sensivity_analysis(32)
-
-
-# slowly flatten the line going from -14 to -30 to return p_te_t
-merged_data$p_te_t_17 = p_te_t_sensivity_analysis_part2(17)
-merged_data$p_te_t_18 = p_te_t_sensivity_analysis_part2(18)
-merged_data$p_te_t_19 = p_te_t_sensivity_analysis_part2(19)
-merged_data$p_te_t_20 = p_te_t_sensivity_analysis_part2(20)
-merged_data$p_te_t_21 = p_te_t_sensivity_analysis_part2(21)
-merged_data$p_te_t_22 = p_te_t_sensivity_analysis_part2(22)
-merged_data$p_te_t_23 = p_te_t_sensivity_analysis_part2(23)
-merged_data$p_te_t_24 = p_te_t_sensivity_analysis_part2(24)
-merged_data$p_te_t_25 = p_te_t_sensivity_analysis_part2(25)
-merged_data$p_te_t_26 = p_te_t_sensivity_analysis_part2(26)
-merged_data$p_te_t_27 = p_te_t_sensivity_analysis_part2(27)
-merged_data$p_te_t_28 = p_te_t_sensivity_analysis_part2(28)
-merged_data$p_te_t_29 = p_te_t_sensivity_analysis_part2(29)
-merged_data$p_te_t_30 = p_te_t_sensivity_analysis_part2(30)
-merged_data$p_te_t_31 = p_te_t_sensivity_analysis_part2(31)
-merged_data$p_te_t_32 = p_te_t_sensivity_analysis_part2(32)
+# now make a new p_te_all_csp variable
+# 15
+p_te_all_csp_15 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_15[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_15[i] = model_data$p_te_t_15[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_15[i] = 0
+  }
+}
+model_data$p_te_all_csp_15 = p_te_all_csp_15
+# 16
+p_te_all_csp_16 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_16[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_16[i] = model_data$p_te_t_16[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_16[i] = 0
+  }
+}
+model_data$p_te_all_csp_16 = p_te_all_csp_16
+# 17
+p_te_all_csp_17 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_17[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_17[i] = model_data$p_te_t_17[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_17[i] = 0
+  }
+}
+model_data$p_te_all_csp_17 = p_te_all_csp_17
+# 18
+p_te_all_csp_18 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_18[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_18[i] = model_data$p_te_t_18[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_18[i] = 0
+  }
+}
+model_data$p_te_all_csp_18 = p_te_all_csp_18
+# 19
+p_te_all_csp_19 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_19[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_19[i] = model_data$p_te_t_19[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_19[i] = 0
+  }
+}
+model_data$p_te_all_csp_19 = p_te_all_csp_19
+# 20
+p_te_all_csp_20 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_20[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_20[i] = model_data$p_te_t_20[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_20[i] = 0
+  }
+}
+model_data$p_te_all_csp_20 = p_te_all_csp_20
+# 21
+p_te_all_csp_21 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_21[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_21[i] = model_data$p_te_t_21[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_21[i] = 0
+  }
+}
+model_data$p_te_all_csp_21 = p_te_all_csp_21
+# 22
+p_te_all_csp_22 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_22[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_22[i] = model_data$p_te_t_22[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_22[i] = 0
+  }
+}
+model_data$p_te_all_csp_22 = p_te_all_csp_22
+# 23
+p_te_all_csp_23 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_23[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_23[i] = model_data$p_te_t_23[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_23[i] = 0
+  }
+}
+model_data$p_te_all_csp_23 = p_te_all_csp_23
+# 24
+p_te_all_csp_24 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_24[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_24[i] = model_data$p_te_t_24[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_24[i] = 0
+  }
+}
+model_data$p_te_all_csp_24 = p_te_all_csp_24
+# 25
+p_te_all_csp_25 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_25[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_25[i] = model_data$p_te_t_25[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_25[i] = 0
+  }
+}
+model_data$p_te_all_csp_25 = p_te_all_csp_25
+# 26
+p_te_all_csp_26 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_26[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_26[i] = model_data$p_te_t_26[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_26[i] = 0
+  }
+}
+model_data$p_te_all_csp_26 = p_te_all_csp_26
+# 27
+p_te_all_csp_27 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_27[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_27[i] = model_data$p_te_t_27[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_27[i] = 0
+  }
+}
+model_data$p_te_all_csp_27 = p_te_all_csp_27
+# 28
+p_te_all_csp_28 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_28[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_28[i] = model_data$p_te_t_28[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_28[i] = 0
+  }
+}
+model_data$p_te_all_csp_28 = p_te_all_csp_28
+# 29
+p_te_all_csp_29 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_29[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_29[i] = model_data$p_te_t_29[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_29[i] = 0
+  }
+}
+model_data$p_te_all_csp_29 = p_te_all_csp_29
+# 30
+p_te_all_csp_30 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t_30[i] != 0 & model_data$p_te_d[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_30[i] = model_data$p_te_t_30[i]*model_data$p_te_d[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_30[i] = 0
+  }
+}
+model_data$p_te_all_csp_30 = p_te_all_csp_30
 
 
 #### ------- now create new data sets for each value -------- ####
@@ -369,147 +445,139 @@ test = final_data %>%
 # infections that occurred within 14 days of the symptomatic infections removed from the data set. 
 
 # censor these participants 
-setdiff(ppts_to_censor$sample_name_final,merged_data$sample_name_final)
-length(unique(merged_data$sample_name_final))
-length(unique(merged_data$sample_id_human))
-length(which(merged_data$sample_name_final %in% ppts_to_censor$sample_name_final))
-merged_data = merged_data[-which(merged_data$sample_name_final %in% ppts_to_censor$sample_name_final),]
-merged_data = merged_data[-which(merged_data$sample_name_final == "K05-230518-4-R"),]
-length(unique(merged_data$sample_name_final))
-length(unique(merged_data$sample_id_human))
+setdiff(ppts_to_censor$sample_name_final,model_data$sample_name_final)
+length(unique(model_data$sample_name_final))
+length(unique(model_data$sample_id_human))
+length(which(model_data$sample_name_final %in% ppts_to_censor$sample_name_final))
+model_data = model_data[-which(model_data$sample_name_final %in% ppts_to_censor$sample_name_final),]
+model_data = model_data[-which(model_data$sample_name_final == "K05-230518-4-R"),]
+length(unique(model_data$sample_name_final))
+length(unique(model_data$sample_id_human))
+
+# rescale parasite density
+model_data$pfr364Q_std_combined_rescaled = scale(model_data$pfr364Q_std_combined)
+
+# make mosquito week count cat
+mosquito_week_count_df = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/time sensitivity analysis data sets/spat21_aim2_sensitivity_analysis_data_set_2FEB2020.rds")
+colnames(mosquito_week_count_df)
+mosquito_week_count_df = mosquito_week_count_df %>%
+  select(sample_id_human,sample_id_abdomen,mosquito_week_count)
+model_data = left_join(model_data,mosquito_week_count_df,by=c("sample_id_human","sample_id_abdomen"))
+model_data$mosquito_week_count_cat = ifelse(model_data$mosquito_week_count < 75,"Low mosquito abundance","High mosquito abundance")
+
+# make symptomatic infections the referent
+model_data$aim2_exposure = as.factor(model_data$aim2_exposure)
+model_data$aim2_exposure = relevel(model_data$aim2_exposure, ref="symptomatic infection")
 
 # now make separate data sets for each sensitivity analysis value
-original_data = merged_data %>%
-  filter(p_te_d > 0 & p_te_t > 0)
-data_17 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_17 > 0)
-data_18 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_18 > 0)
-data_19 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_19 > 0)
-data_20 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_20 > 0)
-data_21 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_21 > 0)
-data_22 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_22 > 0)
-data_23 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_23 > 0)
-data_24 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_24 > 0)
-data_25 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_25 > 0)
-data_26 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_26 > 0)
-data_27 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_27 > 0)
-data_28 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_28 > 0)
-data_29 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_29 > 0)
-data_30 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_30 > 0)
-data_31 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_31 > 0)
-data_32 = merged_data %>%
-  filter(p_te_d > 0 & p_te_t_32 > 0)
+original_data = model_data %>%
+  filter(p_te_d > 0 & p_te_t > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_15 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_15 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_16 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_16 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_17 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_17 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_18 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_18 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_19 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_19 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_20 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_20 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_21 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_21 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_22 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_22 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_23 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_23 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_24 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_24 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_25 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_25 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_26 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_26 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_27 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_27 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_28 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_28 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_29 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_29 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_30 = model_data %>%
+  filter(p_te_d > 0 & p_te_t_30 > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
 
 
-#### -------- now rerun the model to get new ORs for different time distributions ------- ####
+
+#### ------- now run new models ------- ####
+
 
 # run the models for the new p_te_t estimates
 # note: sensitivity analysis models have 5218 human-mosquito pair observations
-model_original <- glmer(p_te_all~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = original_data, control = glmerControl(optimizer="bobyqa"))
-model_17 <- glmer(p_te_all_17~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_17, control = glmerControl(optimizer="bobyqa"))
-model_18 <- glmer(p_te_all_18~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_18, control = glmerControl(optimizer="bobyqa"))
-model_19 <- glmer(p_te_all_19~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_19, control = glmerControl(optimizer="bobyqa"))
-model_20 <- glmer(p_te_all_20~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_20, control = glmerControl(optimizer="bobyqa"))
-model_21 <- glmer(p_te_all_21~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_21, control = glmerControl(optimizer="bobyqa"))
-model_22 <- glmer(p_te_all_22~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_22, control = glmerControl(optimizer="bobyqa"))
-model_23 <- glmer(p_te_all_23~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_23, control = glmerControl(optimizer="bobyqa"))
-model_24 <- glmer(p_te_all_24~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_24, control = glmerControl(optimizer="bobyqa"))
-model_25 <- glmer(p_te_all_25~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_25, control = glmerControl(optimizer="bobyqa"))
-model_26 <- glmer(p_te_all_26~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_26, control = glmerControl(optimizer="bobyqa"))
-model_27 <- glmer(p_te_all_27~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_27, control = glmerControl(optimizer="bobyqa"))
-model_28 <- glmer(p_te_all_28~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_28, control = glmerControl(optimizer="bobyqa"))
-model_29 <- glmer(p_te_all_29~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_29, control = glmerControl(optimizer="bobyqa"))
-model_30 <- glmer(p_te_all_30~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_30, control = glmerControl(optimizer="bobyqa"))
-model_31 <- glmer(p_te_all_31~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_31, control = glmerControl(optimizer="bobyqa"))
-model_32 <- glmer(p_te_all_32~aim2_exposure+age_cat_baseline+mosquito_week_count_rescaled+mosquito_week_count_quad_rescaled+mosquito_week_count_cubic_rescaled+pfr364Q_std_combined_rescaled+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_32, control = glmerControl(optimizer="bobyqa"))
+model_original <- glmmTMB(p_te_all_csp~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = original_data)
+model_15 <- glmmTMB(p_te_all_csp_15~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_15)
+model_16 <- glmmTMB(p_te_all_csp_16~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_16)
+model_17 <- glmmTMB(p_te_all_csp_17~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_17)
+model_18 <- glmmTMB(p_te_all_csp_18~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_18)
+model_19 <- glmmTMB(p_te_all_csp_19~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_19)
+model_20 <- glmmTMB(p_te_all_csp_20~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_20)
+model_21 <- glmmTMB(p_te_all_csp_21~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_21)
+model_22 <- glmmTMB(p_te_all_csp_22~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_22)
+model_23 <- glmmTMB(p_te_all_csp_23~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_23)
+model_24 <- glmmTMB(p_te_all_csp_24~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_24)
+model_25 <- glmmTMB(p_te_all_csp_25~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_25)
+model_26 <- glmmTMB(p_te_all_csp_26~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_26)
+model_27 <- glmmTMB(p_te_all_csp_27~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_27)
+model_28 <- glmmTMB(p_te_all_csp_28~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_28)
+model_29 <- glmmTMB(p_te_all_csp_29~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_29)
+model_30 <- glmmTMB(p_te_all_csp_30~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_30)
+
 
 # pull out the estimates
 # model original
 summary(model_original)
-exp(1.020800)
 exp(confint(model_original, method="Wald"))
-# day 17
-summary(model_17)
-exp(0.89263)
+exp(confint(model_15, method="Wald"))
+exp(confint(model_16, method="Wald"))
 exp(confint(model_17, method="Wald"))
-# day 18
-summary(model_18)
-exp(0.83631)
 exp(confint(model_18, method="Wald"))
-# day 19
-summary(model_19)
-exp(0.87228)
 exp(confint(model_19, method="Wald"))
-# day 20
-summary(model_20)
-exp(0.89639)
 exp(confint(model_20, method="Wald"))
-# day 21
-summary(model_21)
-exp(0.88070)
 exp(confint(model_21, method="Wald"))
-# day 22
-summary(model_22)
-exp(0.85781)
 exp(confint(model_22, method="Wald"))
-# day 23
-summary(model_23)
-exp(0.75121)
 exp(confint(model_23, method="Wald"))
-# day 24
-summary(model_24)
-exp(0.74038)
 exp(confint(model_24, method="Wald"))
-# day 25
-summary(model_25)
-exp(0.74195)
 exp(confint(model_25, method="Wald"))
-# day 26
-summary(model_26)
-exp(0.75502)
 exp(confint(model_26, method="Wald"))
-# day 27
-summary(model_27)
-exp(0.77803)
 exp(confint(model_27, method="Wald"))
-# day 28
-summary(model_28)
-exp(0.85387)
 exp(confint(model_28, method="Wald"))
-# day 29
-summary(model_29)
-exp(0.98737)
 exp(confint(model_29, method="Wald"))
-# day 30
-summary(model_30)
-exp(0.99146)
 exp(confint(model_30, method="Wald"))
-# day 31
-summary(model_31)
-exp(1.03872)
-exp(confint(model_31, method="Wald"))
 
 
 
 #### ------- now make two plots for the time sensitivity analysis ------- ####
 
 # first plot the p_te_t values tested
-p_te_t_sensitivity_plot = ggplot(data=data_17) +
+p_te_t_sensitivity_plot = ggplot(data=data_30) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t),colour="black",lwd=2.5) +
+  geom_line(aes(x=date_difference_flipped,y=p_te_t_15),colour="#67000d",lwd=1.5) +
+  geom_line(aes(x=date_difference_flipped,y=p_te_t_16),colour="#3f007d",lwd=1.5) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t_17),colour="#67000d",lwd=1.5) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t_18),colour="#a50f15",lwd=1.5) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t_19),colour="#9e0142",lwd=1.5) +
@@ -524,27 +592,26 @@ p_te_t_sensitivity_plot = ggplot(data=data_17) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t_28),colour="#3288bd",lwd=1.5) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t_29),colour="#5e4fa2",lwd=1.5) +
   geom_line(aes(x=date_difference_flipped,y=p_te_t_30),colour="#54278f",lwd=1.5) +
-  geom_line(aes(x=date_difference_flipped,y=p_te_t_31),colour="#3f007d",lwd=1.5) +
   xlab("Days between human infection and mosquito collection") +
   ylab("Probability of tranmission for time") +
-  scale_x_continuous(breaks=c(0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,-30)) + 
+  scale_x_continuous(breaks=c(7,6,5,4,3,2,1,0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,-30)) + 
   theme_bw()
 p_te_t_sensitivity_plot
 # export the plot
-ggsave(p_te_t_sensitivity_plot, filename="/Users/kelseysumner/Desktop/time_sensitivity_analysis_x_axis_plot.png", device="png",
-       height=7, width=8, units="in", dpi=500)
+# ggsave(p_te_t_sensitivity_plot, filename="/Users/kelseysumner/Desktop/time_sensitivity_analysis_x_axis_plot.png", device="png",
+       # height=7, width=8, units="in", dpi=500)
 
 # then plot the new odds ratios across values of p_te_t
 # read in the model results
 model_results = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/computational_model_materials/time_sensitivity_analysis.csv")
-model_results$day = c(-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29)
+model_results$day = c("-14 to +7","-15 to +7","-16 to +7","-17 to +7","-18 to +7","-19 to +7","-20 to +7","-21 to +7","-22 to +7","-23 to +7","-24 to +7","-25 to +7","-26 to +7","-27 to +7","-28 to +7","-29 to +7","-30 to +7")
 # make a plot of the model results
 model_plot_smooth = ggplot(data=model_results,aes(x=factor(day),y=estimate,group=1),cex=1.5,col="#762a83") +
   geom_smooth(data=model_results,aes(x=factor(day),y=estimate,group=1),cex=1.5,col="#762a83",fill="#762a83") +
   theme_bw() +
-  xlab("Probability decreases at this day") +
+  xlab("Time window (day range)") +
   ylab("Odds ratio (95% CI)") + 
-  scale_y_continuous(breaks=c(0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0),trans="log10") +
+  scale_y_continuous(trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip() +
   theme(text = element_text(size=25)) 
@@ -554,15 +621,153 @@ model_plot = ggplot(data=model_results,aes(x=factor(day),y=estimate,group=1),cex
   geom_line(data=model_results,aes(x=factor(day),y=estimate,group=1),cex=1.5,col="#762a83") +
   geom_ribbon(data=model_results,aes(x=factor(day),ymin = lower_ci, ymax = upper_ci),alpha=0.2,fill="#762a83") +
   theme_bw() +
-  xlab("Probability decreases at this day") + 
+  xlab("Time window (day range)") + 
   ylab("Odds ratio (95% CI)") + 
-  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12),trans="log10") +
+  scale_y_continuous(trans="log10") +
   geom_hline(yintercept=1,linetype="dashed") + 
   coord_flip()
 model_plot
 # export the plot
 ggsave(model_plot, filename="/Users/kelseysumner/Desktop/time_sensitivity_analysis_model_plot.png", device="png",
        height=7, width=8, units="in", dpi=500)
-ggsave(model_plot_smooth, filename="/Users/kelseysumner/Desktop/time_sensitivity_analysis_model_plot_smooth.png", device="png",
+
+
+
+
+#### ------- now do a sensitivity analysis for distance allowing infections at any distance to be matched -------- ####
+
+# make a new variable for distance
+# 6 km
+p_te_d_6 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$distance_km[i] >= 0 & model_data$distance_km[i] <= 6){
+    p_te_d_6[i] = exp(-model_data$distance_km[i]*3)
+  } else {
+    p_te_d_6[i] = 0
+  }
+}
+model_data$p_te_d_6 = p_te_d_6
+# 9 km
+p_te_d_9 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$distance_km[i] >= 0 & model_data$distance_km[i] <= 9){
+    p_te_d_9[i] = exp(-model_data$distance_km[i]*3)
+  } else {
+    p_te_d_9[i] = 0
+  }
+}
+model_data$p_te_d_9 = p_te_d_9
+# 12 km
+p_te_d_12 = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$distance_km[i] >= 0 & model_data$distance_km[i] <= 12){
+    p_te_d_12[i] = exp(-model_data$distance_km[i]*3)
+  } else {
+    p_te_d_12[i] = 0
+  }
+}
+model_data$p_te_d_12 = p_te_d_12
+
+# now make a new p_te_all_csp variable
+# 6km
+p_te_all_csp_6km = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t[i] != 0 & model_data$p_te_d_6[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_6km[i] = model_data$p_te_t[i]*model_data$p_te_d_6[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_6km[i] = 0
+  }
+}
+model_data$p_te_all_csp_6km = p_te_all_csp_6km
+# 9km
+p_te_all_csp_9km = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t[i] != 0 & model_data$p_te_d_9[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_9km[i] = model_data$p_te_t[i]*model_data$p_te_d_9[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_9km[i] = 0
+  }
+}
+model_data$p_te_all_csp_9km = p_te_all_csp_9km
+# 12 km
+p_te_all_csp_12km = rep(NA,nrow(model_data))
+for (i in 1:nrow(model_data)){
+  if (model_data$p_te_t[i] != 0 & model_data$p_te_d_12[i] != 0 & model_data$rescaled_p_te_c[i] != 0){
+    p_te_all_csp_12km[i] = model_data$p_te_t[i]*model_data$p_te_d_12[i]*model_data$rescaled_p_te_c[i]
+  } else {
+    p_te_all_csp_12km[i] = 0
+  }
+}
+model_data$p_te_all_csp_12km = p_te_all_csp_12km
+
+# now make separate data sets for each sensitivity analysis value
+original_data = model_data %>%
+  filter(p_te_d > 0 & p_te_t > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_6km = model_data %>%
+  filter(p_te_d_6 > 0 & p_te_t > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_9km = model_data %>%
+  filter(p_te_d_9 > 0 & p_te_t > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+data_12km = model_data %>%
+  filter(p_te_d_12 > 0 & p_te_t > 0) %>%
+  filter(!(is.na(csp_haps_shared)))
+
+
+# run the models for the new p_te_t estimates
+# note: sensitivity analysis models have 5218 human-mosquito pair observations
+model_3km <- glmmTMB(p_te_all_csp~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = original_data)
+model_6km <- glmmTMB(p_te_all_csp_6km~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_6km)
+model_9km <- glmmTMB(p_te_all_csp_9km~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_9km)
+model_12km <- glmmTMB(p_te_all_csp_12km~aim2_exposure+pfr364Q_std_combined_rescaled+age_cat_baseline+mosquito_week_count_cat+village_name+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = data_12km)
+
+
+# pull out the estimates
+# model original
+summary(model_3km)
+exp(confint(model_3km, method="Wald"))
+exp(confint(model_6km, method="Wald"))
+exp(confint(model_9km, method="Wald"))
+exp(confint(model_12km, method="Wald"))
+
+
+# then plot the new odds ratios across values of p_te_t
+# read in the model results
+model_results = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/computational_model_materials/distance_sensitivity_analysis.csv")
+# make a plot of the model results
+model_plot = ggplot(data=model_results,aes(x=factor(time_interval),y=estimate,group=1),cex=1.5,col="") +
+  geom_line(data=model_results,aes(x=factor(time_interval),y=estimate,group=1),cex=1.5,col="#e34a33") +
+  geom_ribbon(data=model_results,aes(x=factor(time_interval),ymin = lower_ci, ymax = upper_ci),alpha=0.2,fill="#e34a33") +
+  theme_bw() +
+  xlab("Maximum distance between specimens (Km)") + 
+  ylab("Odds ratio (95% CI)") + 
+  scale_y_continuous(trans="log10") +
+  geom_hline(yintercept=1,linetype="dashed") + 
+  coord_flip()
+model_plot
+# export the plot
+ggsave(model_plot, filename="/Users/kelseysumner/Desktop/distance_sensitivity_analysis_model_plot.png", device="png",
        height=7, width=8, units="in", dpi=500)
 
+
+
+# calculate amount of haplotype sharing at <= 3km and > 3 km
+under3_data = model_data %>% filter(distance_km <= 3)
+over3_data = model_data %>% filter(distance_km > 3)
+summary(under3_data$distance_km)
+summary(over3_data$distance_km)
+summary(under3_data$csp_haps_shared)
+summary(over3_data$csp_haps_shared)
+model_data$under3 = ifelse(model_data$distance_km <= 3, "3 Km or less",ifelse(model_data$distance_km > 3,"Greater than 3 Km",NA))
+box_plot = ggplot(data=model_data,aes(x=factor(under3),y=csp_haps_shared,fill=under3)) +
+  geom_boxplot(alpha=0.7) +
+  theme_bw() +
+  ylab("Maximum distance between specimens (Km)") + 
+  xlab("Number of pfcsp haplotypes shared") +
+  scale_fill_manual(values = c("#fc8d59","#99d594")) +
+  theme(legend.position = "")
+box_plot
+# export the plot
+ggsave(box_plot, filename="/Users/kelseysumner/Desktop/distance_hap_sharing_box_plot.png", device="png",
+       height=7, width=8, units="in", dpi=500)

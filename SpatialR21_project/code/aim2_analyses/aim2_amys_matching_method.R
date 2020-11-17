@@ -1041,3 +1041,62 @@ fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome_figure3coding_ama_supplement.png", device="png",
        height=5, width=8, units="in", dpi=400)
+
+
+
+
+#### ------- make table S1 comparing subset csp data set to full data set -------- ####
+
+# read in the combined ama and csp data set for mosquito abdomens
+model_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 2/clean_ids_haplotype_results/AMA_and_CSP/final/model data/final_model_data/spat21_aim2_merged_data_with_weights_5MAR2020.rds")
+
+# subset the data set to samples that passed pfcsp sequencing only
+model_data = model_data %>%
+  filter(!(is.na(csp_haps_shared)))
+
+# parasite density
+short_1 = csp_subset_data %>% select(sample_id_human,sample_id_abdomen,pfr364Q_std_combined,csp_moi) %>% mutate(type = rep("Analysis",nrow(csp_subset_data)))
+short_2 = model_data %>% select(sample_id_human,sample_id_abdomen,pfr364Q_std_combined,csp_moi) %>% mutate(type = rep("Full",nrow(model_data))) 
+all_data = rbind(short_1,short_2)
+# wilcoxon-mann-whitney test
+wilcox.test(pfr364Q_std_combined ~ type,data=all_data)
+# correct for repeated measures
+2.2e-16*14
+
+# age categories
+# first make a contingency table
+df = data.frame(analysis = c(179,1105,281),full=c(438,1806,1438))
+# then do a chi-squared test
+chisq.test(df)
+# correct for repeated measures
+2.2e-16*14
+
+# csp moi
+# wilcoxon-mann-whitney test
+wilcox.test(csp_moi ~ type,data=all_data)
+# correct for repeated measures
+0.01509*14
+
+# number of infections per participant
+# for analysis data set
+small_test = csp_all_nonzero_data %>%
+  group_by(unq_memID) %>%
+  summarize(n=n())
+small_test$type = rep("Analysis",nrow(small_test))
+median(small_test$n)
+# for full data set
+big_test = model_data %>%
+  group_by(unq_memID,sample_id_human) %>%
+  summarize(n=n())
+big_test = big_test %>%
+  group_by(unq_memID) %>%
+  summarize(n = n())
+summary(small_test$n)
+summary(big_test$n)
+big_test$type = rep("Full",nrow(big_test))
+median(big_test$n)
+combo_data = rbind(small_test,big_test)
+# wilcoxon-mann-whitney test
+wilcox.test(n ~ type,data=combo_data)
+# correct for repeated measures
+4.545e-05*14

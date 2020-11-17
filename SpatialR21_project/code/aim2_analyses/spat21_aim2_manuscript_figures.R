@@ -1623,3 +1623,8 @@ ggsave(control_plot_2, filename="/Users/kelseysumner/Desktop/control_plot_2.png"
 
 # calculate moi
 colnames(csp_haplotypes)
+
+
+
+
+write_csv(total_haps,"Desktop/mydata.csv")

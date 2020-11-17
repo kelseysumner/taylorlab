@@ -363,7 +363,15 @@ consecutive_follow_up_ordered_df <- consecutive_follow_up_ordered_df[,c("unq_mem
 
 #### ----------- now calculate the event indicator ------------- ####
 
+# read back in the imputed data sets
+survival_data_primary = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/survival_data_primary_24AUG2020.rds")
+survival_data_secondary_stringent = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/survival_data_secondary_stringent_24AUG2020.rds")
+survival_data_secondary_permissive = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/survival_data_secondary_permissive_24AUG2020.rds")
+
+
+
 ## ---- survival_data_primary
+
 
 # first remove all sick visits that did not have a symptomatic infection
 survival_data_primary = survival_data_primary %>% filter(!(is.na(survival_data_primary$main_outcome_primary_case_def) &
@@ -376,7 +384,6 @@ survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id
 unq_memID_start_date = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
 
 # pull out a list of the different unique ids to censor 
-# set up a for loop of follow up dates to identify which you need to impute
 old_date_to_add = c()
 new_date_to_add = c()
 id_to_add = c()
@@ -426,13 +433,19 @@ for (i in 1:nrow(unq_memID_start_date)){
   for (j in 1:nrow(survival_data_primary)){
     if (j > 1){
       if (survival_data_primary$main_outcome_primary_case_def[j]=="symptomatic infection" &
-          !(is.na(survival_data_primary$main_outcome_primary_case_def[j])) & unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j]){
-        event_indicator[j] = 1
+          !(is.na(survival_data_primary$main_outcome_primary_case_def[j])) & 
+          unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j]){
+        if (survival_data_primary$sample_id_date[j] != unq_memID_start_date$sample_id_date[i]){
+          event_indicator[j] = 1
+        } else {
+          event_indicator[j] = 0
+        }
       }
       if (survival_data_primary$main_outcome_primary_case_def[j-1] =="symptomatic infection" & 
           !(is.na(survival_data_primary$main_outcome_primary_case_def[j-1])) &
           unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j] & 
-          survival_data_primary$sample_id_date[j]-survival_data_primary$sample_id_date[j-1] <= 14){
+          survival_data_primary$sample_id_date[j]-survival_data_primary$sample_id_date[j-1] <= 14 &
+          survival_data_primary$sample_id_date[j] != unq_memID_start_date$sample_id_date[i]){
         event_indicator[j] = 0
       }
     }
@@ -443,21 +456,15 @@ survival_data_primary$event_indicator = event_indicator
 table(survival_data_primary$event_indicator,survival_data_primary$main_exposure_primary_case_def,useNA = "always")
 table(survival_data_primary$event_indicator,survival_data_primary$main_outcome_primary_case_def,useNA = "always")
 survival_data_primary %>%
-  filter(main_outcome_primary_case_def=="symptomatic infection" & event_indicator == 0) %>%
+  filter(event_indicator == 0) %>%
+  View()
+survival_data_primary %>%
+  filter(event_indicator == 0 & survival_data_primary$main_outcome_primary_case_def=="symptomatic infection") %>%
   View()
 
 # now add the censoring for LTFU
-table(survival_data_primary$event_indicator,survival_data_primary$main_exposure_primary_case_def,useNA = "always")
-table(survival_data_primary$event_indicator,survival_data_primary$main_outcome_primary_case_def,useNA = "always")
-for (i in 1:nrow(censoring_df)){
-  for (j in 1:nrow(survival_data_primary)){
-      if (survival_data_primary$unq_memID[j] == censoring_df$id_to_add[i] & survival_data_primary$month_year[j] == censoring_df$old_date_to_add[i] & survival_data_primary$visit_type[j]=="monthly visit"){
-        survival_data_primary$event_indicator[j] = 0
-    }
-  }
-}
-table(survival_data_primary$event_indicator,survival_data_primary$main_exposure_primary_case_def,useNA = "always")
-table(survival_data_primary$event_indicator,survival_data_primary$main_outcome_primary_case_def,useNA = "always")
+survival_data_primary = survival_data_primary %>% filter(event_indicator == 1 | is.na(event_indicator))
+table(survival_data_primary$event_indicator,useNA="always")
 
 
 ## ---- survival_data_secondary_stringent
@@ -523,13 +530,19 @@ for (i in 1:nrow(unq_memID_start_date)){
   for (j in 1:nrow(survival_data_secondary_stringent)){
     if (j > 1){
       if (survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j]=="symptomatic infection" &
-          !(is.na(survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j])) & unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j]){
-        event_indicator[j] = 1
+          !(is.na(survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j])) & 
+          unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j]){
+        if (survival_data_secondary_stringent$sample_id_date[j] != unq_memID_start_date$sample_id_date[i]){
+          event_indicator[j] = 1
+        } else {
+          event_indicator[j] = 0
+        }
       }
       if (survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j-1] =="symptomatic infection" & 
           !(is.na(survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def[j-1])) &
           unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j] & 
-          survival_data_secondary_stringent$sample_id_date[j]-survival_data_secondary_stringent$sample_id_date[j-1] <= 14){
+          survival_data_secondary_stringent$sample_id_date[j]-survival_data_secondary_stringent$sample_id_date[j-1] <= 14 &
+          survival_data_secondary_stringent$sample_id_date[j] != unq_memID_start_date$sample_id_date[i]){
         event_indicator[j] = 0
       }
     }
@@ -544,17 +557,9 @@ survival_data_secondary_stringent %>%
   View()
 
 # now add the censoring for LTFU
-table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,useNA = "always")
-table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def,useNA = "always")
-for (i in 1:nrow(censoring_df)){
-  for (j in 1:nrow(survival_data_secondary_stringent)){
-    if (survival_data_secondary_stringent$unq_memID[j] == censoring_df$id_to_add[i] & survival_data_secondary_stringent$month_year[j] == censoring_df$old_date_to_add[i] & survival_data_secondary_stringent$visit_type[j]=="monthly visit"){
-      survival_data_secondary_stringent$event_indicator[j] = 0
-    }
-  }
-}
-table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,useNA = "always")
-table(survival_data_secondary_stringent$event_indicator,survival_data_secondary_stringent$main_outcome_secondary_stringent_case_def,useNA = "always")
+survival_data_secondary_stringent = survival_data_secondary_stringent %>% filter(event_indicator == 1 | is.na(event_indicator))
+table(survival_data_secondary_stringent$event_indicator,useNA="always")
+
 
 
 ## ---- survival_data_secondary_permissive
@@ -620,13 +625,19 @@ for (i in 1:nrow(unq_memID_start_date)){
   for (j in 1:nrow(survival_data_secondary_permissive)){
     if (j > 1){
       if (survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j]=="symptomatic infection" &
-          !(is.na(survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j])) & unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j]){
-        event_indicator[j] = 1
+          !(is.na(survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j])) & 
+          unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j]){
+        if (survival_data_secondary_permissive$sample_id_date[j] != unq_memID_start_date$sample_id_date[i]){
+          event_indicator[j] = 1
+        } else {
+          event_indicator[j] = 0
+        }
       }
       if (survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j-1] =="symptomatic infection" & 
           !(is.na(survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def[j-1])) &
           unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j] & 
-          survival_data_secondary_permissive$sample_id_date[j]-survival_data_secondary_permissive$sample_id_date[j-1] <= 14){
+          survival_data_secondary_permissive$sample_id_date[j]-survival_data_secondary_permissive$sample_id_date[j-1] <= 14 &
+          survival_data_secondary_permissive$sample_id_date[j] != unq_memID_start_date$sample_id_date[i]){
         event_indicator[j] = 0
       }
     }
@@ -641,22 +652,13 @@ survival_data_secondary_permissive %>%
   View()
 
 # now add the censoring for LTFU
-table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,useNA = "always")
-table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def,useNA = "always")
-for (i in 1:nrow(censoring_df)){
-  for (j in 1:nrow(survival_data_secondary_permissive)){
-    if (survival_data_secondary_permissive$unq_memID[j] == censoring_df$id_to_add[i] & survival_data_secondary_permissive$month_year[j] == censoring_df$old_date_to_add[i] & survival_data_secondary_permissive$visit_type[j]=="monthly visit"){
-      survival_data_secondary_permissive$event_indicator[j] = 0
-    }
-  }
-}
-table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,useNA = "always")
-table(survival_data_secondary_permissive$event_indicator,survival_data_secondary_permissive$main_outcome_secondary_permissive_case_def,useNA = "always")
+survival_data_secondary_permissive = survival_data_secondary_permissive %>% filter(event_indicator == 1 | is.na(event_indicator))
+table(survival_data_secondary_permissive$event_indicator,useNA="always")
 
 
 
 
-#### ------ add in information for the days since first infection ------- ####
+#### ------ add in information for the days since first infection up to each event indicator ------- ####
 
 ## ---- survival_data_primary
 
@@ -666,17 +668,65 @@ survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id
 # first pull out when each participant entered the study
 unq_memID_start_date = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
 
-# now calculate the time since the participant first entered the study
-days_in_study = rep(NA,nrow(survival_data_primary))
+# make a data set of when the participant had symptomatic infections
+symp_infections_data = survival_data_primary %>% filter(event_indicator==1)
+
+# make a data set that is when you start the follow-up for each event
+starter_infections = rep(NA,nrow(survival_data_primary))
 for (i in 1:nrow(unq_memID_start_date)){
   for (j in 1:nrow(survival_data_primary)){
     if (unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j]){
-      days_in_study[j] = survival_data_primary$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
+      if (unq_memID_start_date$sample_id_date[i] == survival_data_primary$sample_id_date[j]){
+        starter_infections[j] = 1
+      } else if (survival_data_primary$event_indicator[j-1] == 1 & !(is.na(survival_data_primary$event_indicator[j-1]))){
+        starter_infections[j] = 1
+      } else {
+        starter_infections[j] = 0
+      }
     }
   }
 }
-summary(days_in_study)  
-survival_data_primary$days_in_study = days_in_study
+survival_data_primary$starter_infections = starter_infections
+table(survival_data_primary$main_exposure_primary_case_def,survival_data_primary$starter_infections, useNA="always")
+table(survival_data_primary$main_outcome_primary_case_def,survival_data_primary$starter_infections, useNA="always")
+survival_data_primary %>%
+  select(unq_memID,sample_id_date,main_exposure_primary_case_def,main_outcome_primary_case_def,event_indicator,starter_infections) %>%
+  View()
+
+# remove symptomatic infections that immediately follow other symptomatic infections in the data set
+subset_to_remove = survival_data_primary %>%
+  select(sample_name_final,unq_memID,sample_id_date,main_exposure_primary_case_def,main_outcome_primary_case_def,event_indicator,starter_infections) %>%
+  filter(main_outcome_primary_case_def == "symptomatic infection" & starter_infections == 1)
+survival_data_primary = survival_data_primary[-which(survival_data_primary$sample_name_final %in% subset_to_remove$sample_name_final),]
+survival_data_primary %>%
+  select(sample_name_final,unq_memID,sample_id_date,main_exposure_primary_case_def,main_outcome_primary_case_def,event_indicator,starter_infections) %>%
+  filter(main_outcome_primary_case_def == "symptomatic infection" & starter_infections == 1) %>%
+  View()
+
+# finish the data set that indicates the start the follow-up for each event
+starter_data = survival_data_primary %>% filter(starter_infections==1)
+
+# put the starter data set on hold because will actually be restarting follow-up at each month with the "month method" from Hernan et al. 
+# could use the starter data set later if compare the "month method" results to more traditional exposure coding methods 
+
+
+
+##### WHERE TO START BACK - NEED TO MAKE SURE IT'S CORRECTLY DOING DATES - ISSUE MIGHT BE IN TRIPLE FOR LOOPS
+# now calculate the time since the participant first entered the study until each event
+days_until_event = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (k in 1:nrow(symp_infections_data)){
+    for (j in 1:nrow(survival_data_primary)){
+      if (unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j] &
+          survival_data_primary$sample_id_date[i] < symp_infections_data$sample_id_date[k] &
+          !(is.na(symp_infections_data$sample_id_date[k]))){
+        days_until_event[j] = symp_infections_data$sample_id_date[k]-survival_data_primary$sample_id_date[j]
+      }
+    }
+  }
+}
+summary(days_until_event)  
+survival_data_primary$days_until_event = days_until_event
 
 
 ## ---- survival_data_secondary_stringent
