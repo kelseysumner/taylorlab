@@ -668,9 +668,6 @@ survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id
 # first pull out when each participant entered the study
 unq_memID_start_date = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
 
-# make a data set of when the participant had symptomatic infections
-symp_infections_data = survival_data_primary %>% filter(event_indicator==1)
-
 # make a data set that is when you start the follow-up for each event
 starter_infections = rep(NA,nrow(survival_data_primary))
 for (i in 1:nrow(unq_memID_start_date)){
@@ -709,19 +706,163 @@ starter_data = survival_data_primary %>% filter(starter_infections==1)
 # put the starter data set on hold because will actually be restarting follow-up at each month with the "month method" from Hernan et al. 
 # could use the starter data set later if compare the "month method" results to more traditional exposure coding methods 
 
+# make a data set of when the participant had symptomatic infections
+symp_infections_data = survival_data_primary %>% filter(event_indicator==1)
 
+# now order and tabulate the consecutive follow-up again
+consecutive_follow_up_ordered_df = survival_data_primary %>%
+  filter(visit_type == "monthly visit") %>%
+  select(unq_memID,sample_id_date) %>%
+  group_by(unq_memID) %>%
+  mutate(id = paste0(as.character(lubridate::month(sample_id_date)),"-",as.character(lubridate::year(sample_id_date)))) %>%
+  spread(key=id,value=sample_id_date)
 
-##### WHERE TO START BACK - NEED TO MAKE SURE IT'S CORRECTLY DOING DATES - ISSUE MIGHT BE IN TRIPLE FOR LOOPS
+# reorder consecutive follow-up columns
+consecutive_follow_up_ordered_df <- consecutive_follow_up_ordered_df[,c("unq_memID","6-2017", "7-2017", "8-2017","9-2017","10-2017","11-2017","12-2017","1-2018","2-2018","3-2018","4-2018","5-2018","6-2018","7-2018","8-2018","9-2018","10-2018","11-2018","12-2018","1-2019","2-2019","3-2019","4-2019","5-2019","6-2019","7-2019","8-2019","9-2019","10-2019","11-2019")]
+
+# create a dataset has the end of follow-up for each person
+end_date_to_add = c()
+id_to_add = c()
+for (i in 1:nrow(consecutive_follow_up_ordered_df)){
+  for (j in 1:(ncol(consecutive_follow_up_ordered_df))-1){
+    if (j>2){
+      
+      if (is.na(consecutive_follow_up_ordered_df[i,j])){
+        
+        # pull out the end date
+        split_up = str_split(colnames(followup_data)[j],"-")[[1]]
+        if (nchar(split_up[1]) == 1){
+          end_date = paste0("0",split_up[1],"01",split_up[2])
+        } else {
+          end_date = paste0(split_up[1],"01",split_up[2])
+        }
+        end_date_to_add = c(end_date_to_add,end_date)
+        
+        # pull out the id
+        id_to_add = c(id_to_add,consecutive_follow_up_ordered_df$unq_memID[i])
+
+      }
+    }
+    
+  }
+  
+}
+end_date_df = data.frame(id_to_add,end_date_to_add)
+end_date_df$end_date_to_add=lubridate::mdy(end_date_df$end_date_to_add)
+end_date_df$sample_id_date = rep(NA,nrow(end_date_df))
+end_date_df = end_date_df %>% rename("id_to_add"="unq_memID","end_date_to_add"="month_year")
+end_date_df$end_type = rep("lost to follow up",nrow(end_date_df))
+
+# now add some additional end dates
+small_symp_infections_data = symp_infections_data %>% select(unq_memID,sample_id_date,month_year)
+small_symp_infections_data$end_type = rep("symptomatic infection",nrow(small_symp_infections_data))
+small_end_study_data = survival_data_primary %>%
+  group_by(unq_memID) %>%
+  summarize(sample_id_date = max(sample_id_date),month_year = max(month_year))
+small_end_study_data$end_type = rep("study ended",nrow(small_end_study_data))
+all_end_dates_df = rbind(end_date_df,small_symp_infections_data,small_end_study_data)
+all_end_dates_df$sample_id_date = lubridate::as_date(all_end_dates_df$sample_id_date, origin = lubridate::origin)
+
+# sort all end dates df
+all_end_dates_df = dplyr::arrange(all_end_dates_df,unq_memID,month_year,end_type)
+
+# now remove lost to follow up entries when the study ended or there was a symptomatic infection
+# first remove the lost to follow up that was coded after the study ended
+remove = rep(NA,nrow(all_end_dates_df))
+for (i in 1:nrow(all_end_dates_df)){
+  for (j in 1:nrow(small_end_study_data)){
+    if (all_end_dates_df$unq_memID[i] == small_end_study_data$unq_memID[j]){
+      if (all_end_dates_df$month_year[i] > small_end_study_data$sample_id_date[j]){
+        remove[i] = "remove"
+      }
+    }
+  }
+}
+all_end_dates_df$remove = remove
+table(all_end_dates_df$remove,useNA="always")
+all_end_dates_df = all_end_dates_df %>% filter(is.na(remove))
+# now look at duplicate entries and remove the lost to follow up of those
+dups_list = all_end_dates_df %>%
+  group_by(unq_memID,month_year) %>%
+  summarize(n=n())
+dups_list = dups_list %>% filter(n>1)
+trips_list = dups_list %>% filter(n>2)
+remove = rep(NA,nrow(all_end_dates_df))
+for (i in 1:nrow(all_end_dates_df)){
+  if (all_end_dates_df$unq_memID[i] %in% dups_list$unq_memID){
+    if (all_end_dates_df$end_type[i] == "lost to follow up"){
+      remove[i] = "remove"
+    }
+    if (all_end_dates_df$end_type[i] == "study ended" & all_end_dates_df$unq_memID[i] %in% trips_list){
+      remove[i] = "remove"
+    }
+  }
+}
+all_end_dates_df$remove = remove
+table(all_end_dates_df$remove,useNA="always")
+all_end_dates_df = all_end_dates_df %>% filter(is.na(remove))
+# check for duplicate dates
+dups_list = all_end_dates_df %>%
+  group_by(unq_memID,month_year) %>%
+  summarize(n=n())
+dups_list = dups_list %>% filter(n>1)
+# rerun the code one more time to remove additional duplicates
+remove = rep(NA,nrow(all_end_dates_df))
+for (i in 1:nrow(all_end_dates_df)){
+  if (all_end_dates_df$unq_memID[i] %in% dups_list$unq_memID){
+    if (all_end_dates_df$end_type[i] == "study ended"){
+      remove[i] = "remove"
+    }
+  }
+}
+all_end_dates_df$remove = remove
+table(all_end_dates_df$remove,useNA="always")
+all_end_dates_df = all_end_dates_df %>% filter(is.na(remove))
+# check for duplicate dates
+dups_list = all_end_dates_df %>%
+  group_by(unq_memID,month_year) %>%
+  summarize(n=n())
+dups_list = dups_list %>% filter(n>1)
+# this scenario is fine
+
+# clean up the end dates data set
+all_end_dates_df$remove <- NULL
+all_end_dates_df$sample_id_date = ifelse(is.na(all_end_dates_df$sample_id_date),all_end_dates_df$month_year,all_end_dates_df$sample_id_date)
+all_end_dates_df$sample_id_date = lubridate::as_date(all_end_dates_df$sample_id_date, origin = lubridate::origin)
+all_end_dates_df$month_year <- NULL
+all_end_dates_df$end_follow_up = rep("yes",nrow(all_end_dates_df))
+
+# add the end dates to the full survival primary data set
+survival_data_primary = left_join(survival_data_primary,all_end_dates_df,by=c("unq_memID","sample_id_date"))
+
+# sort survival data primary again
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+### THIS IS WHERE YOU NEED TO START BACK - TRYING TO ADD END DATE TO EVERY ROW
+# now add end dates of follow-up to the big data frame at every entry
+already_used_list = rep(NA,nrow(survival_data_primary))
+fu_end_date = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(survival_data_primary)){
+  for (j in 1:nrow(all_end_dates_df)){
+    if (survival_data_primary$unq_memID[i] == end_date_df$id_to_add[j] &
+        survival_data_primary$sample_id_date[i] <= end_date_df$end_date_to_add[j] &
+        !(survival_data_primary$sample_id_date[i] %in% already_used_list)){
+      fu_end_date[i] = end_date_df$end_date_to_add[j]
+      already_used_list[i] = survival_data_primary$sample_id_date[i]
+    }
+  }
+}
+survival_data_primary$fu_end_date = fu_end_date
+survival_data_primary$fu_end_date = lubridate::as_date(survival_data_primary$fu_end_date, origin = lubridate::origin)
+
 # now calculate the time since the participant first entered the study until each event
 days_until_event = rep(NA,nrow(survival_data_primary))
-for (i in 1:nrow(unq_memID_start_date)){
-  for (k in 1:nrow(symp_infections_data)){
+for (i in 1:nrow(symp_infections_data)){
     for (j in 1:nrow(survival_data_primary)){
-      if (unq_memID_start_date$unq_memID[i] == survival_data_primary$unq_memID[j] &
-          survival_data_primary$sample_id_date[i] < symp_infections_data$sample_id_date[k] &
-          !(is.na(symp_infections_data$sample_id_date[k]))){
-        days_until_event[j] = symp_infections_data$sample_id_date[k]-survival_data_primary$sample_id_date[j]
-      }
+      if (symp_infections_data$unq_memID[i] == survival_data_primary$unq_memID[j] &
+          survival_data_primary$sample_id_date[j] < symp_infections_data$sample_id_date[i] &
+          !(is.na(symp_infections_data$sample_id_date[i]))){
+        days_until_event[j] = symp_infections_data$sample_id_date[i]-survival_data_primary$sample_id_date[j]
     }
   }
 }
@@ -731,44 +872,8 @@ survival_data_primary$days_until_event = days_until_event
 
 ## ---- survival_data_secondary_stringent
 
-# first order the data set by date
-survival_data_secondary_stringent = dplyr::arrange(survival_data_secondary_stringent,unq_memID,sample_id_date)
-
-# first pull out when each participant entered the study
-unq_memID_start_date = survival_data_secondary_stringent[match(unique(survival_data_secondary_stringent$unq_memID), survival_data_secondary_stringent$unq_memID),]
-
-# now calculate the time since the participant first entered the study
-days_in_study = rep(NA,nrow(survival_data_secondary_stringent))
-for (i in 1:nrow(unq_memID_start_date)){
-  for (j in 1:nrow(survival_data_secondary_stringent)){
-    if (unq_memID_start_date$unq_memID[i] == survival_data_secondary_stringent$unq_memID[j]){
-      days_in_study[j] = survival_data_secondary_stringent$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
-    }
-  }
-}
-summary(days_in_study)  
-survival_data_secondary_stringent$days_in_study = days_in_study
-
 
 ## ---- survival_data_secondary_permissive
-
-# first order the data set by date
-survival_data_secondary_permissive = dplyr::arrange(survival_data_secondary_permissive,unq_memID,sample_id_date)
-
-# first pull out when each participant entered the study
-unq_memID_start_date = survival_data_secondary_permissive[match(unique(survival_data_secondary_permissive$unq_memID), survival_data_secondary_permissive$unq_memID),]
-
-# now calculate the time since the participant first entered the study
-days_in_study = rep(NA,nrow(survival_data_secondary_permissive))
-for (i in 1:nrow(unq_memID_start_date)){
-  for (j in 1:nrow(survival_data_secondary_permissive)){
-    if (unq_memID_start_date$unq_memID[i] == survival_data_secondary_permissive$unq_memID[j]){
-      days_in_study[j] = survival_data_secondary_permissive$sample_id_date[j]-unq_memID_start_date$sample_id_date[i]
-    }
-  }
-}
-summary(days_in_study)  
-survival_data_secondary_permissive$days_in_study = days_in_study
 
 
 
