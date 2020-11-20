@@ -77,10 +77,79 @@ survival_data_primary$days_until_event = as.numeric(survival_data_primary$days_u
 survival_data_secondary_stringent$days_until_event = as.numeric(survival_data_secondary_stringent$days_until_event)
 survival_data_secondary_permissive$days_until_event = as.numeric(survival_data_secondary_permissive$days_until_event)
 
-#### FINISH BY MAKING REST OF VARIABLES FACTORS AND IN CORRECT FORMAT
+# make the age cat variable
+# primary data
+survival_data_primary$age_cat_baseline = ifelse(survival_data_primary$age_all_baseline < 5,"<5 years",
+                                                ifelse(survival_data_primary$age_all_baseline >= 5 & survival_data_primary$age_all_baseline <= 15,"5-15 years",">15 years"))
+table(survival_data_primary$age_all_baseline,survival_data_primary$age_cat_baseline,useNA="always")
+survival_data_primary$age_cat_baseline = as.factor(survival_data_primary$age_cat_baseline)
+levels(survival_data_primary$age_cat_baseline)
+# secondary stringent data
+survival_data_secondary_stringent$age_cat_baseline = ifelse(survival_data_secondary_stringent$age_all_baseline < 5,"<5 years",
+                                                ifelse(survival_data_secondary_stringent$age_all_baseline >= 5 & survival_data_secondary_stringent$age_all_baseline <= 15,"5-15 years",">15 years"))
+table(survival_data_secondary_stringent$age_all_baseline,survival_data_secondary_stringent$age_cat_baseline,useNA="always")
+survival_data_secondary_stringent$age_cat_baseline = as.factor(survival_data_secondary_stringent$age_cat_baseline)
+levels(survival_data_secondary_stringent$age_cat_baseline)
+# secondary permissive data
+survival_data_secondary_permissive$age_cat_baseline = ifelse(survival_data_secondary_permissive$age_all_baseline < 5,"<5 years",
+                                                            ifelse(survival_data_secondary_permissive$age_all_baseline >= 5 & survival_data_secondary_permissive$age_all_baseline <= 15,"5-15 years",">15 years"))
+table(survival_data_secondary_permissive$age_all_baseline,survival_data_secondary_permissive$age_cat_baseline,useNA="always")
+survival_data_secondary_permissive$age_cat_baseline = as.factor(survival_data_secondary_permissive$age_cat_baseline)
+levels(survival_data_secondary_permissive$age_cat_baseline)
+
+# make village name a factor
+# primary data
+survival_data_primary$village_name = as.factor(survival_data_primary$village_name)
+# secondary stringent
+survival_data_secondary_stringent$village_name = as.factor(survival_data_secondary_stringent$village_name)
+# secondary permissive
+survival_data_secondary_permissive$village_name = as.factor(survival_data_secondary_permissive$village_name)
+
+# make slept under net regularly a factor
+# primary data
+survival_data_primary$slept_under_net_regularly = as.factor(survival_data_primary$slept_under_net_regularly)
+# secondary stringent
+survival_data_secondary_stringent$slept_under_net_regularly = as.factor(survival_data_secondary_stringent$slept_under_net_regularly)
+# secondary permissive
+survival_data_secondary_permissive$slept_under_net_regularly = as.factor(survival_data_secondary_permissive$slept_under_net_regularly)
+
+# make status a factor
+# primary data
+survival_data_primary$status = as.factor(survival_data_primary$status)
+# secondary stringent
+survival_data_secondary_stringent$status = as.factor(survival_data_secondary_stringent$status)
+# secondary permissive
+survival_data_secondary_permissive$status = as.factor(survival_data_secondary_permissive$status)
+
+# make main exposure a factor
+# primary data
+survival_data_primary$main_exposure_primary_case_def = as.factor(survival_data_primary$main_exposure_primary_case_def)
+survival_data_primary$main_exposure_primary_case_def = relevel(survival_data_primary$main_exposure_primary_case_def,ref="no infection")
+# secondary stringent
+survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def = as.factor(survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def)
+survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def = relevel(survival_data_secondary_stringent$main_exposure_secondary_stringent_case_def,ref="no infection")
+# secondary permissive
+survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def = as.factor(survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def)
+survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def = relevel(survival_data_secondary_permissive$main_exposure_secondary_permissive_case_def,ref="no infection")
+
+# make gender a factor
+# primary data
+survival_data_primary$gender = as.factor(survival_data_primary$gender)
+# secondary stringent
+survival_data_secondary_stringent$gender = as.factor(survival_data_secondary_stringent$gender)
+# secondary permissive
+survival_data_secondary_permissive$gender = as.factor(survival_data_secondary_permissive$gender)
+
 
 
 #### ----- now export the data sets ------ ####
 
-
-
+# primary data
+write_rds(survival_data_primary,"Desktop/survival_data_primary_survival_format_19NOV2020.rds")
+write_csv(survival_data_primary,"Desktop/survival_data_primary_survival_format_19NOV2020.csv")
+# secondary stringent
+write_rds(survival_data_secondary_stringent,"Desktop/survival_data_secondary_stringent_survival_format_19NOV2020.rds")
+write_csv(survival_data_secondary_stringent,"Desktop/survival_data_secondary_stringent_survival_format_19NOV2020.csv")
+# secondary permissive
+write_rds(survival_data_secondary_permissive,"Desktop/survival_data_secondary_permissive_survival_format_19NOV2020.rds")
+write_csv(survival_data_secondary_permissive,"Desktop/survival_data_secondary_permissive_survival_format_19NOV2020.csv")
