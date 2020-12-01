@@ -252,13 +252,13 @@ fit.coxph.male <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_
 fit.coxph.male
 
 # make a forest plot of the results
-names = c("Female","Asymptomatic infection","","Male"," Asymptomatic infection")
-estimate = c(NA,1.1443571,NA,NA,1.0768265)
-lower_ci = c(NA,1.0054618,NA,NA,0.9368085)
-upper_ci = c(NA,1.3024395,NA,NA,1.237772)
+names = c("Male","Asymptomatic infection","","Female"," Asymptomatic infection")
+estimate = c(NA,1.0768265,NA,NA,1.1443571)
+lower_ci = c(NA,0.9368085,NA,NA,1.0054618)
+upper_ci = c(NA,1.237772,NA,NA,1.3024395)
 forest_plot_df = data.frame(names,estimate,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Female","Asymptomatic infection","","Male"," Asymptomatic infection"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Female","Asymptomatic infection","","Male"," Asymptomatic infection"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Male","Asymptomatic infection","","Female"," Asymptomatic infection"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Male","Asymptomatic infection","","Female"," Asymptomatic infection"))
 # create a forest plot
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(colour=c(NA,"#000000",NA,NA,"#000000"),size=c(2,2,2,2,2)) + 
