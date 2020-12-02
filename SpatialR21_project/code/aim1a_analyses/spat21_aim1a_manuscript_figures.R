@@ -168,16 +168,16 @@ forest_plot_df$names = factor(forest_plot_df$names, levels = c("Asymptomatic inf
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Asymptomatic infection","","Participant age 5-15 years","Participant age >15 years","  ","Female","   ","Regular bed net usage","    ","Maruti village","Sitabicha village"))
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(2,1,1,1,1,1,1,1,1,1,1),colour=c("#000000","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9")) + 
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1,1,1),colour=c("#000000","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9","#A9A9A9")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Hazard of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10",breaks=c(0,0.2,0.4,0.6,0.8,1.0,2.0,3.0,4.0,5.0)) +
   theme_bw() +
-  theme(text = element_text(size=12)) 
+  theme(text = element_text(size=10)) 
 fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/primary_forest_plot_coxph_1levels.png", device="png",
-       height=4, width=9, units="in", dpi=400)
+       height=3, width=6, units="in", dpi=400)
 
 
 ## ---- check effect measure modification by age
@@ -273,14 +273,27 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/primary_gender_stratified_fores
        height=4.5, width=6.5, units="in", dpi=400)
 
 
+## ---- check effect measure modification by bed net usage
 
-#### ------ make some descriptives for the data sets ------ ####
+# primary data set
+# model with an interaction term for gender
+fit.coxph.interaction <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*slept_under_net_regularly + (1 | unq_memID), 
+                               data = survival_data_primary)
+fit.coxph.interaction
+# now run an anova to compare models
+anova(fit.coxph.interaction,fit.coxph) # does not appear to be significant interaction
 
-## ----- survival data primary
+# now run stratified models
+# regular bed net usage
+data_regular = survival_data_primary %>% filter(slept_under_net_regularly=="yes")
+fit.coxph.regular <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + village_name + (1 | unq_memID), 
+                          data = data_regular)
+fit.coxph.regular
+# not regular bed net usage
+data_notregular = survival_data_primary %>% filter(slept_under_net_regularly=="no")
+fit.coxph.notregular <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + village_name + (1 | unq_memID), 
+                        data = data_notregular)
+fit.coxph.notregular
+# models would not compile
 
-# look at number of participants
-length(unique(survival_data_primary$unq_memID))
-
-# look at the average length of follow-up
-summary(survival_data_primary$days_until_event)
 

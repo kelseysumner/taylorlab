@@ -1,11 +1,11 @@
 # -------------------------------------- #
 #           Spat21/Mozzie Study          #
-#       Secondary survival analysis      #
+#           Third survival analysis      #
 #                 Aim 1A                 #
 #               Human Data               #
 #            Mozzie Phase 3              #
 #                K. Sumner               #
-#           November 29, 2020            #
+#            December 1, 2020            #
 # -------------------------------------- #
 
 

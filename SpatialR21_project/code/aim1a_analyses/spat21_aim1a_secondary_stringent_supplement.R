@@ -166,12 +166,13 @@ data_female = survival_data_secondary_stringent %>% filter(gender=="female")
 fit.coxph.female <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_secondary_stringent_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
                           data = data_female)
 fit.coxph.female
+exp(confint(fit.coxph.female))
 # males
 data_male = survival_data_secondary_stringent %>% filter(gender == "male")
 fit.coxph.male <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_secondary_stringent_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
                         data = data_male)
 fit.coxph.male
-
+exp(confint(fit.coxph.male))
 # make a forest plot of the results
 names = c("Female","Asymptomatic infection","","Male"," Asymptomatic infection")
 estimate = c(NA,1.1443571,NA,NA,1.0768265)
