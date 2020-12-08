@@ -174,7 +174,53 @@ exp(confint(fit.coxph))
 
 
 
+#### -------- explore EMM by age using primary case definition ------- ####
 
+# under 5
+data_under5 = secondary_analysis_data %>% filter(age_cat_baseline == "<5 years")
+fit.coxph.under5 <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_under5)
+fit.coxph.under5
+# 5 to 15
+data_5to15 = secondary_analysis_data %>% filter(age_cat_baseline == "5-15 years")
+fit.coxph.5to15 <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = data_5to15)
+fit.coxph.5to15
+# over 15
+data_over15 = secondary_analysis_data %>% filter(age_cat_baseline == ">15 years")
+fit.coxph.over15 <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_over15)
+fit.coxph.over15
+
+# model with an interaction term for age
+fit.coxph.interaction <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*age_cat_baseline + (1 | unq_memID), 
+                               data = secondary_analysis_data)
+fit.coxph.interaction
+# now run an anova to compare models
+anova(fit.coxph.interaction,fit.coxph) # does not appear to be significant interaction
+
+
+#### ----- look at EMM by sex using primary case definition ------- ####
+
+# primary data set
+# model with an interaction term for gender
+fit.coxph.interaction <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*gender + (1 | unq_memID), 
+                               data = secondary_analysis_data)
+fit.coxph.interaction
+# now run an anova to compare models
+anova(fit.coxph.interaction,fit.coxph) # does not appear to be significant interaction
+
+# now run stratified models
+# females
+data_female = secondary_analysis_data %>% filter(gender=="female")
+fit.coxph.female <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_female)
+fit.coxph.female
+# males
+data_male = secondary_analysis_data %>% filter(gender == "male")
+fit.coxph.male <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = data_male)
+fit.coxph.male
 
 
 
