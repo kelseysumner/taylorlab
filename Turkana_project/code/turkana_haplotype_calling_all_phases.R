@@ -1,7 +1,7 @@
 # ----------------------------------------- #
 #       Turkana Haplotype Output Cleaning   #
 #         FINAL CENSORING VERSION           #
-#           February 27, 2020               #
+#           December 10, 2020               #
 #                K. Sumner                  #
 # ----------------------------------------- #
 
@@ -24,7 +24,7 @@ library(schoolmath)
 #### ------- read in the AMA haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results/AMA/AMA_embatalk_allphases_haplotypes.rds")
+foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results/haplotype_output/AMA/AMA_embatalk_allphases_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -43,7 +43,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary$haplotype_reads == 0) # 1 sample to remove
+needtoremove = which(haplotype_summary$haplotype_reads == 0) # 2 samples to remove
 haplotype_summary = haplotype_summary[-needtoremove,] 
 
 # write some code that removes haplotypes that occur in <250 of the sample reads
@@ -70,7 +70,7 @@ for (i in 1:nrow(foo)){
 }
 
 # for each haplotype that is a different length than the majority of haplotypes, throw it out
-table(nchar(getSequences(foo))) # most haplotypes 300 bp, but 10 are not 300 bp long
+table(nchar(getSequences(foo))) # most haplotypes 300 bp, but 32 are not 300 bp long
 nchar(getSequences(foo))
 haps_to_remove = rep(NA,ncol(foo))
 for (i in 1:ncol(foo)) {
@@ -97,7 +97,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 13 samples removed
+needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 142 samples removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
 # remove any samples that have no haplotypes anymore
@@ -206,18 +206,18 @@ uniquesToFasta(getUniques(foo), fout="Desktop/AMA_uniqueSeqs.fasta", ids=paste0(
 ### ---- read back in that haplotype sequence file
 
 # read in the haplotype sequence fasta file
-haplotype_sequences = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/censoring_info/AMA_uniqueSeqs.fasta")
+haplotype_sequences = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results/censoring_info/AMA_uniqueSeqs.fasta")
 
 # read in the haplotype sequence variant table
-variant_table = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/censoring_info/ama_variant_report")
+variant_table = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results//censoring_info/ama_snp_table")
 
 # filter variant table to see the variants that only occur in 1 haplotype
 filtered_variant_table = variant_table %>%
-  filter(`SNP %` == "1.61 %")
+  filter(`SNP %` == "1.09 %")
 
 # reorganize the haplotype sequence fasta file to be in a better format
-sequence_names = rep(NA,62) # number is number of haplotypes in fasta file of unique haplotype sequences
-sequences = rep(NA,62)
+sequence_names = rep(NA,91) # number is number of haplotypes in fasta file of unique haplotype sequences
+sequences = rep(NA,91)
 sequence_names[1] = ">Seq1"
 for (i in 1:nrow(haplotype_sequences)) {
   if (is.even(i)) {
@@ -246,8 +246,8 @@ for (i in 1:nrow(new_haplotype_sequences)){
 }
 # remove the missing values
 haplotypes_to_remove_from_final = na.omit(haplotypes_to_remove_from_final)
-length(haplotypes_to_remove_from_final) # 6
-nrow(filtered_variant_table) # 6
+length(haplotypes_to_remove_from_final) # 7
+nrow(filtered_variant_table) # 7
 haplotypes_to_remove_from_final = c(haplotypes_to_remove_from_final)
 colnames(foo)
 # pull out the haplotype sequences associated with each haplotype name
@@ -265,12 +265,12 @@ haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotype
 # remove haplotypes to remove based on low SNP % that are found in only 1 sample
 haplotype_num_summary = haplotype_num_summary %>%
   filter(haplotypes_across_samples == 0 | haplotypes_across_samples == 1)
-to_remove = intersect(haplotype_sequences_to_remove,haplotype_num_summary$haplotype_ids) # 1 haplotype
+to_remove = intersect(haplotype_sequences_to_remove,haplotype_num_summary$haplotype_ids) # 3 haplotypes
 
 # enforce censoring to rds data set
-ncol(foo) # 62
+ncol(foo) # 91
 foo = foo[,-(which(colnames(foo) %in% to_remove))]
-ncol(foo) # 61 (which is 62-1=61 and correct)
+ncol(foo) # 88 (which is 91-3=88 and correct)
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -309,7 +309,7 @@ ncol(foo)
 nrow(foo)
 
 # write out the haplotypes results as a fasta
-uniquesToFasta(getUniques(foo), fout="Desktop/embatalk_phase1_AMA_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+uniquesToFasta(getUniques(foo), fout="Desktop/embatalk_allphases_AMA_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 
 # rename the columns to be a unique haplotype column number
 newcolnames = c(1:ncol(foo))
@@ -346,13 +346,13 @@ haplotype_summary_censored_final = dplyr::rename(haplotype_summary_censored_fina
 ama_merge_data = dplyr::left_join(ama_merge_data,haplotype_summary_censored_final,by="MiSeq.ID")
 
 # remove samples without MOI
-length(which(is.na(ama_merge_data$haplotype_number))) # 103
+length(which(is.na(ama_merge_data$haplotype_number))) # 471
 ama_merge_data = ama_merge_data %>%
   filter(!(is.na(haplotype_number)))
 
 # write out as an RDS and CSV files
-write_rds(ama_merge_data,"Desktop/embatalk_phase1and2_AMA_haplotype_table_censored_final_version_with_moi_and_ids_2APR2020.rds")
-write_csv(ama_merge_data,"Desktop/embatalk_phase1and2_AMA_haplotype_table_censored_final_version_with_moi_and_ids_2APR2020.csv")
+write_rds(ama_merge_data,"Desktop/embatalk_allphases_AMA_haplotype_table_censored_final_version_with_moi_and_ids_10DEC2020.rds")
+write_csv(ama_merge_data,"Desktop/embatalk_allphases_AMA_haplotype_table_censored_final_version_with_moi_and_ids_10DEC2020.csv")
 
 
 
@@ -360,7 +360,7 @@ write_csv(ama_merge_data,"Desktop/embatalk_phase1and2_AMA_haplotype_table_censor
 #### ------- read in the CSP haplotype output -------------- ####
 
 # read in the haplotype data set
-foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/haplotype_output/CSP/CSP_embatalk_phase1and2_haplotypes.rds")
+foo = read_rds("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results/haplotype_output/CSP/CSP_embatalk_allphases_haplotypes.rds")
 
 # figure out how many rows and columns
 nrow(foo)
@@ -405,7 +405,7 @@ for (i in 1:nrow(foo)){
 }
 
 # for each haplotype that is a different length than the majority of haplotypes, throw it out
-table(nchar(getSequences(foo))) # most haplotypes 288 bp, but 36 are not 288 bp long
+table(nchar(getSequences(foo))) # most haplotypes 288 bp, but 33 are not 288 bp long
 nchar(getSequences(foo))
 haps_to_remove = rep(NA,ncol(foo))
 for (i in 1:ncol(foo)) {
@@ -420,7 +420,7 @@ length(which(!(is.na(haps_to_remove))))
 # now remove those columns from the data set
 haps_to_remove = na.omit(haps_to_remove)
 foo = foo[,-haps_to_remove]
-ncol(foo) # only 51 columns left which is correct
+ncol(foo) # only 177 columns left which is correct
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -432,7 +432,7 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 21 samples removed
+needtoremove = which(haplotype_summary_censored$haplotype_reads == 0) # 133 samples removed
 haplotype_summary_censored = haplotype_summary_censored[-needtoremove,]
 
 # remove any samples that have no haplotypes anymore
@@ -541,18 +541,18 @@ uniquesToFasta(getUniques(foo), fout="Desktop/CSP_uniqueSeqs.fasta", ids=paste0(
 ### ---- read back in the haplotype sequence fasta file and haplotype sequence variant table
 
 # read in the haplotype sequence fasta file
-haplotype_sequences = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/censoring_info/CSP_uniqueSeqs.fasta")
+haplotype_sequences = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results//censoring_info/CSP_uniqueSeqs.fasta")
 
 # read in the haplotype sequence variant table
-variant_table = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/Phase 1and2/censoring_info/csp_variant_table")
+variant_table = read_tsv("Desktop/Dissertation Materials/Turkana Project/EMBATALK/Lab materials/Sequencing data/All phases results/censoring_info/csp_snp_table")
 
 # filter variant table to see the variants that only occur in 1 haplotype
 filtered_variant_table = variant_table %>%
-  filter(`SNP %` == "2.00 %")
+  filter(`SNP %` == "1.16 %")
 
 # reorganize the haplotype sequence fasta file to be in a better format
-sequence_names = rep(NA,50)
-sequences = rep(NA,50)
+sequence_names = rep(NA,86)
+sequences = rep(NA,86)
 sequence_names[1] = ">Seq1"
 for (i in 1:nrow(haplotype_sequences)) {
   if (is.even(i)) {
@@ -620,8 +620,8 @@ for (i in 1:nrow(new_haplotype_sequences)){
 }
 # remove the missing values
 haplotypes_to_remove_from_final = na.omit(haplotypes_to_remove_from_final)
-length(haplotypes_to_remove_from_final) # 8
-nrow(filtered_variant_table) # 8
+length(haplotypes_to_remove_from_final) # 19
+nrow(filtered_variant_table) # 20
 haplotypes_to_remove_from_final = c(haplotypes_to_remove_from_final)
 colnames(foo)
 # pull out the haplotype sequences associated with each haplotype name
@@ -639,12 +639,12 @@ haplotype_num_summary = data.frame("haplotype_ids" = haplotype.names, "haplotype
 # remove haplotypes to remove based on low SNP % that are found in only 1 sample
 haplotype_num_summary = haplotype_num_summary %>%
   filter(haplotypes_across_samples == 0 | haplotypes_across_samples == 1)
-to_remove = intersect(haplotype_sequences_to_remove,haplotype_num_summary$haplotype_ids) # 4 haplotypes
+to_remove = intersect(haplotype_sequences_to_remove,haplotype_num_summary$haplotype_ids) # 14 haplotypes
 
 # enforce censoring to rds data set
-ncol(foo) # 50
+ncol(foo) # 86
 foo = foo[,-(which(colnames(foo) %in% to_remove))]
-ncol(foo) # 46 (which is 50-4 and correct)
+ncol(foo) # 72 (which is 86-14=72 and correct)
 
 # look at an updated haplotype summary
 sample.names = row.names(foo)
@@ -656,7 +656,8 @@ for (i in 1:nrow(foo)){
 }
 haplotype_summary_censored_final = data.frame("sample_names" = sample.names, "haplotype_number" = haplotype_num, "haplotype_reads" = haplotype_reads)
 # remove samples that ended up with no reads at the end
-needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 0 samples removed
+needtoremove = which(haplotype_summary_censored_final$haplotype_reads == 0) # 2 samples removed
+haplotype_summary_censored_final = haplotype_summary_censored_final[-needtoremove,]
 
 # remove any samples that have no haplotypes anymore
 ncol(foo)
@@ -683,7 +684,7 @@ ncol(foo)
 nrow(foo)
 
 # write out the haplotypes results as a fasta
-uniquesToFasta(getUniques(foo), fout="Desktop/embatalk_phase1_CSP_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
+uniquesToFasta(getUniques(foo), fout="Desktop/embatalk_allphases_CSP_uniqueSeqs_final_censored.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 # created a sequence variant table with the haplotype sequences
 
 # rename the columns to be a unique haplotype column number
@@ -726,7 +727,7 @@ csp_merge_data = csp_merge_data %>%
   filter(!(is.na(haplotype_number)))
 
 # write out as an RDS and CSV files
-write_rds(csp_merge_data,"Desktop/embatalk_phase1and2_CSP_haplotype_table_censored_final_version_with_moi_and_ids_3APR2020.rds")
-write_csv(csp_merge_data,"Desktop/embatalk_phase1and2_CSP_haplotype_table_censored_final_version_with_moi_and_ids_3APR2020.csv")
+write_rds(csp_merge_data,"Desktop/embatalk_allphases_CSP_haplotype_table_censored_final_version_with_moi_and_ids_10DEC2020.rds")
+write_csv(csp_merge_data,"Desktop/embatalk_allphases_CSP_haplotype_table_censored_final_version_with_moi_and_ids_10DEC2020.csv")
 
 
