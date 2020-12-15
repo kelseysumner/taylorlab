@@ -224,3 +224,100 @@ fit.coxph.male
 
 
 
+
+#### ---------- now set up for the 30-day analysis ---------- ####
+
+
+# first pull out when each participant entered the study
+unq_memID_start_date = secondary_analysis_data[match(unique(secondary_analysis_data$unq_memID), secondary_analysis_data$unq_memID),]
+
+# only follow-up participants for 30 days
+days_until_event_30day = rep(NA,nrow(secondary_analysis_data))
+status_30day = rep(NA,nrow(secondary_analysis_data))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(secondary_analysis_data)){
+    if (secondary_analysis_data$unq_memID[j] == unq_memID_start_date$unq_memID[i]){
+      if (secondary_analysis_data$days_until_event[j] <= 30){
+        days_until_event_30day[j] = secondary_analysis_data$days_until_event[j]
+        if (secondary_analysis_data$status[j] == "symptomatic infection"){
+          status_30day[j] = "symptomatic infection"
+        } else {
+          status_30day[j] = "censored"
+        }
+      } else {
+        days_until_event_30day[j] = 30
+        status_30day[j] = "censored"
+      }
+    }
+  }
+}
+secondary_analysis_data$days_until_event_30day = days_until_event_30day
+secondary_analysis_data$status_30day = status_30day
+
+# test the output
+symptomatic_data = secondary_analysis_data %>% filter(status_30day == "symptomatic infection")
+summary(symptomatic_data$days_until_event_30day)
+test = symptomatic_data %>% select(unq_memID,fu_end_date)
+length(unique(test$unq_memID,test$fu_end_date))
+summary(secondary_analysis_data$days_until_event_30day)
+table(secondary_analysis_data$status_30day,useNA="always")
+
+# update the event indicator variable
+secondary_analysis_data$event_indicator_30day = ifelse(secondary_analysis_data$status_30day == "symptomatic infection",1,0)
+table(secondary_analysis_data$event_indicator_30day,secondary_analysis_data$status_30day,useNA = "always")
+
+# primary data set
+fit.coxph.30day <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = secondary_analysis_data)
+fit.coxph.30day
+
+
+# now test for EMM by age
+# model with an interaction term for age
+fit.coxph.interaction <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*age_cat_baseline + (1 | unq_memID), 
+                               data = secondary_analysis_data)
+fit.coxph.interaction
+# now run an anova to compare models
+anova(fit.coxph.interaction,fit.coxph.30day) # does not appear to be significant interaction
+
+# now run stratified models
+# under 5
+data_under5 = secondary_analysis_data %>% filter(age_cat_baseline == "<5 years")
+fit.coxph.under5 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_under5)
+fit.coxph.under5
+# 5 to 15
+data_5to15 = secondary_analysis_data %>% filter(age_cat_baseline == "5-15 years")
+fit.coxph.5to15 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = data_5to15)
+fit.coxph.5to15
+# over 15
+data_over15 = secondary_analysis_data %>% filter(age_cat_baseline == ">15 years")
+fit.coxph.over15 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_over15)
+fit.coxph.over15
+
+
+# now test for EMM by gender
+# model with an interaction term for gender
+fit.coxph.interaction <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*gender + (1 | unq_memID), 
+                               data = secondary_analysis_data)
+fit.coxph.interaction
+# now run an anova to compare models
+anova(fit.coxph.interaction,fit.coxph.30day) # does appear to be significant interaction
+
+# now run stratified models
+# females
+data_female = secondary_analysis_data %>% filter(gender=="female")
+fit.coxph.female <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_female)
+fit.coxph.female
+# males
+data_male = secondary_analysis_data %>% filter(gender == "male")
+fit.coxph.male <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = data_male)
+fit.coxph.male
+
+
+
+

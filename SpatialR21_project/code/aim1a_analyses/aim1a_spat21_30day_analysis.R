@@ -76,8 +76,8 @@ survival_data_primary$event_indicator_30day = ifelse(survival_data_primary$statu
 table(survival_data_primary$event_indicator_30day,survival_data_primary$status_30day,useNA = "always")
 
 # export the data set
-write_csv(survival_data_primary,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_primary_survival_format_30day_10DEC2020.csv")
-write_rds(survival_data_primary,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_primary_survival_format_30day_10DEC2020.rds")
+# write_csv(survival_data_primary,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_primary_survival_format_30day_10DEC2020.csv")
+# write_rds(survival_data_primary,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_primary_survival_format_30day_10DEC2020.rds")
 
 
 ## ------- for secondary stringent data
@@ -121,8 +121,8 @@ survival_data_secondary_stringent$event_indicator_30day = ifelse(survival_data_s
 table(survival_data_secondary_stringent$event_indicator_30day,survival_data_secondary_stringent$status_30day,useNA = "always")
 
 # export the data set
-write_csv(survival_data_secondary_stringent,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_stringent_survival_format_30day_10DEC2020.csv")
-write_rds(survival_data_secondary_stringent,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_stringent_survival_format_30day_10DEC2020.rds")
+# write_csv(survival_data_secondary_stringent,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_stringent_survival_format_30day_10DEC2020.csv")
+# write_rds(survival_data_secondary_stringent,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_stringent_survival_format_30day_10DEC2020.rds")
 
 
 ## ------- for secondary permissive data
@@ -166,8 +166,8 @@ survival_data_secondary_permissive$event_indicator_30day = ifelse(survival_data_
 table(survival_data_secondary_permissive$event_indicator_30day,survival_data_secondary_permissive$status_30day,useNA = "always")
 
 # export the data set
-write_csv(survival_data_secondary_permissive,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_permissive_survival_format_30day_10DEC2020.csv")
-write_rds(survival_data_secondary_permissive,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_permissive_survival_format_30day_10DEC2020.rds")
+# write_csv(survival_data_secondary_permissive,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_permissive_survival_format_30day_10DEC2020.csv")
+# write_rds(survival_data_secondary_permissive,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_permissive_survival_format_30day_10DEC2020.rds")
 
 
 
@@ -501,7 +501,197 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/figure4_hazardsympmalaria_acros
 
 
 
+
+
 #### ------- now do the short-term analysis stratified by parasite density ------- #####
+
+# read in the full data set
+final_merged_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/De-identified Phase II_v13/final_merged_data/phase3_spat21_human_merged_data_with_dbs_censoring_18AUG2020.rds")
+final_merged_data = final_merged_data %>% select(sample_name_final,pfr364Q_std_combined)
+
+## ----- primary case definition
+
+# merge in parasite density
+survival_data_primary = left_join(survival_data_primary,final_merged_data,by="sample_name_final")
+length(which(is.na(survival_data_primary$pfr364Q_std_combined)))
+asymp_test = survival_data_primary %>% filter(main_exposure_primary_case_def == "asymptomatic infection")
+length(which(is.na(asymp_test$pfr364Q_std_combined)))
+asymp_test %>%
+  filter(is.na(pfr364Q_std_combined)) %>%
+  View()
+# missing observations are imputed
+
+# classify each asymptomatic infection by its parasite density
+survival_data_primary$micro_detectable = ifelse(survival_data_primary$pfr364Q_std_combined >= 500,"Microscopy",NA)
+survival_data_primary$rdt_detectable = ifelse(survival_data_primary$pfr364Q_std_combined >= 100,"RDT",NA)
+survival_data_primary$hsrdt_detectable = ifelse(survival_data_primary$pfr364Q_std_combined >= 1,"HS-RDT",NA)
+survival_data_primary$pcr_detectable = ifelse(!(is.na(survival_data_primary$pfr364Q_std_combined)),"qPCR",NA)
+survival_data_primary %>%
+  filter(micro_detectable == "Microscopy") %>%
+  View()
+summary(survival_data_primary$pfr364Q_std_combined)
+length(which(!(is.na(survival_data_primary$pfr364Q_std_combined))))
+table(survival_data_primary$micro_detectable)
+table(survival_data_primary$rdt_detectable)
+table(survival_data_primary$hsrdt_detectable)
+table(survival_data_primary$pcr_detectable)
+
+# now run separate models for each parasite density stratification
+## microscopy
+micro_data = survival_data_primary %>% filter(micro_detectable == "Microscopy")
+fit.coxph.micro <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                           data = micro_data)
+# model wouldn't compile with covariates
+fit.coxph.micro <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + (1 | unq_memID), 
+                         data = micro_data)
+# crude model wouldn't compile either
+## rdt
+rdt_data = survival_data_primary %>% filter(rdt_detectable == "RDT")
+fit.coxph.rdt <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = rdt_data)
+# model wouldn't compile with covariates
+fit.coxph.rdt <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + (1 | unq_memID), 
+                         data = rdt_data)
+# crude model wouldn't compile either
+## hs-rdt
+hsrdt_data = survival_data_primary %>% filter(hsrdt_detectable == "HS-RDT")
+fit.coxph.hsrdt <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                       data = hsrdt_data)
+# model wouldn't compile with covariates
+fit.coxph.hsrdt <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + (1 | unq_memID), 
+                       data = hsrdt_data)
+# crude model wouldn't compile either
+## pcr
+pcr_data = survival_data_primary %>% filter(pcr_detectable == "qPCR")
+fit.coxph.pcr <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                       data = pcr_data)
+# model wouldn't compile with covariates
+fit.coxph.pcr <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + (1 | unq_memID), 
+                       data = pcr_data)
+# crude model wouldn't compile either
+
+
+#### ------ now do a misclassification analysis --------- ####
+
+# remove monthly visits up to 14 days before the symptomatic infection
+# primary data set
+remove = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(survival_data_primary)){
+  if (survival_data_primary$days_until_event_30day[i] < 15 & survival_data_primary$event_indicator_30day[i] == 1){
+    remove[i] = "yes"
+  }
+}
+table(remove)
+length(which(survival_data_primary$days_until_event_30day < 15 & survival_data_primary$status == "symptomatic infection"))
+survival_data_primary$remove = remove
+survival_data_primary = survival_data_primary %>% filter(is.na(remove))
+survival_data_primary$remove <- NULL
+
+
+# remove monthly visits up to 14 days before the symptomatic infection
+# secondary stringent data set
+remove = rep(NA,nrow(survival_data_secondary_stringent))
+for (i in 1:nrow(survival_data_secondary_stringent)){
+  if (survival_data_secondary_stringent$days_until_event_30day[i] < 15 & survival_data_secondary_stringent$event_indicator_30day[i] == 1){
+    remove[i] = "yes"
+  }
+}
+table(remove)
+length(which(survival_data_secondary_stringent$days_until_event_30day < 15 & survival_data_secondary_stringent$status == "symptomatic infection"))
+survival_data_secondary_stringent$remove = remove
+survival_data_secondary_stringent = survival_data_secondary_stringent %>% filter(is.na(remove))
+survival_data_secondary_stringent$remove <- NULL
+
+
+# remove monthly visits up to 14 days before the symptomatic infection
+# secondary permissive data set
+remove = rep(NA,nrow(survival_data_secondary_permissive))
+for (i in 1:nrow(survival_data_secondary_permissive)){
+  if (survival_data_secondary_permissive$days_until_event_30day[i] < 15 & survival_data_secondary_permissive$event_indicator_30day[i] == 1){
+    remove[i] = "yes"
+  }
+}
+table(remove)
+length(which(survival_data_secondary_permissive$days_until_event_30day < 15 & survival_data_secondary_permissive$status == "symptomatic infection"))
+survival_data_secondary_permissive$remove = remove
+survival_data_secondary_permissive = survival_data_secondary_permissive %>% filter(is.na(remove))
+survival_data_secondary_permissive$remove <- NULL
+
+
+# run a model using the primary case definition
+summary(survival_data_primary$days_until_event_30day)
+fit.coxph.primary <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                           data = survival_data_primary)
+fit.coxph.primary
+exp(confint(fit.coxph.primary))
+
+
+# run a model using the secondary permissive case definition
+fit.coxph.secondarypermissive <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_secondary_permissive_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                                       data = survival_data_secondary_permissive)
+fit.coxph.secondarypermissive
+exp(confint(fit.coxph.secondarypermissive))
+
+
+# run a model using the secondary stringent case definition
+fit.coxph.secondarystringent <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_secondary_stringent_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                                      data = survival_data_secondary_stringent)
+fit.coxph.secondarystringent
+exp(confint(fit.coxph.secondarystringent))
+
+
+## ------ now explore EMM by age for the primary case definition
+
+# compare model with interaction term
+fit.coxph.interaction <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*age_cat_baseline + (1 | unq_memID), 
+                          data = survival_data_primary)
+fit.coxph.interaction
+anova(fit.coxph.interaction,fit.coxph.primary)
+
+# under 5
+data_under5 = survival_data_primary %>% filter(age_cat_baseline == "<5 years")
+fit.coxph.under5 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_under5)
+fit.coxph.under5
+# 5 to 15
+data_5to15 = survival_data_primary %>% filter(age_cat_baseline == "5-15 years")
+fit.coxph.5to15 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = data_5to15)
+fit.coxph.5to15
+# over 15
+data_over15 = survival_data_primary %>% filter(age_cat_baseline == ">15 years")
+fit.coxph.over15 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_over15)
+fit.coxph.over15
+
+
+## ----- no explore EMM by sex
+
+# primary data set
+# model with an interaction term for gender
+fit.coxph.interaction <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + main_exposure_primary_case_def*gender + (1 | unq_memID), 
+                               data = survival_data_primary)
+fit.coxph.interaction
+# now run an anova to compare models
+anova(fit.coxph.interaction,fit.coxph.primary) # does not appear to be significant interaction
+
+# now run stratified models
+# females
+data_female = survival_data_primary %>% filter(gender=="female")
+fit.coxph.female <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                          data = data_female)
+fit.coxph.female
+# males
+data_male = survival_data_primary %>% filter(gender == "male")
+fit.coxph.male <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = data_male)
+fit.coxph.male
+
+
+
+
+
+
 
 
 
