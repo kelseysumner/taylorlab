@@ -203,21 +203,21 @@ ama_persistent_data$haplotype_category = factor(ama_persistent_data$haplotype_ca
 # make a beeswarm plot of the days between infections for persistent categories
 csp_bees = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
   geom_boxplot() +
-  geom_quasirandom(aes(color=haplotype_category)) + 
+  geom_quasirandom(aes(fill=haplotype_category),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +
   xlab("") +
   ylab("Number of days since previous infection") +
-  scale_color_manual(values = c("#ca0020","#f4a582","#92c5de","#0571b0")) +
+  scale_fill_manual(values = c("#cccccc","#969696","#636363","#252525")) +
   coord_flip() +
   theme(legend.position = "none")
 csp_bees
 ama_bees = ggplot(data=ama_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
   geom_boxplot() +
-  geom_quasirandom(aes(color=haplotype_category)) + 
+  geom_quasirandom(aes(fill=haplotype_category),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +
   xlab("") +
   ylab("Number of days since previous infection") +
-  scale_color_manual(values = c("#ca0020","#f4a582","#92c5de","#0571b0")) +
+  scale_fill_manual(values = c("#cccccc","#969696","#636363","#252525")) +
   coord_flip() +
   theme(legend.position = "none")
 ama_bees

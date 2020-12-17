@@ -95,7 +95,7 @@ forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. on
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1),colour=c("#b2182b","#ef8a62","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1),colour=c("#000000","#636363","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
@@ -135,7 +135,7 @@ forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. on
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1),colour=c("#b2182b","#ef8a62","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1),colour=c("#000000","#636363","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
@@ -196,7 +196,7 @@ forest_plot_df$names = factor(forest_plot_df$names, levels = c("Participant age 
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Participant age 15 years or less","Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes","","Participant age >15 years"," Only new vs. only recurrent haplotypes"," New and recurrent vs. only recurrent haplotypes"))
 # create a forest plot
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(colour=c(NA,"#2166ac","#67a9cf",NA,NA,"#2166ac","#67a9cf"),size=c(2,2,2,2,2,2,2)) + 
+  geom_pointrange(colour=c(NA,"#000000","#636363",NA,NA,"#000000","#636363"),size=c(2,2,2,2,2,2,2)) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
@@ -206,7 +206,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_c
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_new_age_stratified.png", device="png",
-       height=6, width=10, units="in", dpi=400)
+       height=4, width=10, units="in", dpi=400)
 
 
 

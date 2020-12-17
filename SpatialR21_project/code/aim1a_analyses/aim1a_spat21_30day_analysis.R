@@ -453,7 +453,7 @@ fit.coxph.male
 #### ---------- now make a figure compiling all results ---------- ####
 
 
-# make a forest plot of the model results - additional way
+# make a forest plot of the model results 
 estimates = c(2.61,NA,3.77,2.45,2.55,NA,1.76,3.71,1.97,NA,2.27,2.09,1.77,NA,1.73,2.18,2.76,NA,3.94,2.64,2.47,NA,2.05,3.60)
 lower_ci = c(2.05,NA,2.02,1.79,1.57,NA,1.24,2.62,1.63,NA,1.37,1.58,1.29,NA,1.30,1.68,2.11,NA,2.09,1.88,1.36,NA,1.39,2.46)
 upper_ci = c(3.33,NA,7.04,3.35,4.15,NA,2.50,5.24,2.40,NA,3.74,2.77,2.44,NA,2.32,2.83,3.62,NA,7.43,3.72,4.49,NA,3.02,5.28)
@@ -490,7 +490,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab("") + ylab("Hazard of symptomatic malaria (95% CI)") +
+  xlab("") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10",breaks=c(0.8,0.9,1.0,1.5,2.0,2.5,3.0,3.5)) +
   theme_bw() +
   facet_wrap(~type,ncol=1,strip.position = "top",scales = "free_y") +
@@ -541,24 +541,54 @@ summary(survival_data_primary %>% filter(hsrdt_detectable == "HS-RDT") %>% selec
 summary(survival_data_primary %>% filter(pcr_detectable == "qPCR") %>% select(pfr364Q_std_combined))
 
 
+# now run separate models based on the parasite densities
+survival_data_primary$p_any = ifelse(!(is.na(survival_data_primary$pfr364Q_std_combined)),"yes",NA)
+survival_data_primary$p_1 = ifelse(survival_data_primary$pfr364Q_std_combined > 1,"yes",NA)
+survival_data_primary$p_10 = ifelse(survival_data_primary$pfr364Q_std_combined > 10,"yes",NA)
+survival_data_primary$p_100 = ifelse(survival_data_primary$pfr364Q_std_combined > 100,"yes",NA)
+survival_data_primary$p_500 = ifelse(survival_data_primary$pfr364Q_std_combined > 500,"yes",NA)
+survival_data_primary$p_1000 = ifelse(survival_data_primary$pfr364Q_std_combined > 1000,"yes",NA)
+survival_data_primary$p_5000 = ifelse(survival_data_primary$pfr364Q_std_combined > 5000,"yes",NA)
+summary(survival_data_primary %>% filter(p_any == "yes") %>% select(pfr364Q_std_combined))
+summary(survival_data_primary %>% filter(p_1 == "yes") %>% select(pfr364Q_std_combined))
+summary(survival_data_primary %>% filter(p_10 == "yes") %>% select(pfr364Q_std_combined))
+summary(survival_data_primary %>% filter(p_100 == "yes") %>% select(pfr364Q_std_combined))
+summary(survival_data_primary %>% filter(p_500 == "yes") %>% select(pfr364Q_std_combined))
+summary(survival_data_primary %>% filter(p_1000 == "yes") %>% select(pfr364Q_std_combined))
+summary(survival_data_primary %>% filter(p_5000 == "yes") %>% select(pfr364Q_std_combined))
+
+
 # now run separate models for each parasite density stratification
-## microscopy
-micro_data = survival_data_primary %>% filter(micro_detectable == "Microscopy" | main_exposure_primary_case_def == "no infection")
-fit.coxph.micro <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
-                           data = micro_data)
-fit.coxph.micro
-## rdt
-rdt_data = survival_data_primary %>% filter(rdt_detectable == "RDT" | main_exposure_primary_case_def == "no infection")
-fit.coxph.rdt <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
-                         data = rdt_data)
-## hs-rdt
-hsrdt_data = survival_data_primary %>% filter(hsrdt_detectable == "HS-RDT" | main_exposure_primary_case_def == "no infection")
-fit.coxph.hsrdt <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
-                       data = hsrdt_data)
-## pcr
-pcr_data = survival_data_primary %>% filter(pcr_detectable == "qPCR" | main_exposure_primary_case_def == "no infection")
-fit.coxph.pcr <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
-                       data = pcr_data)
+## p_any
+pany_data = survival_data_primary %>% filter(p_any == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.pany <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                           data = pany_data)
+fit.coxph.pany
+## 1
+p1_data = survival_data_primary %>% filter(p_1 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p1_data)
+fit.coxph.p1
+## 10
+p10_data = survival_data_primary %>% filter(p_10 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p10 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                      data = p10_data)
+fit.coxph.p10
+## 100
+p100_data = survival_data_primary %>% filter(p_100 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p100 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                       data = p100_data)
+fit.coxph.p100
+## 500
+p500_data = survival_data_primary %>% filter(p_500 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p500 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p500_data)
+fit.coxph.p500
+## 1000
+p1000_data = survival_data_primary %>% filter(p_1000 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1000 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p1000_data)
+fit.coxph.p1000
 
 
 # now reclassify asymptomatic infections based on parasite densities and detectability
@@ -592,6 +622,64 @@ fit.coxph.hsrdt.2
 fit.coxph.pcr.2 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ pcr_detectable + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
                        data = survival_data_primary)
 fit.coxph.pcr.2
+
+
+# make parasite density figure
+# figure 1: detectability restricted to asymptomatic infections
+estimates = c(2.21,2.78,2.89,2.93,3.41,3.99)
+lower_ci = c(1.70,2.10,2.10,2.00,2.17,2.41)
+upper_ci = c(2.87,3.66,3.98,4.29,5.37,6.62)
+names = c(">0 p/uL",">1 p/uL",">10 p/uL",">100 p/uL",">500 p/uL",">1000 p/uL")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$name, levels=c(">0 p/uL",">1 p/uL",">10 p/uL",">100 p/uL",">500 p/uL",">1000 p/uL"))
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("Parasite density threshold") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks = c(1,2,3,4,5,6,7)) +
+  theme_bw() +
+  theme(text = element_text(size=12.5))
+fp
+ggsave(fp, filename="/Users/kelseysumner/Desktop/detectability_analysis_restricted.png", device="png",
+       height=4, width=6, units="in", dpi=400)
+# figure 2: detectability recoding asymptomatic infections
+estimates = c(2.41,1.93,2.11,1.70)
+lower_ci = c(1.56,1.36,1.63,1.33)
+upper_ci = c(3.71,2.74,2.72,2.17)
+names = c("Microscopy","RDT","HS-RDT","qPCR")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$name, levels=c("Microscopy","RDT","HS-RDT","qPCR"))
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  xlab("Malaria diagnostic") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks = c(1,2,3,4,5,6,7)) +
+  theme_bw() +
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  theme(text = element_text(size=10.5))
+n = fp + expand_limits(y=c(0,7))
+ggsave(n, filename="/Users/kelseysumner/Desktop/detectability_analysis_recoded.png", device="png",
+       height=3, width=5.1, units="in", dpi=400)
+
+
+# also make a histogram of parasite densities across asymptomatic infections
+survival_data_primary_pf = survival_data_primary %>% filter(!(is.na(pfr364Q_std_combined)))
+hist_p = ggplot(data = survival_data_primary_pf,aes(x=pfr364Q_std_combined)) +
+  geom_density(fill="#A9A9A9")+
+  theme_bw() +
+  ylab("Parasite density (p/uL)")
+hist_p
+# now restrict to just 1000 p/uL
+survival_data_primary_pf = survival_data_primary %>% filter(pfr364Q_std_combined <= 1000)
+hist_p = ggplot(data = survival_data_primary_pf,aes(x=pfr364Q_std_combined)) +
+  geom_density(fill="#A9A9A9")+
+  theme_bw() +
+  xlab("Parasite density (p/uL)")
+hist_p
+# this is still super right skewed
+
+
 
 
 

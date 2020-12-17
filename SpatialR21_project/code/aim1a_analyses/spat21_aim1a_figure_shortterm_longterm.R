@@ -47,7 +47,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab("") + ylab("Hazard of symptomatic malaria (95% CI)") +
+  xlab("") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10",breaks=c(0.5,0.9,1.0,1.2,1.5,2.0,2.5,3.0,3.5,4.0)) +
   theme_bw() +
   facet_wrap(~type,ncol=1,strip.position = "top",scales = "free_y") +
