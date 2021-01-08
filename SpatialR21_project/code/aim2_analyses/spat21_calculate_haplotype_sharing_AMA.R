@@ -19,9 +19,9 @@ finalfoo_all <- read_rds("Desktop/clean_ids_haplotype_results/AMA/spat21_AMA_hap
 
 # edit the data set to be in the correct format
 finalfoo_all = as.matrix(finalfoo_all)
-rownames(finalfoo_all) = finalfoo_all[,2]
+rownames(finalfoo_all) = finalfoo_all[,2] # sample ids
 colnames(finalfoo_all)
-finalfoo_all=finalfoo_all[,-c(1,2,3,461,462,463)]
+finalfoo_all=finalfoo_all[,-c(1,2,3,461,462,463)] # remove non-H# columns
 colnames(finalfoo_all)
 
 # make finalfoo_all values numeric

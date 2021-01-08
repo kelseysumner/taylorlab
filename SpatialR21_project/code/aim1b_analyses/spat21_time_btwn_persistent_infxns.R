@@ -109,8 +109,8 @@ symptomatic_ama_data = symptomatic_ama_data %>% filter(symptomatic_status == "sy
 
 
 # make a variable for having persistent haplotypes for the symptomatic infections
-symptomatic_csp_data$has_persistent = ifelse(str_detect(symptomatic_csp_data$haplotype_category,"persistent"),"Infections with persistent haplotypes","Infections without persistent haplotypes")
-symptomatic_ama_data$has_persistent = ifelse(str_detect(symptomatic_ama_data$haplotype_category,"persistent"),"Infections with persistent haplotypes","Infections without persistent haplotypes")
+symptomatic_csp_data$has_persistent = ifelse(str_detect(symptomatic_csp_data$haplotype_category,"persistent"),"Symptomatic infections \n with persistent haplotypes","Symptomatic infections \n without persistent haplotypes")
+symptomatic_ama_data$has_persistent = ifelse(str_detect(symptomatic_ama_data$haplotype_category,"persistent"),"Symptomatic infections \n with persistent haplotypes","Symptomatic infections \n without persistent haplotypes")
 table(symptomatic_csp_data$has_persistent,symptomatic_csp_data$haplotype_category, useNA = "always")
 table(symptomatic_ama_data$has_persistent,symptomatic_ama_data$haplotype_category, useNA = "always")
 table(symptomatic_csp_data$has_persistent)
@@ -138,28 +138,34 @@ symptomatic_ama_data %>%
 # make a beeswarm plot of the days between infections for persistent categories
 csp_pre_symp = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
   geom_boxplot() +
-  geom_quasirandom(aes(color=has_persistent)) + 
+  geom_quasirandom(aes(fill=has_persistent),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +
   xlab("") +
   ylab("Number of days since previous infection") +
-  scale_color_manual(values = c("#0571b0","#ca0020")) +
+  scale_fill_manual(values = c("#969696","#252525")) +
   coord_flip() +
   theme(legend.position = "none")
 csp_pre_symp
 ama_pre_symp = ggplot(data=symptomatic_ama_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
   geom_boxplot() +
-  geom_quasirandom(aes(color=has_persistent)) + 
+  geom_quasirandom(aes(fill=has_persistent),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +
   xlab("") +
   ylab("Number of days since previous infection") +
-  scale_color_manual(values = c("#0571b0","#ca0020")) +
+  scale_fill_manual(values = c("#969696","#252525")) +
   coord_flip() +
   theme(legend.position = "none")
 ama_pre_symp
 ggsave(csp_pre_symp, filename="/Users/kelseysumner/Desktop/csp_pre_symptomatic_plot.png", device="png",
-       height=4, width=6.5, units="in", dpi=400)
+       height=3, width=6, units="in", dpi=400)
 ggsave(ama_pre_symp, filename="/Users/kelseysumner/Desktop/ama_pre_symptomatic_plot.png", device="png",
-       height=4, width=6.5, units="in", dpi=400)
+       height=3, width=6, units="in", dpi=400)
+
+
+# also create some descriptive covariates for the number of pre-symptomatic infections
+table(symptomatic_csp_data$has_persistent,symptomatic_csp_data$symptomatic_status,useNA = "always")
+table(symptomatic_ama_data$has_persistent,symptomatic_ama_data$symptomatic_status,useNA = "always")
+
 
 
 

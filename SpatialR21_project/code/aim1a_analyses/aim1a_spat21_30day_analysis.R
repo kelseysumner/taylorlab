@@ -629,17 +629,16 @@ fit.coxph.pcr.2
 estimates = c(2.21,2.78,2.89,2.93,3.41,3.99)
 lower_ci = c(1.70,2.10,2.10,2.00,2.17,2.41)
 upper_ci = c(2.87,3.66,3.98,4.29,5.37,6.62)
-names = c(">0 p/uL",">1 p/uL",">10 p/uL",">100 p/uL",">500 p/uL",">1000 p/uL")
+names = c("Any density \n N=1602/5139",">1 p/uL \n N=1098/4635",">10 p/uL \n N=691/4228",">100 p/uL \n N=398/3935",">500 p/uL \n N=170/3707",">1000 p/uL \n N=110/3647")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$name, levels=c(">0 p/uL",">1 p/uL",">10 p/uL",">100 p/uL",">500 p/uL",">1000 p/uL"))
-fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+forest_plot_df$names = factor(forest_plot_df$name, levels=c("Any density \n N=1602/5139",">1 p/uL \n N=1098/4635",">10 p/uL \n N=691/4228",">100 p/uL \n N=398/3935",">500 p/uL \n N=170/3707",">1000 p/uL \n N=110/3647"))
+fp <- ggplot(data=forest_plot_df, aes(x=names, y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
-  coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("Parasite density threshold") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10",breaks = c(1,2,3,4,5,6,7)) +
   theme_bw() +
-  theme(text = element_text(size=12.5))
+  theme(text = element_text(size=11))
 fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/detectability_analysis_restricted.png", device="png",
        height=4, width=6, units="in", dpi=400)
@@ -647,20 +646,19 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/detectability_analysis_restrict
 estimates = c(2.41,1.93,2.11,1.70)
 lower_ci = c(1.56,1.36,1.63,1.33)
 upper_ci = c(3.71,2.74,2.72,2.17)
-names = c("Microscopy","RDT","HS-RDT","qPCR")
+names = c("Microscopy \n N=170/5379","RDT \n N=398/5379","HS-RDT \n N=1098/5379","qPCR \n N=1602/5379")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$name, levels=c("Microscopy","RDT","HS-RDT","qPCR"))
-fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+forest_plot_df$names = factor(forest_plot_df$name, levels=c("qPCR \n N=1602/5379","HS-RDT \n N=1098/5379","RDT \n N=398/5379","Microscopy \n N=170/5379"))
+fp <- ggplot(data=forest_plot_df, aes(x=names, y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   xlab("Malaria diagnostic") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10",breaks = c(1,2,3,4,5,6,7)) +
   theme_bw() +
-  coord_flip() +  # flip coordinates (puts labels on y axis)
-  theme(text = element_text(size=10.5))
+  theme(text = element_text(size=11))
 n = fp + expand_limits(y=c(0,7))
 ggsave(n, filename="/Users/kelseysumner/Desktop/detectability_analysis_recoded.png", device="png",
-       height=3, width=5.1, units="in", dpi=400)
+       height=4, width=6, units="in", dpi=400)
 
 
 # also make a histogram of parasite densities across asymptomatic infections
@@ -823,9 +821,6 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
 fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/figure4b_hazardsympmalaria_across_shortterm_casedefs.png", device="png",
        height=4, width=7, units="in", dpi=400)
-
-
-
 
 
 

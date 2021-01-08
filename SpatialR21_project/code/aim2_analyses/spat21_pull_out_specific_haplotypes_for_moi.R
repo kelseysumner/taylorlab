@@ -31,9 +31,9 @@ csp_haplotypes <- read_rds("Desktop/clean_ids_haplotype_results/CSP/spat21_CSP_h
 
 # edit the data set to be in the correct format
 ama_haplotypes = as.matrix(ama_haplotypes)
-rownames(ama_haplotypes) = ama_haplotypes[,2]
+rownames(ama_haplotypes) = ama_haplotypes[,2] # make sure is column of sample names
 colnames(ama_haplotypes)
-ama_haplotypes=ama_haplotypes[,-c(1,2,3,460,461,462)]
+ama_haplotypes=ama_haplotypes[,-c(1,2,3,460,461,462)] # update to columns that are non-H#
 colnames(ama_haplotypes)
 
 # make ama_haplotypes values numeric
@@ -69,9 +69,9 @@ write_rds(haplotype_summary,"Desktop/spat21_ama_summarized_haplotype_list_31DEC2
 
 # edit the data set to be in the correct format
 csp_haplotypes = as.matrix(csp_haplotypes)
-rownames(csp_haplotypes) = csp_haplotypes[,2]
+rownames(csp_haplotypes) = csp_haplotypes[,2] # make sure is column of sample names
 colnames(csp_haplotypes)
-csp_haplotypes=csp_haplotypes[,-c(1,2,3,302,303,304)]
+csp_haplotypes=csp_haplotypes[,-c(1,2,3,302,303,304)] # update to non H# columns
 colnames(csp_haplotypes)
 
 # make csp_haplotypes values numeric
