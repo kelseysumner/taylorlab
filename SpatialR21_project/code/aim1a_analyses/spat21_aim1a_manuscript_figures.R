@@ -388,12 +388,11 @@ fit.coxph.over15
 km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
                      xlab = "Time in days", 
                      ylab = "Survival probability",
-                     surv.median.line = "hv",
                      tables.height = 0.2,
                      tables.theme = theme_cleantable(),
                      conf.int = T,
                      legend = "none",
-                     pval = T,
+                     pval = F,
                      ggtheme = theme_bw(),
                      risk.table = T,
                      ncensor.plot = F,
@@ -401,7 +400,7 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ ma
                      conf.int.style = "step",
                      risk.table.y.text = FALSE,
                      risk.table.y.text.col = T,
-                     title="Symptomatic malaria (primary)",
+                     title="29-month follow-up",
                      font.title = c(11, "bold"))
 ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier.png", device="png",
        height=5, width=4, units="in", dpi=300)

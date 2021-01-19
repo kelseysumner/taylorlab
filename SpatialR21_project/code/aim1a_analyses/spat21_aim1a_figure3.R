@@ -91,33 +91,48 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3_combo_forest_plot_coxph
 
 
 
-#### --------- now make a new figure 3B that compares across all exposures and outcomes ------- ####
 
+#### ------- now make a figure that is all follow-up time analyses together -------- ####
 
-# this will be the new 3B
-
-
+# make a forest plot of the model results 
 # make a forest plot of the model results
-estimates = c(1.11,1.20,1.02,1.20,1.02)
-lower_ci = c(1.01,1.03,0.92,1.11,0.92)
-upper_ci = c(1.22,1.41,1.12,1.31,1.13)
-type = c("Main model","Exposure sensitivity analyses","Exposure sensitivity analyses","Outcome sensitivity analyses","Outcome sensitivity analyses")
-names = c("Symptomatic malaria \n (primary)","Post-treatment analysis","Misclassification analysis","Symptomatic malaria \n (secondary permissive)","Symptomatic malaria \n (secondary stringent)")
-forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci,type)
-forest_plot_df$type = factor(forest_plot_df$type,levels = c("Main model","Exposure sensitivity analyses","Outcome sensitivity analyses"))
+estimates = c(2.61,1.77,2.54)
+lower_ci = c(2.05,1.26,1.76)
+upper_ci = c(3.33,2.47,3.67)
+names = c("Main model","Pre-symptomatic analysis","Post-treatment analysis")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names,levels = c("Main model","Pre-symptomatic analysis","Post-treatment analysis"))
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab("") + ylab("Hazard of symptomatic malaria (95% CI)") +
-  scale_y_continuous(trans="log10",breaks=c(0.5,0.6,0.7,0.8,0.85,0.9,0.92,0.95,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0)) +
+  xlab("") + ylab("Adusted hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks=c(0,1.0,1.5,2.0,2.5,3.0,3.5,4.0)) +
   theme_bw() +
-  facet_wrap(~type,ncol=1,strip.position = "top",scales = "free_y") +
+  theme(text = element_text(size=10.5))
+fp
+ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3a_hazardsympmalaria_1monthanalysis.png", device="png",
+       height=2.5, width=6, units="in", dpi=400)
+
+
+# make a forest plot of the model results across all months
+estimates = c(2.61,1.64,1.38,1.12,1.11)
+lower_ci = c(2.05,1.40,1.20,1.00,1.01)
+upper_ci = c(3.33,1.94,1.58,1.25,1.22)
+names = c("1-month","3-month","6-month","12-month","29-month")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names,levels = c("1-month","3-month","6-month","12-month","29-month"))
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks=c(0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.4)) +
+  theme_bw() +
   theme(text = element_text(size=12.5))
 fp
-ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3b_hazardsympmalaria_across_casedefs.png", device="png",
+ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3b_hazardsympmalaria_across_monthfollowup.png", device="png",
        height=4, width=7, units="in", dpi=400)
-
 
 
 

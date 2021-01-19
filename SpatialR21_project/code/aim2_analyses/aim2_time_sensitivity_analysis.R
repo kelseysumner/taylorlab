@@ -759,15 +759,16 @@ summary(under3_data$distance_km)
 summary(over3_data$distance_km)
 summary(under3_data$csp_haps_shared)
 summary(over3_data$csp_haps_shared)
+x_label = expression(paste("Number of",italic(" pfcsp "),"haplotypes shared"))
 model_data$under3 = ifelse(model_data$distance_km <= 3, "3 Km or less",ifelse(model_data$distance_km > 3,"Greater than 3 Km",NA))
 box_plot = ggplot(data=model_data,aes(x=factor(under3),y=csp_haps_shared,fill=under3)) +
   geom_boxplot(alpha=0.7) +
   theme_bw() +
   ylab("Maximum distance between specimens (Km)") + 
-  xlab("Number of pfcsp haplotypes shared") +
+  xlab(x_label) +
   scale_fill_manual(values = c("#fc8d59","#99d594")) +
   theme(legend.position = "")
 box_plot
 # export the plot
 ggsave(box_plot, filename="/Users/kelseysumner/Desktop/distance_hap_sharing_box_plot.png", device="png",
-       height=7, width=8, units="in", dpi=500)
+       height=5, width=5, units="in", dpi=500)

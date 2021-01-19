@@ -129,14 +129,14 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds ratio (95% CI)") +
-  scale_y_continuous(trans="log10") +
+  scale_y_continuous(trans="log10",breaks=c(0,0.4,0.6,0.8,1.0,1.2,1.4,1.6)) +
   theme_bw() +
   theme(text = element_text(size=25)) 
 fp
 
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/sensitivity_analysis_aim2_model_combined_csp_ama.png", device="png",
-       height=10, width=12.5, units="in", dpi=400)
+       height=10, width=12, units="in", dpi=400)
 
 
 #### ---- change plot 4D to a histogram ------- ####

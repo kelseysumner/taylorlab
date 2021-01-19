@@ -18,6 +18,7 @@ library(survival)
 library(ggalluvial)
 library(gridExtra)
 library(coxme)
+library(lme4)
 
 
 #### ------- read in the data sets -------- ####
@@ -170,6 +171,21 @@ table(survival_data_secondary_permissive$event_indicator_30day,survival_data_sec
 # write_rds(survival_data_secondary_permissive,"Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/Final data sets/survival format/survival_data_secondary_permissive_survival_format_30day_10DEC2020.rds")
 
 
+#### ----- run a multi-level logistic regression model --------- ####
+
+## ---- for the primary case definition
+# this is logistic regression model
+survival_data_primary$status_30day = factor(survival_data_primary$status_30day,levels=c("censored","symptomatic infection"))
+logit.model.30day <- glmer(status_30day ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = survival_data_primary, family = binomial(link="logit"),control = glmerControl(optimizer="bobyqa"))
+summary(logit.model.30day)
+exp(confint(logit.model.30day,method="Wald"))
+
+# also calculate crude RR of symptomatic malaria within 30 days
+table(survival_data_primary$main_exposure_primary_case_def,survival_data_primary$status_30day,useNA = "always")
+RR = (161/(1681+161))/(123/(123+3414))
+RR
+
 
 #### ----------- now run a multi-level cox regression model ----------- ####
 
@@ -190,9 +206,9 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event_30day, event_indicator
                       tables.height = 0.2,
                       tables.theme = theme_cleantable(),
                       conf.int = T,
-                      legend = "bottom",
+                      legend = "none",
                      legend.labs = c("no infection","asymptomatic infection"),
-                      pval = T,
+                      pval = F,
                       ggtheme = theme_bw(),
                       risk.table = T,
                       ncensor.plot = F,
@@ -200,9 +216,10 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event_30day, event_indicator
                       conf.int.style = "step",
                       risk.table.y.text = FALSE,
                       risk.table.y.text.col = T,
-                      font.title = c(11, "bold"))
+                      font.title = c(11, "bold"),
+                     title = "1-month follow-up")
 ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_30day.png", device="png",
-       height=4, width=4, units="in", dpi=300)
+       height=5, width=4, units="in", dpi=300)
 # log rank test for difference in two KM survival curves
 survdiff(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary)
 sd <- survdiff(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary)
@@ -214,6 +231,12 @@ sd <- survdiff(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposu
 fit.coxph.30day <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
                    data = survival_data_primary)
 fit.coxph.30day
+
+
+# rerun the model but with a robust variance estimator (GEE)
+gee.coxph.30day <- coxph(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + cluster(unq_memID),robust=TRUE, 
+                         data = survival_data_primary)
+gee.coxph.30day
 
 
 # make a forest plot of the model results

@@ -209,28 +209,43 @@ ama_persistent_data$haplotype_category = factor(ama_persistent_data$haplotype_ca
 # make a beeswarm plot of the days between infections for persistent categories
 csp_bees = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
   geom_boxplot() +
-  geom_quasirandom(aes(fill=haplotype_category),alpha=0.8,pch=21,color="#000000") + 
+  geom_quasirandom(aes(fill=haplotype_category,shape=symptomatic_status),alpha=0.8,size=1.75,color="#000000") + 
   theme_bw() +
   xlab("") +
   ylab("Number of days since previous infection") +
   scale_fill_manual(values = c("#cccccc","#969696","#636363","#252525")) +
+  scale_shape_manual(values = c(21, 24)) +
   coord_flip() +
-  theme(legend.position = "none")
+  labs(shape = "Symptomatic status") +
+  theme(legend.position = "top") +
+  guides(fill = FALSE)
 csp_bees
 ama_bees = ggplot(data=ama_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
   geom_boxplot() +
-  geom_quasirandom(aes(fill=haplotype_category),alpha=0.8,pch=21,color="#000000") + 
+  geom_quasirandom(aes(fill=haplotype_category,shape=symptomatic_status),alpha=0.8,size=1.75,color="#000000") + 
   theme_bw() +
   xlab("") +
   ylab("Number of days since previous infection") +
   scale_fill_manual(values = c("#cccccc","#969696","#636363","#252525")) +
+  scale_shape_manual(values = c(21, 24)) +
   coord_flip() +
-  theme(legend.position = "none")
+  labs(shape = "Symptomatic status") +
+  theme(legend.position = "top") +
+  guides(fill = FALSE)
 ama_bees
 ggsave(csp_bees, filename="/Users/kelseysumner/Desktop/csp_beeswarm_plot.png", device="png",
        height=4, width=6.5, units="in", dpi=400)
 ggsave(ama_bees, filename="/Users/kelseysumner/Desktop/ama_beeswarm_plot.png", device="png",
        height=4, width=6.5, units="in", dpi=400)
+
+
+# compare the proportion of observations that are symptomatic across categories
+table(csp_persistent_data$symptomatic_status,csp_persistent_data$haplotype_category,useNA = "always")
+table(ama_persistent_data$symptomatic_status,ama_persistent_data$haplotype_category,useNA = "always")
+
+# compare the proportion of observations that are symptomatic within 14 days compared to greater than 14 days
+length(which(csp_persistent_data$symptomatic_status=="symptomatic infection" & csp_persistent_data$days_btwn_infxns <= 14)) # 20/37 = 54.1%
+length(which(ama_persistent_data$symptomatic_status=="symptomatic infection" & ama_persistent_data$days_btwn_infxns <= 14)) # 18/31 = 58.1%
 
 
 # now make plots of interval in days between infections with persistent haplotypes
