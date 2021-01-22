@@ -106,7 +106,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
-  xlab("") + ylab("Adusted hazard of symptomatic malaria (95% CI)") +
+  xlab("") + ylab("Adusted 1-month hazard of symptomatic malaria (95% CI)") +
   scale_y_continuous(trans="log10",breaks=c(0,1.0,1.5,2.0,2.5,3.0,3.5,4.0)) +
   theme_bw() +
   theme(text = element_text(size=10.5))
@@ -122,17 +122,16 @@ upper_ci = c(3.33,1.94,1.58,1.25,1.22)
 names = c("1-month","3-month","6-month","12-month","29-month")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
 forest_plot_df$names = factor(forest_plot_df$names,levels = c("1-month","3-month","6-month","12-month","29-month"))
-fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+fp <- ggplot(data=forest_plot_df, aes(x=(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
   geom_pointrange(size=1.25) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
-  coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Adjusted hazard of symptomatic malaria (95% CI)") +
-  scale_y_continuous(trans="log10",breaks=c(0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.4)) +
+  scale_y_continuous(trans="log10",breaks=c(0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.5,3.0,3.5)) +
   theme_bw() +
   theme(text = element_text(size=12.5))
 fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3b_hazardsympmalaria_across_monthfollowup.png", device="png",
-       height=4, width=7, units="in", dpi=400)
+       height=5, width=7, units="in", dpi=400)
 
 
 

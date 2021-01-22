@@ -19,6 +19,8 @@ library(ggalluvial)
 library(gridExtra)
 library(coxme)
 library(lme4)
+library(resample)
+library(Hmisc)
 
 
 #### ------- read in the data sets -------- ####
@@ -186,10 +188,62 @@ table(survival_data_primary$main_exposure_primary_case_def,survival_data_primary
 RR = (161/(1681+161))/(123/(123+3414))
 RR
 
+# also try a crude log-risk regression
+survival_data_primary$status_30day = factor(survival_data_primary$status_30day,levels=c("censored","symptomatic infection"))
+logrisk.model.30day <- glmer(status_30day ~ main_exposure_primary_case_def + (1 | unq_memID), 
+                           data = survival_data_primary, family = binomial(link="log"),control = glmerControl(optimizer="bobyqa"))
+summary(logrisk.model.30day)
+exp(confint(logrisk.model.30day,method="Wald"))
+
+
 
 #### ----------- now run a multi-level cox regression model ----------- ####
 
 ## ------ for the primary case definition
+
+# make a cumulative risk plot
+#Fit a survival model by exposure
+s2 <- survival::survfit(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary, type="kaplan-meier")
+s_by_exp <- summary(s2)
+s_by_exp
+# create a data frame of the survival times
+#Create a data frame
+s_df <- data.frame(
+  time = s_by_exp$time,
+  exposure = factor(as.numeric(s_by_exp$strata), 
+                    levels = c(1,2), 
+                    labels=c("No infection", "Asymptomatic infection")),
+  n_at_risk = s_by_exp$n.risk,
+  n_symptomatic = s_by_exp$n.event,
+  survival = s_by_exp$surv,
+  risk = 1 - s_by_exp$surv,
+  lower_ci_risk = 1 - s_by_exp$upper,
+  upper_ci_risk = 1 - s_by_exp$lower)
+s_df
+#Plot cumulative risk by exposure group
+risk_plot = ggplot(data=s_df, aes(x=time, y=risk, group=exposure, fill=exposure)) +
+  geom_ribbon(aes(ymin=lower_ci_risk, ymax=upper_ci_risk), alpha=0.5) +
+  geom_point(alpha=0.5,size=0.5) +
+  geom_line() + 
+  theme_bw() + 
+  xlab("Risk period in days") + 
+  ylab("Cumulative risk of symptomatic infection (%)") +
+  theme(legend.title = element_blank())
+risk_plot
+# try boostrapping around risk
+# try code from Jess
+set.seed(234)
+B <- 500
+datbi<-samp.bootstrap(nrow(survival_data_primary), B)
+results <- vector()
+for(i in 1:B){
+  results[i] <- 1 - tail(survfit(Surv(days_until_event_30day,event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary)$surv, n = 1)
+}
+sd(results)
+mean(results)
+# not sure this is what we want becuase sd 0
+
+
 
 # check model assumptions
 check <- coxph(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name, 
@@ -219,11 +273,32 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event_30day, event_indicator
                       font.title = c(11, "bold"),
                      title = "1-month follow-up")
 ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_30day.png", device="png",
-       height=5, width=4, units="in", dpi=300)
+       height=3, width=4, units="in", dpi=300)
 # log rank test for difference in two KM survival curves
 survdiff(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary)
 sd <- survdiff(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary)
 1 - pchisq(sd$chisq, length(sd$n) - 1)
+
+
+# bootstrap around the KM curve to estimate a crude cumulative RR
+# try code from Jess
+set.seed(234)
+B <- 500
+datbi<-samp.bootstrap(nrow(survival_data_primary), B)
+results <- vector()
+for(i in 1:B){
+  results[i] <- 1 - tail(survfit(Surv(days_until_event_30day,event_indicator_30day) ~ main_exposure_primary_case_def, data = survival_data_primary)$surv, n = 1)
+}
+sd(results)
+mean(results)
+# not sure this is what we want because SD 0
+
+
+# run a crude multi-level coxph model with random intercepts for the participant level
+# primary data set
+fit.coxph.30day.crude <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + (1 | unq_memID), 
+                         data = survival_data_primary)
+fit.coxph.30day.crude
 
 
 # run a multi-level coxph model with random intercepts for the participant level (not doing hh level because not using hh level covariates and didn't explain much variance, also makes interpretation better)

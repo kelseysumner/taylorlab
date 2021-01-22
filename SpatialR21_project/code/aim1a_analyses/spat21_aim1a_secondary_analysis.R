@@ -319,5 +319,54 @@ fit.coxph.male <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ ma
 fit.coxph.male
 
 
+##  comparison of data set in 30 post-treatment analysis to full analysis
+##  first look at the number of symptomatic infections across covariates for post-treatment analysis
+symp_infections = secondary_analysis_data %>% filter(status=="symptomatic infection")
+table(symp_infections$main_exposure_primary_case_def)
+table(symp_infections$age_cat_baseline)
+table(symp_infections$gender)
+table(symp_infections$slept_under_net_regularly)
+table(symp_infections$village_name)
+##  now compare the proportions between data sets
+##  main exposure
+# first make a contingency table
+df = data.frame(full = c(1580,826),post=c(570,264))
+# then do a chi-squared test
+chisq.test(df)
+# correct for repeated measures
+0.1716*29
+## age
+# first make a contingency table
+df = data.frame(full = c(329,1319,758),post=c(63,617,154))
+# then do a chi-squared test
+chisq.test(df)
+# correct for repeated measures
+2.2e-16*29
+## sex
+# first make a contingency table
+df = data.frame(full = c(1190,1216),post=c(348,486))
+# then do a chi-squared test
+chisq.test(df)
+# correct for repeated measures
+0.0001369*29
+## regular bed net usage
+# first make a contingency table
+df = data.frame(full = c(730,1676),post=c(257,577))
+# then do a chi-squared test
+chisq.test(df)
+# correct for repeated measures
+0.8314*29
+## village
+# first make a contingency table
+df = data.frame(full = c(876,745,785),post=c(259,294,281))
+# then do a chi-squared test
+chisq.test(df)
+# correct for repeated measures
+0.01208*29
+
+
+
+
+
 
 

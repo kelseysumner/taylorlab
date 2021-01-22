@@ -401,13 +401,40 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ ma
                      risk.table.y.text = FALSE,
                      risk.table.y.text.col = T,
                      title="29-month follow-up",
-                     font.title = c(11, "bold"))
+                     font.title = c(11, "bold"),
+                     break.x.by = c(30),
+                     xlim=c(0,810))
 ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier.png", device="png",
-       height=5, width=4, units="in", dpi=300)
+       height=6, width=11, units="in", dpi=300)
 # log rank test for difference in two KM survival curves
 survdiff(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary)
 sd <- survdiff(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary)
 1 - pchisq(sd$chisq, length(sd$n) - 1)
+
+# now make this same plot but with only the first 30 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#cccccc","#000000"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="1-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(5),
+                     xlim=c(0,30),
+                     ylim=c(0.85,1.00))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short30.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+
 
 
 ## ----- for the secondary permissive case definition
