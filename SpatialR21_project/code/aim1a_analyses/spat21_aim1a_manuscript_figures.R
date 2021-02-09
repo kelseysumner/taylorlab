@@ -72,12 +72,12 @@ plot_human_data_withperc = plot_human_data %>%
 # reorder so asymptomatic infections are on the bottom
 plot_human_data_withperc$main_exposure_primary_case_def = relevel(as.factor(plot_human_data_withperc$main_exposure_primary_case_def),"no infection")
 
-# now make an alluvial plot of how infection status changes over time
+# now make an alluvial plot of how infection status changes over time in BW
 alluvial_plot = ggplot(plot_human_data_withperc,
                        aes(x = month_year, stratum = main_exposure_primary_case_def, alluvium = unq_memID,
                            y = perc_n,fill = main_exposure_primary_case_def, label = main_exposure_primary_case_def)) +
   geom_flow(na.rm=T,alpha=0.4) +
-  geom_stratum(width = 5) +
+  geom_stratum(width = 8) +
   theme_bw() +
   xlab("Month")+
   ylab("Proportion of participants") +
@@ -88,6 +88,42 @@ alluvial_plot = ggplot(plot_human_data_withperc,
 alluvial_plot
 ggsave(alluvial_plot, filename="/Users/kelseysumner/Desktop/primary_alluvial_exposure.png", device="png",
        height=6, width=11, units="in", dpi=500)
+
+
+# now make an alluvial plot of how infection status changes over time but with colors
+alluvial_plot = ggplot(plot_human_data_withperc,
+                       aes(x = month_year, stratum = main_exposure_primary_case_def, alluvium = unq_memID,
+                           y = perc_n,fill = main_exposure_primary_case_def, label = main_exposure_primary_case_def)) +
+  geom_flow(na.rm=T,alpha=0.4) +
+  geom_stratum(width = 8) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Proportion of participants") +
+  labs(fill="Main exposure") +
+  scale_fill_manual(values = c("#1b9e77","#d95f02")) +
+  scale_x_date(limits = as.Date(c("2017-05-01","2019-12-01")),breaks = "3 months") +
+  theme(legend.position="bottom")
+alluvial_plot
+ggsave(alluvial_plot, filename="/Users/kelseysumner/Desktop/primary_alluvial_exposure_color.png", device="png",
+       height=5, width=11, units="in", dpi=500)
+
+
+# now make an alluvial plot of how infection status changes over time but with colors - dissertation colors
+alluvial_plot = ggplot(plot_human_data_withperc,
+                       aes(x = month_year, stratum = main_exposure_primary_case_def, alluvium = unq_memID,
+                           y = perc_n,fill = main_exposure_primary_case_def, label = main_exposure_primary_case_def)) +
+  geom_flow(na.rm=T,alpha=0.4) +
+  geom_stratum(width = 8) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Proportion of participants") +
+  labs(fill="Main exposure") +
+  scale_fill_manual(values = c("#4daf4a","#ff7f00")) +
+  scale_x_date(limits = as.Date(c("2017-05-01","2019-12-01")),breaks = "3 months") +
+  theme(legend.position="bottom")
+alluvial_plot
+ggsave(alluvial_plot, filename="/Users/kelseysumner/Desktop/primary_alluvial_exposure_color.png", device="png",
+       height=5, width=11, units="in", dpi=500)
 
 
 # make a violin plot of follow-up time for asymptomatic compared to no infection for symptomatic infections only
@@ -434,6 +470,105 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ ma
                      ylim=c(0.85,1.00))
 ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short30.png", device="png",
        height=3, width=4, units="in", dpi=300)
+
+
+
+# now make these same plots in color
+# KM curve stratified
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#1b9e77","#d95f02"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="29-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(30),
+                     xlim=c(0,810))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_color.png", device="png",
+       height=5, width=11, units="in", dpi=300)
+# now make this same plot but with only the first 30 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#1b9e77","#d95f02"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="1-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(5),
+                     xlim=c(0,30),
+                     ylim=c(0.85,1.00))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short30_color.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+
+
+
+# now make these same plots in color for the dissertation document
+# KM curve stratified
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#4daf4a","#ff7f00"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="29-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(30),
+                     xlim=c(0,810))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_color_dis.png", device="png",
+       height=5, width=11, units="in", dpi=300)
+# now make this same plot but with only the first 30 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#4daf4a","#ff7f00"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="1-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(5),
+                     xlim=c(0,30),
+                     ylim=c(0.85,1.00))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short30_color_dis.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+
 
 
 

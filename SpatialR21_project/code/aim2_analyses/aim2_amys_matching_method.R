@@ -369,14 +369,14 @@ csp_plot = ggplot(csp_all, aes(x=symp_median_prop_nonzero, y=asymp_median_prop_n
   geom_point(aes(size=total_infections),pch=21,alpha=0.75,color="black",fill="#8AAF9D") + 
   theme_bw() +
   geom_abline(intercept = 0, slope = 1,linetype="dashed") +
-  xlab("Median proportion infected mosquitoes with parasites matching a symptomatic infection") +
+  xlab("Median proportion infected mosquitoes with \n parasites matching a symptomatic infection") +
   ylab("Median proportion infected mosquitoes with \n parasites matching an asymptomatic infection") +
   labs(size="Number of malaria infections") +
   scale_x_continuous(limits=c(0,1)) +
   scale_y_continuous(limits=c(0,1)) +
-  theme(text = element_text(size=14), legend.position = c(0.85,0.25), legend.box.background = element_rect(colour = "black")) 
+  theme(text = element_text(size=14), legend.position = c(0.8,0.25), legend.box.background = element_rect(colour = "black")) 
 ggsave(csp_plot, filename="/Users/kelseysumner/Desktop/csp_matched_prob_plot_alt3.png", device="png",
-       height=5, width=11, units="in", dpi=500)
+       height=5, width=8, units="in", dpi=500)
 
 # check the median of medians by symptomatic status
 # for csp

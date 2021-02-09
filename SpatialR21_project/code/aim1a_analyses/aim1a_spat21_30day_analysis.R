@@ -923,3 +923,45 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/figure4b_hazardsympmalaria_acro
 
 
 
+#### -------- make a figure of hazard of symptomatic malaria across age and sex ---------- ####
+
+# make a forest plot of the model results across age categories
+estimates = c(3.77,2.45,2.55)
+lower_ci = c(2.02,1.79,1.57)
+upper_ci = c(7.04,3.35,4.15)
+names = c("<5 years","5-15 years",">15 years")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names,levels = c("<5 years","5-15 years",">15 years"))
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks = c(1,1.5,2,2.5,3,3.5,4,5,6,7)) +
+  theme_bw() +
+  theme(text = element_text(size=12.5))
+fp
+ggsave(fp, filename="/Users/kelseysumner/Desktop/hazard_symp_malaria_1month_age.png", device="png",
+       height=4, width=5, units="in", dpi=400)
+
+
+# make a forest plot of the model results across sex
+estimates = c(1.76,3.71)
+lower_ci = c(1.24,2.62)
+upper_ci = c(2.50,5.24)
+names = c("Male","Female")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names,levels = c("Male","Female"))
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks = c(1,1.5,2,2.5,3,3.5,4,5,6,7)) +
+  theme_bw() +
+  theme(text = element_text(size=12.5))
+fp
+ggsave(fp, filename="/Users/kelseysumner/Desktop/hazard_symp_malaria_1month_sex.png", device="png",
+       height=4, width=5, units="in", dpi=400)
+
+

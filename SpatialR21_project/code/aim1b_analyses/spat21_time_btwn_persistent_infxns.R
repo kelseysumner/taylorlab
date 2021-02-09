@@ -167,6 +167,22 @@ table(symptomatic_csp_data$has_persistent,symptomatic_csp_data$symptomatic_statu
 table(symptomatic_ama_data$has_persistent,symptomatic_ama_data$symptomatic_status,useNA = "always")
 
 
+# make a beeswarm plot for csp for dissertation defense colors
+csp_pre_symp = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(fill=has_persistent),alpha=0.8,pch=21,color="#000000") + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous infection") +
+  scale_fill_manual(values = c("#a50f15","#fb6a4a")) +
+  coord_flip() +
+  theme(legend.position = "none")
+csp_pre_symp
+ggsave(csp_pre_symp, filename="/Users/kelseysumner/Desktop/csp_pre_symptomatic_plot_dis.png", device="png",
+       height=3.7, width=5, units="in", dpi=400)
+
+
+
 
 
 #### ----- subset to just the persistent haplotypes ------ ####
@@ -236,6 +252,24 @@ ama_bees
 ggsave(csp_bees, filename="/Users/kelseysumner/Desktop/csp_beeswarm_plot.png", device="png",
        height=4, width=6.5, units="in", dpi=400)
 ggsave(ama_bees, filename="/Users/kelseysumner/Desktop/ama_beeswarm_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+
+
+# make a beeswarm plot of the days between infections for persistent categories for csp but dissertation colors
+csp_bees = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(fill=haplotype_category,shape=symptomatic_status),alpha=0.8,size=1.75,color="#000000") + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous infection") +
+  scale_fill_manual(values = c("#810f7c","#8856a7","#8c96c6","#b3cde3")) +
+  scale_shape_manual(values = c(21, 24)) +
+  coord_flip() +
+  labs(shape = "Symptomatic status") +
+  theme(legend.position = "bottom") +
+  guides(fill = FALSE)
+csp_bees
+ggsave(csp_bees, filename="/Users/kelseysumner/Desktop/csp_beeswarm_plot_dis.png", device="png",
        height=4, width=6.5, units="in", dpi=400)
 
 

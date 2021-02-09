@@ -343,6 +343,36 @@ ggsave(density_all_plot, filename="/Users/kelseysumner/Desktop/density_all_plot_
   height=15, width=20, units="in", dpi=500)
 
 
+# remake the plot but with dissertation colors
+# symptomatic (red): #e41a1c
+# asymptomatic (orange): #ff7f00
+# mosquitoes (light pink): #fdcdac
+# no infection (light grey): #D3DDDC
+small_all_df$color = rep(NA,nrow(small_all_df))
+small_all_df$color[which(small_all_df$type=="Symptomatic visit" & small_all_df$infection_status=="Positive")] = "#e41a1c"
+small_all_df$color[which(small_all_df$type=="Symptomatic visit" & small_all_df$infection_status=="Negative")] = "#D3DDDC"
+small_all_df$color[which(small_all_df$type=="Asymptomatic visit" & small_all_df$infection_status=="Positive")] = "#ff7f00"
+small_all_df$color[which(small_all_df$type=="Asymptomatic visit" & small_all_df$infection_status=="Negative")] = "#D3DDDC"
+small_all_df$color[which(small_all_df$type=="Mosquito collection" & small_all_df$infection_status=="Positive")] = "#fdcdac"
+small_all_df$color[which(small_all_df$type=="Mosquito collection" & small_all_df$infection_status=="Negative")] = "#D3DDDC"
+plot_human_data_asymp <- within(plot_human_data_asymp, month <- factor(month, levels=month_order))
+color_order = c("#D3DDDC","#e41a1c","#ff7f00","#fdcdac")
+small_all_df <- within(small_all_df,color <- factor(color,levels=color_order))
+density_all_plot = ggplot(data=small_all_df,aes(x=new_date,fill=color,y=n)) + 
+  facet_grid(type ~ .,switch = "y") +
+  geom_histogram(stat="identity",color="black") +
+  xlab("") +
+  ylab("Number of samples collected") +
+  scale_fill_identity() +
+  theme_bw() +
+  scale_x_date(date_breaks="1 month",limits = as.Date(c("2017-06-01","2018-08-01"))) + 
+  scale_y_continuous(limits = c(0,100),breaks=c(0,20,40,60,80,100),position = "right") + 
+  theme(text = element_text(size=30),axis.text.x = element_text(angle = 90)) 
+ggsave(density_all_plot, filename="/Users/kelseysumner/Desktop/density_all_plot_fig1.png", device="png",
+       height=15, width=20, units="in", dpi=500)
+
+
+
 
 # another way to make the plot
 # try a facet plot with gg_rdiges

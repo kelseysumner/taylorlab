@@ -251,6 +251,25 @@ ggsave(ca_plot, filename="/Users/kelseysumner/Desktop/ca_plot.png", device="png"
        height=5, width=10, units="in", dpi=500)
 
 
+# make a line plot of the different paf values but with dissertation colors
+ca_plot = ggplot() +
+  geom_line(data=month_df_1,aes(x=month_1,y=cas_1),size=1.5,group=1,colour="black") +
+  theme_bw() +
+  xlab("Month") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  theme(text = element_text(size=12)) +
+  geom_area(data=month_df_1,aes(x=month_1,y=cas_1),group=1, fill="#ff7f00",alpha=0.8) +
+  geom_ribbon(data=month_df_1,aes(ymin=pmin(cas_1,100), ymax=100,x=month_1), fill="#e41a1c", alpha=0.8,group=1) +
+  geom_line(data=month_df_1,aes(x=month_1,y=month_summary.prop_asymptomatic),group=1,colour="#081d58",size=1.5,alpha=0.7) +
+  scale_y_continuous(limits = c(0,100),name="Contribution to infectious reservoir (%)",sec.axis = sec_axis(~.*1,name="Percent of asymptomatic infections (%)"))
+ca_plot
+ggsave(ca_plot, filename="/Users/kelseysumner/Desktop/ca_plot_dis.png", device="png",
+       height=5, width=10, units="in", dpi=500)
+
+
+
+
+
 #### -------- calculate cas across all months ------- ####
 
 # calculate the proportion of people that were asymptomatic vs symptomatic across the entire study follow-up

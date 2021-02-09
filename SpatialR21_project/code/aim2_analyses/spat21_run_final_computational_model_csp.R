@@ -296,6 +296,23 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuo
        height=10, width=12.5, units="in", dpi=400)
 
 
+# create a forest plot with dissertation colors
+library(forcats)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1,1,1,1,1,1),colour=c("#ff7f00","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds ratio (95% CI)") +
+  scale_y_continuous(trans="log10") +
+  theme_bw() +
+  theme(text = element_text(size=25)) 
+ggsave(fp, filename="/Users/kelseysumner/Desktop/forest_plot_aim2_model_continuous_outcome.png", device="png",
+       height=10, width=12.5, units="in", dpi=400)
+
+
+
+
+
 
 #### ------- make a forest plot of model with the covariate for csp moi included ------ ####
 
@@ -341,6 +358,21 @@ model_data$aim2_exposure = relevel(model_data$aim2_exposure, ref="asymptomatic i
 p_te_all_plot = ggplot(data=model_data,aes(x=p_te_all_csp,fill=aim2_exposure)) +
   geom_density(alpha=0.6) + 
   scale_fill_manual(values=c("#E1AF00","#3B9AB2")) + 
+  labs(fill="Symptomatic status") +
+  theme_bw() + 
+  xlab("Probability of transmission across all variables") +
+  ylab("Density") +
+  theme(plot.title = element_text(size = 26, face = "bold", hjust = 0.5), text = element_text(size=25), legend.position = c(0.7, 0.77),legend.box.background = element_rect(colour = "black"), legend.text = element_text(size=40))
+p_te_all_plot
+ggsave(p_te_all_plot, filename="/Users/kelseysumner/Desktop/p_te_all_plot_density.png", device="png",
+       height=8, width=14, units="in", dpi=500)
+
+
+# make a density plot of p_te_all with dissertation colors  
+model_data$aim2_exposure = relevel(model_data$aim2_exposure, ref="asymptomatic infection")
+p_te_all_plot = ggplot(data=model_data,aes(x=p_te_all_csp,fill=aim2_exposure)) +
+  geom_density(alpha=0.6) + 
+  scale_fill_manual(values=c("#ff7f00","#e41a1c")) + 
   labs(fill="Symptomatic status") +
   theme_bw() + 
   xlab("Probability of transmission across all variables") +
@@ -738,11 +770,23 @@ model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),
   coord_flip() +
   theme(text = element_text(size=16)) 
 model_plot
-
-
-
 ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plot.png", device="png",
        height=7, width=5, units="in", dpi=500)
 
 
+
+# now make this plot but with dissertation colors
+model_plot = ggplot(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#ff7f00") +
+  geom_line(data=model_results,aes(x=binary_outcome,y=estimate,group=1),cex=1.5,col="#ff7f00") +
+  geom_ribbon(data=model_results,aes(x=1:length(binary_outcome),ymin = lower_ci, ymax = upper_ci),alpha=0.2,fill="#ff7f00") +
+  theme_bw() +
+  xlab("Cutoff for what is a transmission event") + 
+  ylab("Odds ratio (95% CI)") + 
+  scale_y_continuous(breaks=c(0,1,1.5,2,2.5,3,3.5),trans="log10") +
+  geom_hline(yintercept=1,linetype="dashed") + 
+  coord_flip() +
+  theme(text = element_text(size=20)) 
+model_plot
+ggsave(model_plot, filename="/Users/kelseysumner/Desktop/binary_coding_model_plot.png", device="png",
+       height=7, width=9, units="in", dpi=500)
 
