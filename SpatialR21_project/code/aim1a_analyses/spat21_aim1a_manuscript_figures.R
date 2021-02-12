@@ -126,6 +126,25 @@ ggsave(alluvial_plot, filename="/Users/kelseysumner/Desktop/primary_alluvial_exp
        height=5, width=11, units="in", dpi=500)
 
 
+# now make an alluvial plot of how infection status changes over time but with colors but remove ribbons - dissertation colors
+alluvial_plot = ggplot(plot_human_data_withperc,
+                       aes(x = month_year, stratum = main_exposure_primary_case_def, alluvium = unq_memID,
+                           y = perc_n,fill = main_exposure_primary_case_def, label = main_exposure_primary_case_def)) +
+  geom_flow(na.rm=T,alpha=0) +
+  geom_stratum(width = 8) +
+  theme_bw() +
+  xlab("Month")+
+  ylab("Proportion of participants") +
+  labs(fill="Main exposure") +
+  scale_fill_manual(values = c("#4daf4a","#ff7f00")) +
+  scale_x_date(limits = as.Date(c("2017-05-01","2019-12-01")),breaks = "3 months") +
+  theme(legend.position="bottom")
+alluvial_plot
+ggsave(alluvial_plot, filename="/Users/kelseysumner/Desktop/primary_alluvial_exposure_color_dis_no_ribbons.png", device="png",
+       height=5, width=11, units="in", dpi=500)
+
+
+
 # make a violin plot of follow-up time for asymptomatic compared to no infection for symptomatic infections only
 symp_infections = survival_data_primary %>% filter(status=="symptomatic infection")
 violin_plot = ggplot(symp_infections, aes(x = main_exposure_primary_case_def,y=days_until_event)) + 
@@ -525,7 +544,7 @@ ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_
 # now make these same plots in color for the dissertation document
 # KM curve stratified
 km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
-                     xlab = "Time in days", 
+                     xlab = "Time in days to symptomatic malaria", 
                      ylab = "Survival probability",
                      tables.height = 0.2,
                      tables.theme = theme_cleantable(),
@@ -547,7 +566,7 @@ ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_
        height=5, width=11, units="in", dpi=300)
 # now make this same plot but with only the first 30 days of follow-up
 km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
-                     xlab = "Time in days", 
+                     xlab = "Time in days to symptomatic malaria", 
                      ylab = "Survival probability",
                      tables.height = 0.2,
                      tables.theme = theme_cleantable(),
@@ -567,6 +586,96 @@ km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ ma
                      xlim=c(0,30),
                      ylim=c(0.85,1.00))
 ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short30_color_dis.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+# now make this same plot but with only the first 90 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days to symptomatic malaria", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#4daf4a","#ff7f00"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="3-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(10),
+                     xlim=c(0,90),
+                     ylim=c(0.8,1.00))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short90_color_dis.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+# now make this same plot but with only the first 180 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days to symptomatic malaria", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#4daf4a","#ff7f00"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="6-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(20),
+                     xlim=c(0,180),
+                     ylim=c(0.7,1.00))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short180_color_dis.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+# now make this same plot but with only the first 365 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days to symptomatic malaria", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#4daf4a","#ff7f00"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="12-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(30),
+                     xlim=c(0,365),
+                     ylim=c(0.5,1.00))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_short365_color_dis.png", device="png",
+       height=3, width=4, units="in", dpi=300)
+# now make this same plot but with only the first 90 days of follow-up
+km_plot = ggsurvplot(fit = surv_fit(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def, data = survival_data_primary), 
+                     xlab = "Time in days to symptomatic malaria", 
+                     ylab = "Survival probability",
+                     tables.height = 0.2,
+                     tables.theme = theme_cleantable(),
+                     conf.int = T,
+                     legend = "none",
+                     pval = F,
+                     ggtheme = theme_bw(),
+                     risk.table = T,
+                     ncensor.plot = F,
+                     palette = c("#4daf4a","#ff7f00"),
+                     conf.int.style = "step",
+                     risk.table.y.text = FALSE,
+                     risk.table.y.text.col = T,
+                     title="29-month follow-up",
+                     font.title = c(11, "bold"),
+                     break.x.by = c(100))
+ggsave(km_plot$plot, filename="/Users/kelseysumner/Desktop/primary_kaplan_meier_full29_color_dis.png", device="png",
        height=3, width=4, units="in", dpi=300)
 
 
