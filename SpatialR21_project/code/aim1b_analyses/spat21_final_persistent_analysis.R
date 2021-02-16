@@ -169,7 +169,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
-  scale_y_continuous(trans="log10", breaks = c(0,1,10,100)) +
+  scale_y_continuous(trans="log10", breaks = c(0,1,2,4,6,8,10)) +
   theme_bw()
 fp
 # export the plot

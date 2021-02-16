@@ -314,6 +314,13 @@ gee.coxph.30day <- coxph(Surv(days_until_event_30day, event_indicator_30day) ~ m
 gee.coxph.30day
 
 
+# rerun the model but quickly check if interaction between age and gender
+fit.coxph.30day.intxn <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + age_cat_baseline*gender + (1 | unq_memID), 
+                         data = survival_data_primary)
+fit.coxph.30day.intxn
+exp(confint(fit.coxph.30day.intxn))
+
+
 # make a forest plot of the model results
 table1 = exp(confint(fit.coxph.30day,method="Wald"))
 estimates = c(2.6126717,NA,1.3682320,0.5601212,NA,0.9328874,NA,1.0038190,NA,1.0845478,0.7170426)

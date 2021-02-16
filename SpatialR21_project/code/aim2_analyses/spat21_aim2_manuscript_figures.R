@@ -312,7 +312,7 @@ all_df_pos = data.frame(all_df_pos)
 small_all_df = all_df %>%
   mutate(new_date = floor_date(date,"week")) %>%
   group_by(new_date,type,infection_status) %>%
-  summarize(n=n())
+  summarise(n=n())
 # set the colors
 # symptomatic (blue): #3B9AB2
 # asymptomatic (yellow): #E1AF00
