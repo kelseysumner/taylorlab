@@ -165,11 +165,11 @@ forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mixed types of 
 library(forcats)
 library(ggplot2)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
-  scale_y_continuous(trans="log10", breaks = c(0,1,2,4,6,8,10)) +
+  scale_y_continuous(trans="log10", breaks = c(0,0.2,0.5,1,2,5,10)) +
   theme_bw()
 fp
 # export the plot
@@ -220,11 +220,11 @@ forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mixed types of 
 library(forcats)
 library(ggplot2)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
-  scale_y_continuous(trans="log10", breaks = c(0,1,2,3,4,5,6,7,8)) +
+  scale_y_continuous(trans="log10", breaks = c(0,0.2,0.5,1,2,5,10)) +
   theme_bw()
 fp
 # export the plot

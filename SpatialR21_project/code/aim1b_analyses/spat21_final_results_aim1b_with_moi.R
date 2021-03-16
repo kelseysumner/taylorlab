@@ -95,17 +95,17 @@ forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. on
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1),colour=c("#000000","#636363","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1,1),colour=c("#000000","#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
-  scale_y_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9),trans="log10") +
+  scale_y_continuous(breaks=c(0,0.2,0.5,1,2,5,10),trans="log10") +
   theme_bw() +
   theme(text = element_text(size=15))
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_3_categories_no_persistent.png", device="png",
-       height=6, width=10, units="in", dpi=400)
+       height=5, width=10, units="in", dpi=400)
 
 
 # now run the new vs recurrent model for ama
@@ -135,7 +135,7 @@ forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Only new vs. on
 # create a forest plot
 library(forcats)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,3,1,1,1,1,1,1,1,1),colour=c("#000000","#636363","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1,1),colour=c("#000000","#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
@@ -145,7 +145,7 @@ fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_model_all_3_categories_no_persistent.png", device="png",
-       height=6, width=10, units="in", dpi=400)
+       height=5, width=10, units="in", dpi=400)
 
 
 
@@ -196,13 +196,13 @@ forest_plot_df$names = factor(forest_plot_df$names, levels = c("Participant age 
 forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Participant age 15 years or less","Only new vs. only recurrent haplotypes","New and recurrent vs. only recurrent haplotypes","","Participant age >15 years"," Only new vs. only recurrent haplotypes"," New and recurrent vs. only recurrent haplotypes"))
 # create a forest plot
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimate, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(colour=c(NA,"#000000","#636363",NA,NA,"#000000","#636363"),size=c(2,2,2,2,2,2,2)) + 
+  geom_pointrange(colour=c(NA,"#000000","#000000",NA,NA,"#000000","#000000"),size=c(1,1,1,1,1,1,1)) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
   theme_bw() +
   theme(text = element_text(size=15),axis.text.y = element_text(face=c("plain","plain","bold","plain","plain","plain","bold"))) +
-  scale_y_continuous(trans="log10")
+  scale_y_continuous(trans="log10",breaks=c(0,0.1,1,5,10,20,40))
 fp
 # export the plot
 ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_new_age_stratified.png", device="png",
@@ -374,6 +374,43 @@ chisq.test(tbl)
 # correct for repeated measures
 0.2125*8
 
+
+
+## ----- now look at total infections not stratified by symptomatic status for csp
+
+# haplotype category
+table(csp_data$haplotype_category)
+
+# age category
+table(csp_data$age_cat_baseline)
+
+# number prior malaria infections
+table(csp_data$add_cat_number_prior_infections)
+
+# transmission season
+table(csp_data$mosquito_week_count_cat_add)
+
+# moi
+table(csp_data$moi_cat)
+
+
+
+## ----- now look at total infections not stratified by symptomatic status for ama
+
+# haplotype category
+table(ama_data$haplotype_category)
+
+# age category
+table(ama_data$age_cat_baseline)
+
+# number prior malaria infections
+table(ama_data$add_cat_number_prior_infections)
+
+# transmission season
+table(ama_data$mosquito_week_count_cat_add)
+
+# moi
+table(ama_data$moi_cat)
 
 
 
