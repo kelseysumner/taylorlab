@@ -83,13 +83,113 @@ num_infections_before = symptomatic_ama_data %>%
   group_by(unq_memID) %>%
   summarize (n= n())
 
-# looks like this worked correctly so apply to everything
-symptomatic_csp_data = slice(group_by(symptomatic_csp_data, unq_memID), -1)
-symptomatic_ama_data = slice(group_by(symptomatic_ama_data, unq_memID), -1)
+
+#### ------- now create counts of infections within 30 days of each other within participants ------- ####
+
+## do for csp
+
+# now see how many symptomatic infections were within 30 days after the asymptomatic infections for each participant
+# csp data is still sorted by participant and date
+date_diff = rep(NA,nrow(symptomatic_csp_data))
+symp_30_after_asymp = rep(NA,nrow(symptomatic_csp_data))
+for (i in 1:nrow(symptomatic_csp_data)){
+  if (symptomatic_csp_data$unq_memID[i] == symptomatic_csp_data$unq_memID[i+1] & i != nrow(symptomatic_csp_data) &
+      symptomatic_csp_data$symptomatic_status[i] == "asymptomatic infection" &
+      !(is.na(symptomatic_csp_data$symptomatic_status[i])) &
+      symptomatic_csp_data$symptomatic_status[i+1] == "symptomatic infection" & 
+      !(is.na(symptomatic_csp_data$symptomatic_status[i+1]))){
+    date_diff[i] = symptomatic_csp_data$sample_id_date[i+1] - symptomatic_csp_data$sample_id_date[i]
+    if (date_diff[i] <= 30){
+      symp_30_after_asymp[i] = "yes"
+      symp_30_after_asymp[i+1] = "yes"
+    }
+  } 
+}
+symptomatic_csp_data$date_diff = date_diff
+symptomatic_csp_data$symp_30_after_asymp = symp_30_after_asymp
+# check the output
+symptomatic_csp_data %>%
+  select(unq_memID, symptomatic_status, sample_id_date,date_diff,symp_30_after_asymp) %>%
+  View()
+
+
+# how many people had asymptomatic infections that became symptomatic <= 30 days after
+csp_pre_symptomatic_data = symptomatic_csp_data %>%
+  filter(symp_30_after_asymp == "yes")
+
+# write out the data set
+# write_csv(csp_pre_symptomatic_data,"Desktop/spat21_aim1b_csp_pre_symptomatic_21MAR2021.csv")
+# write_rds(csp_pre_symptomatic_data,"Desktop/spat21_aim1b_csp_pre_symptomatic_21MAR2021.rds")
+
+# look at some tabulations of how infections changed over time
+table(csp_pre_symptomatic_data$symptomatic_status,csp_pre_symptomatic_data$haplotype_category,useNA = "always")
+
+# use this pre-symptomatic data set for the following analyses
+symptomatic_csp_data = csp_pre_symptomatic_data
+
+
+## now do for ama
+
+# now see how many symptomatic infections were within 30 days after the asymptomatic infections for each participant
+# csp data is still sorted by participant and date
+date_diff = rep(NA,nrow(symptomatic_ama_data))
+symp_30_after_asymp = rep(NA,nrow(symptomatic_ama_data))
+for (i in 1:nrow(symptomatic_ama_data)){
+  if (symptomatic_ama_data$unq_memID[i] == symptomatic_ama_data$unq_memID[i+1] & i != nrow(symptomatic_ama_data) &
+      symptomatic_ama_data$symptomatic_status[i] == "asymptomatic infection" &
+      !(is.na(symptomatic_ama_data$symptomatic_status[i])) &
+      symptomatic_ama_data$symptomatic_status[i+1] == "symptomatic infection" & 
+      !(is.na(symptomatic_ama_data$symptomatic_status[i+1]))){
+    date_diff[i] = symptomatic_ama_data$sample_id_date[i+1] - symptomatic_ama_data$sample_id_date[i]
+    if (date_diff[i] <= 30){
+      symp_30_after_asymp[i] = "yes"
+      symp_30_after_asymp[i+1] = "yes"
+    }
+  } 
+}
+symptomatic_ama_data$date_diff = date_diff
+symptomatic_ama_data$symp_30_after_asymp = symp_30_after_asymp
+# check the output
+symptomatic_ama_data %>%
+  select(unq_memID, symptomatic_status, sample_id_date,date_diff,symp_30_after_asymp) %>%
+  View()
+
+
+# how many people had asymptomatic infections that became symptomatic <= 30 days after
+ama_pre_symptomatic_data = symptomatic_ama_data %>%
+  filter(symp_30_after_asymp == "yes")
+
+# write out the data set
+# write_csv(ama_pre_symptomatic_data,"Desktop/spat21_aim1b_ama_pre_symptomatic_21MAR2021.csv")
+# write_rds(ama_pre_symptomatic_data,"Desktop/spat21_aim1b_ama_pre_symptomatic_21MAR2021.rds")
+
+# look at some tabulations of how infections changed over time
+table(ama_pre_symptomatic_data$symptomatic_status,ama_pre_symptomatic_data$haplotype_category,useNA = "always")
+
+# use this pre-symptomatic data set for the following analyses
+symptomatic_ama_data = ama_pre_symptomatic_data
+
+#### ------ create a subset of the data that just looks at the asymptomatic infections that could be pre-symptomatic ------ ####
+
+# first subset to just the asymptomatic infections
+csp_asymp_presymp = csp_pre_symptomatic_data %>% filter(symptomatic_status == "asymptomatic infection")
+ama_asymp_presymp = ama_pre_symptomatic_data %>% filter(symptomatic_status == "asymptomatic infection")
+
+# write out this data set to use in a sensitivity analysis in the spat21_time_btwn_persistent_infxns script
+write_csv(csp_asymp_presymp,"Desktop/csp_asymp_presymp_22MAR2021.csv")
+write_rds(csp_asymp_presymp,"Desktop/csp_asymp_presymp_22MAR2021.rds")
+
+write_csv(ama_asymp_presymp,"Desktop/ama_asymp_presymp_22MAR2021.csv")
+write_rds(ama_asymp_presymp,"Desktop/ama_asymp_presymp_22MAR2021.rds")
+
 
 
 
 #### ----- split up into asymptomatic and symptomatic infections ----- ####
+
+# looks like this worked correctly so apply to everything
+symptomatic_csp_data = slice(group_by(symptomatic_csp_data, unq_memID), -1)
+symptomatic_ama_data = slice(group_by(symptomatic_ama_data, unq_memID), -1)
 
 # now look at the difference in time between haplotype categories stratified by symptomatic status
 csp_boxplot = ggplot(data=symptomatic_csp_data,aes(x=haplotype_category,y=days_btwn_infxns)) + facet_wrap(~symptomatic_status) + geom_boxplot() + theme_bw()
@@ -103,55 +203,58 @@ symptomatic_csp_data = symptomatic_csp_data %>% filter(symptomatic_status == "sy
 symptomatic_ama_data = symptomatic_ama_data %>% filter(symptomatic_status == "symptomatic infection")
 
 
-
-
 #### ---- look at persistent infections ------- ####
 
+# first subset to infections within 30 days
+csp_30days = symptomatic_csp_data %>% filter(days_btwn_infxns <= 30)
+ama_30days = symptomatic_ama_data %>% filter(days_btwn_infxns <= 30)
+summary(csp_30days$days_btwn_infxns)
+summary(ama_30days$days_btwn_infxns)
 
 # make a variable for having persistent haplotypes for the symptomatic infections
-symptomatic_csp_data$has_persistent = ifelse(str_detect(symptomatic_csp_data$haplotype_category,"persistent"),"Symptomatic infections \n with persistent haplotypes","Symptomatic infections \n without persistent haplotypes")
-symptomatic_ama_data$has_persistent = ifelse(str_detect(symptomatic_ama_data$haplotype_category,"persistent"),"Symptomatic infections \n with persistent haplotypes","Symptomatic infections \n without persistent haplotypes")
-table(symptomatic_csp_data$has_persistent,symptomatic_csp_data$haplotype_category, useNA = "always")
-table(symptomatic_ama_data$has_persistent,symptomatic_ama_data$haplotype_category, useNA = "always")
-table(symptomatic_csp_data$has_persistent)
-table(symptomatic_ama_data$has_persistent)
+csp_30days$has_persistent = ifelse(str_detect(csp_30days$haplotype_category,"persistent"),"Symptomatic infections \n with persistent haplotypes","Symptomatic infections \n without persistent haplotypes")
+ama_30days$has_persistent = ifelse(str_detect(ama_30days$haplotype_category,"persistent"),"Symptomatic infections \n with persistent haplotypes","Symptomatic infections \n without persistent haplotypes")
+table(csp_30days$has_persistent,csp_30days$haplotype_category, useNA = "always")
+table(ama_30days$has_persistent,ama_30days$haplotype_category, useNA = "always")
+table(csp_30days$has_persistent)
+table(ama_30days$has_persistent)
 
 # now compare the time between infections with persistent haplotypes compared to those without
 # first make a box plot
-csp_boxplot = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + geom_boxplot(aes(fill=has_persistent)) + theme_bw()
-ama_boxplot = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + geom_boxplot(aes(fill=has_persistent)) + theme_bw()
+csp_boxplot = ggplot(data=csp_30days,aes(x=has_persistent,y=days_btwn_infxns)) + geom_boxplot(aes(fill=has_persistent)) + theme_bw()
+ama_boxplot = ggplot(data=csp_30days,aes(x=has_persistent,y=days_btwn_infxns)) + geom_boxplot(aes(fill=has_persistent)) + theme_bw()
 # note: observations not really independent so this assumption violated
 # check normalcy
-leveneTest(symptomatic_csp_data$days_btwn_infxns,symptomatic_csp_data$has_persistent) # not normal
-leveneTest(symptomatic_ama_data$days_btwn_infxns,symptomatic_ama_data$has_persistent) # not normal
+leveneTest(csp_30days$days_btwn_infxns,csp_30days$has_persistent) # not normal
+leveneTest(ama_30days$days_btwn_infxns,ama_30days$has_persistent) # not normal
 # do kruskal-wallis test instead
-kruskal.test(days_btwn_infxns ~ has_persistent, data=symptomatic_csp_data)
-kruskal.test(days_btwn_infxns ~ has_persistent, data=symptomatic_ama_data)
-symptomatic_csp_data %>%
+kruskal.test(days_btwn_infxns ~ has_persistent, data=csp_30days)
+kruskal.test(days_btwn_infxns ~ has_persistent, data=ama_30days)
+csp_30days %>%
   group_by(has_persistent) %>%
   summarize(min=min(days_btwn_infxns),max=max(days_btwn_infxns),mean=mean(days_btwn_infxns),median(days_btwn_infxns))
-symptomatic_ama_data %>%
+ama_30days %>%
   group_by(has_persistent) %>%
   summarize(min=min(days_btwn_infxns),max=max(days_btwn_infxns),mean=mean(days_btwn_infxns),median(days_btwn_infxns))
 
 # now make a figure
 # make a beeswarm plot of the days between infections for persistent categories
-csp_pre_symp = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
+csp_pre_symp = ggplot(data=csp_30days,aes(x=has_persistent,y=days_btwn_infxns)) + 
   geom_boxplot() +
   geom_quasirandom(aes(fill=has_persistent),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +
   xlab("") +
-  ylab("Number of days since previous infection") +
+  ylab("Number of days since previous asymptomatic infection") +
   scale_fill_manual(values = c("#969696","#252525")) +
   coord_flip() +
   theme(legend.position = "none")
 csp_pre_symp
-ama_pre_symp = ggplot(data=symptomatic_ama_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
+ama_pre_symp = ggplot(data=ama_30days,aes(x=has_persistent,y=days_btwn_infxns)) + 
   geom_boxplot() +
   geom_quasirandom(aes(fill=has_persistent),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +
   xlab("") +
-  ylab("Number of days since previous infection") +
+  ylab("Number of days since previous asymptomatic infection") +
   scale_fill_manual(values = c("#969696","#252525")) +
   coord_flip() +
   theme(legend.position = "none")
@@ -163,12 +266,12 @@ ggsave(ama_pre_symp, filename="/Users/kelseysumner/Desktop/ama_pre_symptomatic_p
 
 
 # also create some descriptive covariates for the number of pre-symptomatic infections
-table(symptomatic_csp_data$has_persistent,symptomatic_csp_data$symptomatic_status,useNA = "always")
-table(symptomatic_ama_data$has_persistent,symptomatic_ama_data$symptomatic_status,useNA = "always")
+table(csp_30days$has_persistent,csp_30days$symptomatic_status,useNA = "always")
+table(ama_30days$has_persistent,ama_30days$symptomatic_status,useNA = "always")
 
 
 # make a beeswarm plot for csp for dissertation defense colors
-csp_pre_symp = ggplot(data=symptomatic_csp_data,aes(x=has_persistent,y=days_btwn_infxns)) + 
+csp_pre_symp = ggplot(data=csp_30days,aes(x=has_persistent,y=days_btwn_infxns)) + 
   geom_boxplot() +
   geom_quasirandom(aes(fill=has_persistent),alpha=0.8,pch=21,color="#000000") + 
   theme_bw() +

@@ -25,6 +25,12 @@ ama_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Disse
 # read in the csp data set with the first infection
 csp_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/with first infection/csp_data_aim1b_11JUN2020.rds")
 
+# read in the csp pre-symptomatic data set
+csp_pre = read_rds("Desktop/csp_asymp_presymp_22MAR2021.rds")
+
+# read in the csp pre-symptomatic data set
+ama_pre = read_rds("Desktop/ama_asymp_presymp_22MAR2021.rds")
+
 # make a new age category variable
 # for csp
 table(csp_data$age_cat_baseline)
@@ -120,6 +126,77 @@ csp_30days = csp_30days[-which(csp_30days$unq_memID == "K01_7" & csp_30days$samp
 csp_30days = csp_30days[-which(csp_30days$unq_memID == "M14_2" & csp_30days$sample_id_date == "2017-08-17"),]
 # 1 infection for ama
 ama_30days = ama_30days[-which(ama_30days$unq_memID == "K01_7" & ama_30days$sample_id_date == "2017-08-03"),]
+
+
+#### ----- make a beeswarm plot ------ ####
+
+
+# subset to just infections with persistent haplotypes
+ama_persistent_data = ama_30days %>% filter(str_detect(haplotype_category,"persistent"))
+csp_persistent_data = csp_30days %>% filter(str_detect(haplotype_category,"persistent"))
+
+# do kruskal-wallis test instead
+kruskal.test(days_btwn_infxns ~ haplotype_category, data=csp_persistent_data)
+kruskal.test(days_btwn_infxns ~ haplotype_category, data=ama_persistent_data)
+
+# relabel the categories
+# for csp
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "recurrent and persistent")] = "Recurrent and persistent"
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "new, recurrent, and persistent")] = "New, recurrent, and persistent"
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "new and persistent")] = "New and persistent"
+csp_persistent_data$haplotype_category[which(csp_persistent_data$haplotype_category == "all persistent")] = "Only persistent"
+csp_persistent_data$haplotype_category = factor(csp_persistent_data$haplotype_category,levels=c("Only persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
+# for ama
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "recurrent and persistent")] = "Recurrent and persistent"
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "new, recurrent, and persistent")] = "New, recurrent, and persistent"
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "new and persistent")] = "New and persistent"
+ama_persistent_data$haplotype_category[which(ama_persistent_data$haplotype_category == "all persistent")] = "Only persistent"
+ama_persistent_data$haplotype_category = factor(ama_persistent_data$haplotype_category,levels=c("Only persistent","New and persistent","Recurrent and persistent","New, recurrent, and persistent"))
+
+# make a beeswarm plot of the days between infections for persistent categories
+csp_bees = ggplot(data=csp_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(fill=haplotype_category,shape=symptomatic_status),alpha=0.8,size=1.75,color="#000000") + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous asymptomatic infection") +
+  scale_fill_manual(values = c("#cccccc","#969696","#636363","#252525")) +
+  scale_shape_manual(values = c(21, 24)) +
+  coord_flip() +
+  labs(shape = "Symptomatic status") +
+  theme(legend.position = "top") +
+  guides(fill = FALSE)
+csp_bees
+ama_bees = ggplot(data=ama_persistent_data,aes(x=haplotype_category,y=days_btwn_infxns)) + 
+  geom_boxplot() +
+  geom_quasirandom(aes(fill=haplotype_category,shape=symptomatic_status),alpha=0.8,size=1.75,color="#000000") + 
+  theme_bw() +
+  xlab("") +
+  ylab("Number of days since previous asymptomatic infection") +
+  scale_fill_manual(values = c("#cccccc","#969696","#636363","#252525")) +
+  scale_shape_manual(values = c(21, 24)) +
+  coord_flip() +
+  labs(shape = "Symptomatic status") +
+  theme(legend.position = "top") +
+  guides(fill = FALSE)
+ama_bees
+ggsave(csp_bees, filename="/Users/kelseysumner/Desktop/csp_beeswarm_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+ggsave(ama_bees, filename="/Users/kelseysumner/Desktop/ama_beeswarm_plot.png", device="png",
+       height=4, width=6.5, units="in", dpi=400)
+
+# compare the proportion of observations that are symptomatic across categories
+table(csp_persistent_data$symptomatic_status,csp_persistent_data$haplotype_category,useNA = "always")
+table(ama_persistent_data$symptomatic_status,ama_persistent_data$haplotype_category,useNA = "always")
+
+# compare the proportion of observations that are symptomatic within 14 days compared to greater than 14 days
+length(which(csp_persistent_data$symptomatic_status=="symptomatic infection" & csp_persistent_data$days_btwn_infxns <= 14)) # 20/30 = 66.7%
+length(which(ama_persistent_data$symptomatic_status=="symptomatic infection" & ama_persistent_data$days_btwn_infxns <= 14)) # 18/28 = 64.3%
+
+
+
+
+#### ----- run models ------ ####
 
 # for csp
 # take out the infections with recurrent haplotypes
@@ -436,77 +513,88 @@ chisq.test(tbl)
 
 
 
+#### ------- run a regression model for persistent infections removing pre-symptomatic infections ------ ####
 
+## first for csp
 
+# first remove asymptomatic infections that are in the pre-symptomatic list
+pre_symptomatic_analysis_csp = all_persistent_data_csp[-which(all_persistent_data_csp$sample_name_dbs %in% csp_pre$sample_name_dbs),]
+intersect(all_persistent_data_csp$sample_name_dbs,csp_pre$sample_name_dbs)
+# this removed 4 asymptomatic infections
+# looks good
 
-
-
-#### ------- run a regression model for persistent infections removing those with infections < 15 days prior ------ ####
-
-# first subset the data set to infections that occurred >= 15 days apart
-# for csp
-csp_infxn_time_data = csp_30days %>% filter(days_btwn_infxns >= 15)
-summary(csp_infxn_time_data$days_btwn_infxns)
-# for ama
-ama_infxn_time_data = ama_30days %>% filter(days_btwn_infxns >= 15)
-summary(ama_infxn_time_data$days_btwn_infxns)
-
-# for csp
-# take out the infections with recurrent haplotypes
-all_persistent_data_csp = csp_infxn_time_data[which((str_detect(csp_infxn_time_data$haplotype_category,"persistent"))),]
-table(all_persistent_data_csp$haplotype_category, useNA = "always")
-all_persistent_data_csp$haplotype_category = as.character(all_persistent_data_csp$haplotype_category)
-all_persistent_data_csp$haplotype_category = as.factor(all_persistent_data_csp$haplotype_category)
-levels(all_persistent_data_csp$haplotype_category)
-all_persistent_data_csp$haplotype_category = relevel(all_persistent_data_csp$haplotype_category,ref="all persistent")
-# merge in covariates
-csp_cov_data = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1B/Data/persistent data/without first infection/aim1b_csp_final_model_data_21JUL2020.rds")
-csp_cov_data = csp_cov_data %>% select(sample_name_dbs,add_cat_number_prior_infections,mosquito_week_count_cat_add,moi_cat)
-all_persistent_data_csp = left_join(all_persistent_data_csp,csp_cov_data,by="sample_name_dbs")
-all_persistent_data_csp = rename(all_persistent_data_csp,unq_memID = unq_memID.x)
-all_persistent_data_csp$unq_memID.y <- NULL
-length(which(is.na(all_persistent_data_csp$moi_cat)))
-all_persistent_data_csp$symptomatic_status = as.factor(all_persistent_data_csp$symptomatic_status)
-levels(all_persistent_data_csp$symptomatic_status)
-# create a new category comparing infections with only persistent haplotypes to those with other types of haplotypes in addition to persistent ones
-all_persistent_data_csp$persistent_category = ifelse(all_persistent_data_csp$haplotype_category=="all persistent","Only persistent haplotypes","Mix of persistent and other haplotypes")
-table(all_persistent_data_csp$persistent_category,all_persistent_data_csp$haplotype_category,useNA = "always")
-table(all_persistent_data_csp$persistent_category,all_persistent_data_csp$symptomatic_status,useNA = "always") # good positivity
-all_persistent_data_csp$persistent_category = as.factor(all_persistent_data_csp$persistent_category)
-all_persistent_data_csp$persistent_category = relevel(all_persistent_data_csp$persistent_category,ref="Only persistent haplotypes")
 # now rerun the model
 csp_model_1 <- glmmTMB(symptomatic_status ~ persistent_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + moi_cat + (1|unq_memID),family=binomial(link = "logit"), 
-                       data = all_persistent_data_csp)
+                       data = pre_symptomatic_analysis_csp)
 summary(csp_model_1)
 performance::icc(csp_model_1)
 exp(confint(csp_model_1,method="Wald"))
-# mix persistent compared to only persistent: HUGE
+# mix persistent compared to only persistent: 0.78 (95% CI: 0.21 to 2.88)
 # make a forest plot of results
 table1 = exp(confint(csp_model_1,method="Wald"))
 summary(csp_model_1)
-estimates = c(table1[2,3],NA,table1[4,3],table1[3,3],NA,table1[5,3],NA,table1[6,3],NA,table1[7,3])
-lower_ci = c(table1[2,1],NA,table1[4,1],table1[3,1],NA,table1[5,1],NA,table1[6,1],NA,table1[7,1])
-upper_ci = c(table1[2,2],NA,table1[4,2],table1[3,2],NA,table1[5,2],NA,table1[6,2],NA,table1[7,2])
-names = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection")
+estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],NA,table1[5,3],NA,table1[6,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],NA,table1[5,1],NA,table1[6,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],NA,table1[5,2],NA,table1[6,2])
+names = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection")
 forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
-forest_plot_df$names = factor(forest_plot_df$names, levels = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
-forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age 5-15 years","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
 # create a forest plot
 library(forcats)
 library(ggplot2)
 fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
-  geom_pointrange(size=c(3,1,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
   geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
   coord_flip() +  # flip coordinates (puts labels on y axis)
   xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
-  scale_y_continuous(trans="log10", breaks = c(0,1,10,100)) +
+  scale_y_continuous(trans="log10", breaks = c(0,0.2,0.5,1,2,5,10)) +
   theme_bw()
 fp
 # export the plot
-ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_model_all_3_categories_all_persistent_subsetinfxns.png", device="png",
+ggsave(fp, filename="/Users/kelseysumner/Desktop/csp_aim1b_all_persistent_sensitivity_analysis.png", device="png",
        height=4.5, width=7, units="in", dpi=400)
 
 
 
+## then for ama
+
+# first remove asymptomatic infections that are in the pre-symptomatic list
+pre_symptomatic_analysis_ama = all_persistent_data_ama[-which(all_persistent_data_ama$sample_name_dbs %in% ama_pre$sample_name_dbs),]
+intersect(all_persistent_data_ama$sample_name_dbs,ama_pre$sample_name_dbs)
+# this removed 3 asymptomatic infections
+# looks good
+
+# now rerun the model
+ama_model_1 <- glmmTMB(symptomatic_status ~ persistent_category + age_cat_baseline + add_cat_number_prior_infections + mosquito_week_count_cat_add + moi_cat + (1|unq_memID),family=binomial(link = "logit"), 
+                       data = pre_symptomatic_analysis_ama)
+summary(ama_model_1)
+performance::icc(ama_model_1)
+exp(confint(ama_model_1,method="Wald"))
+# mix persistent compared to only persistent: 0.24 (95% CI: 0.06 to 1.00)
+# make a forest plot of results
+table1 = exp(confint(ama_model_1,method="Wald"))
+summary(ama_model_1)
+estimates = c(table1[2,3],NA,table1[3,3],NA,table1[4,3],NA,table1[5,3],NA,table1[6,3])
+lower_ci = c(table1[2,1],NA,table1[3,1],NA,table1[4,1],NA,table1[5,1],NA,table1[6,1])
+upper_ci = c(table1[2,2],NA,table1[3,2],NA,table1[4,2],NA,table1[5,2],NA,table1[6,2])
+names = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names, levels = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+forest_plot_df$names = ordered(forest_plot_df$names, levels = c("Mixed types of haplotypes vs. only persistent haplotypes"," ","Participant age >15 years","  ",">3 prior malaria infections","     ","High transmission season","        ","High multiplicity of infection"))
+# create a forest plot
+library(forcats)
+library(ggplot2)
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=c(1,1,1,1,1,1,1,1,1),colour=c("#000000","#969696","#969696","#969696","#969696","#969696","#969696","#969696","#969696")) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Odds of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10", breaks = c(0,0.2,0.5,1,2,5,10)) +
+  theme_bw()
+fp
+# export the plot
+ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_all_persistent_sensitivity_analysis.png", device="png",
+       height=4.5, width=7, units="in", dpi=400)
 
 
