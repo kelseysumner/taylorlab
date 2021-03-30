@@ -930,6 +930,7 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/figure4b_hazardsympmalaria_acro
 
 
 
+
 #### -------- make a figure of hazard of symptomatic malaria across age and sex ---------- ####
 
 # make a forest plot of the model results across age categories

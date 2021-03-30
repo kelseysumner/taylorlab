@@ -135,5 +135,22 @@ ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3b_hazardsympmalaria_acro
 
 
 
-
+# make a forest plot of the model results with the post-treatment analysis removed
+estimates = c(2.61,1.77)
+lower_ci = c(2.05,1.26)
+upper_ci = c(3.33,2.47)
+names = c("Main model","Pre-symptomatic analysis")
+forest_plot_df = data.frame(names,estimates,lower_ci,upper_ci)
+forest_plot_df$names = factor(forest_plot_df$names,levels = c("Main model","Pre-symptomatic analysis"))
+fp <- ggplot(data=forest_plot_df, aes(x=fct_rev(names), y=estimates, ymin=lower_ci, ymax=upper_ci)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("") + ylab("Adjusted 1-month hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks=c(0,1.0,1.5,2.0,2.5,3.0,3.5,4.0)) +
+  theme_bw() +
+  theme(text = element_text(size=9.5))
+fp
+ggsave(fp, filename="/Users/kelseysumner/Desktop/figure3a_hazardsympmalaria_1monthanalysis_noposttreatment.png", device="png",
+       height=1.7, width=5.5, units="in", dpi=400)
 
