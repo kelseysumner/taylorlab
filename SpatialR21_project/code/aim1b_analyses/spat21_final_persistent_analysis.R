@@ -513,7 +513,7 @@ chisq.test(tbl)
 
 
 
-#### ------- run a regression model for persistent infections removing pre-symptomatic infections ------ ####
+#### ------- run a regression model for persistent infections removing double-counted pre-symptomatic infections ------ ####
 
 ## first for csp
 
@@ -597,4 +597,30 @@ fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/ama_aim1b_all_persistent_sensitivity_analysis.png", device="png",
        height=4.5, width=7, units="in", dpi=400)
 
+
+
+
+#### ------ now rerun the models but removing symptomatic infections that were <15 days after an asymptomatic infection -------- ####
+
+## first for csp
+
+# first remove asymptomatic infections that are in the pre-symptomatic list
+removing_symptomatic_14days_csp = all_persistent_data_csp[-which(all_persistent_data_csp$symptomatic_status == "symptomatic infection" & all_persistent_data_csp$days_btwn_infxns < 15),]
+# this removes 20 symptomatic infections
+
+# now rerun the model
+csp_model_1 <- glm(symptomatic_status ~ persistent_category,family=binomial(link = "logit"), 
+                       data = removing_symptomatic_14days_csp)
+summary(csp_model_1)
+performance::icc(csp_model_1)
+exp(confint(csp_model_1,method="Wald"))
+exp(-0.4716)
+# with small sample sizes, causes huge estimates
+
+# look at a crude table
+table(removing_symptomatic_14days_csp$persistent_category,removing_symptomatic_14days_csp$symptomatic_status,useNA = "always")
+crude_odds_exposed = (7/(93))/(1-(7/93))
+crude_odds_unexposed = (3/(26))/(1-(3/26))
+crude_odds_ratio = crude_odds_exposed/crude_odds_unexposed
+crude_odds_ratio
 

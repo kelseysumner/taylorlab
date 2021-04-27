@@ -1,0 +1,90 @@
+---
+title: "Haplotype calling pipeline"
+author: "Kelsey Sumner"
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    theme: lumen
+    highlight: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
+
+
+**Approach:** 
+Using human or mosquito samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among two polymorphic gene targets: AMA1, CSP.
+
+
+**Data aggregation:** 
+Method: Targeted amplicon deep sequencing which produces forward and reverse fastq files for each sample.
+What you need: 
+    + NetID
+    + Duke HARDAC cluster access
+    + Unix/Linux compution system to get into cluster via Terminal or another application
+
+
+# **Receiving sequencing reads from Duke Sequencing Core**
+* Step 1: Betsy grants you access to the sequencing reads
+    + Duke has a now delivery platform for the reads called the Duke Data Service. Betsy will have to add you as a person on the project for you to access the reads. She will do so using this link: https://datadelivery.genome.duke.edu/ 
+* Step 2: Set up DukeDSClient and download the data to the the HARDAC cluster
+    + Follow the instructions for part B "Download data from DDS to HARDAC:" https://datadelivery.genome.duke.edu/
+    + Note that part B.1 Betsy will do in step 1, so you will start at part B.2 "Log into HARDAC"
+
+
+# **Haplotype inference**
+
+## Cleaning sequencing reads and calling haplotypes
+* Cleaned raw fastq files from the Duke sequencing core using Joe's cleaning pipeline (splitReads.pl script and DADA2.R script on Duke HARDAC cluster). Joe wrote a script that will take all the raw reads from the sequencing core, clean them, and map them to the gene targets of interest. 
+  1. *Sequenced in 300bp paired-end fragments on Illumina MiSeq for 2 polymorphic P. falciparum genes: 1) apical membrane antigen 1 (pfama1) and 2) circumsporozoite protein (pfcsp)*
+  2. *Used BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets.*
+  3. *Used CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads.*
+  4. *Used Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score < 15 or was less than 80 nucleotides long.*
+  5. *Used DADA2 to perform haplotype calling of pfcsp and pfama1 targets using additional quality filtering based on DADA2's machine learning error-estimation algorithm and allowing single-nucleotide resolution.* 
+
+* After cleaning the reads and calling haplotypes, we censored falsely detected haplotypes. Censoring criteria was applied in this order:
+  1. *Haplotypes that occur in < 250 of the sample's reads are removed.*
+  2. *Haplotypes that occur in < 3% of the sample's reads are removed.*
+  3. *Haplotypes that are a different length than the majority of haplotypes (300 nucleotides for pfama1, 288 nucleotides for pfcsp) are removed.*
+  4. *For haplotypes that have 1 SNP difference, occur in the same sample, and have a >8 times read depth difference between them within that sample, removed the hapltoype with the lower read depth from that sample.*
+
+
+
+## Cleaning Haplotype Output
+* Clean the DADA2 haplotype inference output to only include samples and haplotypes that occurred in a high enough prevalence
+    + Code for cleaning initial haplotype output: `kelsey_sumner/taylorlab/MESA_project/code/haplotype_inference/MESA_haplotypeanalysis_nocontrols.R`
+* Merge sample information to create one final cleaned data set of the processing from the initial fastq files to the final, cleaned haplotype data set
+
+
+
+# **Miscellaneous**
+
+## Standardizing Ct values from qPCR results
+    1. *Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL). This step was done for the MESA and Mozzie studies but not Turkana/Embatalk. Betsy updated the standards so it was not needed for Embatalk. Ask Betsy if this step is still needed.*
+    2. *Censoring criteria for parasitemia:*
+        - *Recoding of CT values:*
+            - *CT values of 0 recoded to missing (NA).*
+            - *CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.*
+            - *CT values 0 < CT < 40 for human beta-tubulin (Hb) are considered valid detection.*
+            - *CT values of 0 < CT < 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 < CT < 38 for Plasmodium falciparum to be considered valid.*
+            - *Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.*
+        - *CT value censoring rules:*
+            - *Pf positive via PCR:* 
+                - *If 2 replicates amplified Pf: Pf CT values 0 < CT < 40*
+                - *If 1 replicate amplified Pf: Pf CT values 0 < CT < 38*
+            - *Pf negative via PCR: Pf CT undetermined (or Pf CT > 38 if one replicate), Hb CT values 0 < CT < 40*
+            - *Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR*
+    3. *Rules for determining if participant is positive/negative/missing for Pf parasitemia:*
+        - *If 1 replicate Pf positive per criteria above, used that replicate's standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.*
+        - *If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.* 
+        - *If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.*  
+

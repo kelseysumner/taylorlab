@@ -106,10 +106,29 @@ str(model_data$ama_transmission)
 model_data$ama_transmission = factor(model_data$ama_transmission,levels=c("no","yes"))
 
 
-# export the data set
-write_csv(model_data,"Desktop/mozzie_rfa_data_1APR2021.csv")
-write_rds(model_data,"Desktop/mozzie_rfa_data_1APR2021.rds")
+# create a variable for transmission that just uses the mean P_te_all value
+# for csp
+mean_csp = mean(model_data$p_te_all_csp)
+model_data$csp_transmission_mean = ifelse(model_data$p_te_all_csp >= mean_csp,"yes",ifelse(model_data$p_te_all_csp < mean_csp,"no",NA))
+model_data$csp_transmission_mean = factor(model_data$csp_transmission_mean,levels=c("no","yes"))
+# for ama
+mean_ama = mean(model_data$p_te_all_ama)
+model_data$ama_transmission_mean = ifelse(model_data$p_te_all_ama >= mean_ama,"yes",ifelse(model_data$p_te_all_ama < mean_ama,"no",NA))
+model_data$ama_transmission_mean = factor(model_data$ama_transmission_mean,levels=c("no","yes"))
 
+
+# create a variable for transmission that uses 0.2 as the cutoff
+# for csp
+model_data$csp_transmission_0.2 = ifelse(model_data$p_te_all_csp >= 0.2,"yes",ifelse(model_data$p_te_all_csp < 0.2,"no",NA))
+model_data$csp_transmission_0.2 = factor(model_data$csp_transmission_0.2,levels=c("no","yes"))
+# for ama
+model_data$ama_transmission_0.2 = ifelse(model_data$p_te_all_ama >= 0.2,"yes",ifelse(model_data$p_te_all_ama < 0.2,"no",NA))
+model_data$ama_transmission_0.2 = factor(model_data$ama_transmission_0.2,levels=c("no","yes"))
+
+
+# export the data set
+#write_csv(model_data,"Desktop/mozzie_rfa_data_1APR2021.csv")
+#write_rds(model_data,"Desktop/mozzie_rfa_data_1APR2021.rds")
 
 
 #### ------ compare PTEall across covariates for csp ------- ####
@@ -228,3 +247,22 @@ summary(infection_type_model)
 performance::icc(infection_type_model)
 exp(1.0824)
 exp(confint(infection_type_model,method="Wald"))
+
+
+
+#### -------- create a multivariable model with covariates with p < 0.02 -------- ####
+
+# covariates to include in multivariate model:
+#  parasite density, bed net usage, transmission season, and infection type
+
+# run the multivariate model
+multivariate_model <- glmer(csp_transmission~parasite_density+current_bed_net_usage+transmission_season+infection_type+(1|HH_ID_human/unq_memID),family=binomial(link = "logit"), data = model_data)
+summary(multivariate_model)
+performance::icc(multivariate_model)
+exp(-1.0156)
+exp(-2.6349)
+exp(-0.7107)
+exp(0.3265)
+exp(0.1133)
+exp(confint(multivariate_model,method="Wald"))
+
