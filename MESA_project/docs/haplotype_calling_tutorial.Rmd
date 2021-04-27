@@ -57,17 +57,16 @@ What you need:
   4. *For haplotypes that have 1 SNP difference, occur in the same sample, and have a >8 times read depth difference between them within that sample, removed the hapltoype with the lower read depth from that sample.*
 
 
-
 ## Cleaning Haplotype Output
 * Clean the DADA2 haplotype inference output to only include samples and haplotypes that occurred in a high enough prevalence
-    + Code for cleaning initial haplotype output: `kelsey_sumner/taylorlab/MESA_project/code/haplotype_inference/MESA_haplotypeanalysis_nocontrols.R`
 * Merge sample information to create one final cleaned data set of the processing from the initial fastq files to the final, cleaned haplotype data set
-
++ Example R script for cleaning initial haplotype output: `https://github.com/kelseysumner/taylorlab/haplotype_censoring_example.R`
 
 
 # **Miscellaneous**
 
 ## Standardizing Ct values from qPCR results
+* An example R script can be found at: `https://github.com/kelseysumner/taylorlab/Haplotype_calling_tutorial/qpcr_data_cleaning_example.R`
     1. *Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL). This step was done for the MESA and Mozzie studies but not Turkana/Embatalk. Betsy updated the standards so it was not needed for Embatalk. Ask Betsy if this step is still needed.*
     2. *Censoring criteria for parasitemia:*
         - *Recoding of CT values:*
