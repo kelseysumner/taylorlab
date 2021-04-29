@@ -1545,9 +1545,38 @@ div.tocify {
 </div>
 
 
-<p>Last Updated 04/27/2021</p>
-<p><strong>Approach:</strong> Using human or mosquito samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among two polymorphic gene targets: AMA1, CSP.</p>
-<p><strong>Data aggregation:</strong> Method: Targeted amplicon deep sequencing which produces forward and reverse fastq files for each sample. What you need: + NetID + Duke HARDAC cluster access + Unix/Linux compution system to get into cluster via Terminal or another application</p>
+<p>Last Updated 04/29/2021</p>
+<div id="introduction" class="section level1">
+<h1><strong>Introduction</strong></h1>
+<p><em>Overview:</em> Using human or mosquito samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among two polymorphic gene targets: AMA, CSP.</p>
+<p><em>Method:</em> Targeted amplicon deep sequencing which produces forward and reverse fastq files for each sample.</p>
+<p><em>What you need:</em> NetID, Duke HARDAC cluster access. Unix/Linux compution system to get into cluster via Terminal or another application. All scripts I reference on the HARDAC cluster can also be found on my Github: <a href="https://github.com/kelseysumner/taylorlab/tree/master/Haplotype_calling_tutorial" class="uri">https://github.com/kelseysumner/taylorlab/tree/master/Haplotype_calling_tutorial</a></p>
+</div>
+<div id="setting-up-cluster-environment" class="section level1">
+<h1><strong>Setting up cluster environment</strong></h1>
+<ul>
+<li>To start, you will need 4 main folders:
+<ol style="list-style-type: decimal">
+<li>adapters: list of miseq adapters and primers that Betsy used for sequencing. Consists of two fasta files (forwardPrimers.fasta and reversePrimers.fasta). This shoudn’t change unless Betsy notifies you that it has. If unchanged from previous runs, can copy from the haplotype_tutorial folder.</li>
+<li>raw_reads: where you will place the forward and reverse reads you receive from the Duke Sequencing Core. The steps for receiving reads from the Duke Sequencing Core are described next. You need to separate the forward reads (indicated by R1 in the name) and reverse reads (indicated by R2) into two separate folders called “1” (for forward reads) and “2” (for reverse reads).</li>
+<li>refs: contains the AMA and CSP 3D7 reference sequences that will be used to map the raw reads to the appropriate gene targets of interest. The references are stored as fasta files within the “AMA” and “CSP” folders. These references should not change between runs so you can copy from the haplotype_tutorial folder. Other references can be added here as well but will require further downstream changes in the code if done.</li>
+<li>scripts: contains all the scripts you will need for read cleaning and haplotype calling.
+<ol style="list-style-type: decimal">
+<li><code>step1_splitSyncReadsMultiRef.pl</code> - this is a Perl script that Joe wrote that cleans, filters, and maps the raw reads. Briefly, it uses BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets, CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads, and uses Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score &lt; 15 or was less than 80 nucleotides long. This is the first step in read processing on the cluster.</li>
+<li><code>step1_split_reads_slurm.sh</code> - this is the Bash file that you use to schedule the step1_splitSyncRreadsMultiRef.pl script to run on the cluster via the slurm scheduler. This is where you need to input specific paths each time you run the code.</li>
+<li><code>step2a_dada2_AMA.R</code> - this is the R script that you will use to call haplotypes for the AMA target. It uses the DADA2 program. This is the second step in the read processing on the cluster.</li>
+<li><code>step2a_dada2_slurm_AMA.sh</code> - this is the Bash file that you use to schedule the step2a_dada2_AMA.R script to run on the cluster via the slurm scheduler.</li>
+<li><code>step2a_dada2_CSP.R</code> - this is the R script that you will use to call haplotypes for the CSP target. It uses the DADA2 program. This is the second step in the read processing on the cluster.</li>
+<li><code>step2a_dada2_slurm_CSP.sh</code> - this is the Bash file that you use to schedule the step2a_dada2_CSP.R script to run on the cluster via the slurm scheduler.</li>
+</ol></li>
+</ol></li>
+<li>Note:
+<ul>
+<li>It is important to keep the same directory set up (what folders are called, when folders are used, etc) to ensure all code is calling in data from the proper places.</li>
+<li>You will need to have the appropriate R packages installed in your cluster environment: dada2</li>
+</ul></li>
+</ul>
+</div>
 <div id="receiving-sequencing-reads-from-duke-sequencing-core" class="section level1">
 <h1><strong>Receiving sequencing reads from Duke Sequencing Core</strong></h1>
 <ul>
@@ -1559,37 +1588,100 @@ div.tocify {
 <ul>
 <li>Follow the instructions for part B “Download data from DDS to HARDAC:” <a href="https://datadelivery.genome.duke.edu/" class="uri">https://datadelivery.genome.duke.edu/</a></li>
 <li>Note that part B.1 Betsy will do in step 1, so you will start at part B.2 “Log into HARDAC”</li>
+<li>You will end up with 2 fastq files per sample (R1 is the forward file and R2 is the reverse file).</li>
+<li>Split up the fastq files in separate directories for forward and reverse files as follows: + forward reads (indicated by R1 in name): <code>raw reads/1</code> + reverse reads (indicated by R2 in name): <code>raw reads/2</code></li>
 </ul></li>
 </ul>
 </div>
 <div id="haplotype-inference" class="section level1">
 <h1><strong>Haplotype inference</strong></h1>
-<div id="cleaning-sequencing-reads-and-calling-haplotypes" class="section level2">
-<h2>Cleaning sequencing reads and calling haplotypes</h2>
+<div id="cleaning-sequencing-reads" class="section level2">
+<h2>Cleaning sequencing reads</h2>
 <ul>
-<li>Cleaned raw fastq files from the Duke sequencing core using Joe’s cleaning pipeline (splitReads.pl script and DADA2.R script on Duke HARDAC cluster). Joe wrote a script that will take all the raw reads from the sequencing core, clean them, and map them to the gene targets of interest.
+<li>This part explains how to clean and map raw fastq files from the Duke sequencing core using Joe’s cleaning pipeline on the Duke HARDAC cluster. Joe wrote a script that will take all the raw reads from the sequencing core, clean them, and map them to the gene targets of interest. Some details are:
 <ol style="list-style-type: decimal">
-<li><em>Sequenced in 300bp paired-end fragments on Illumina MiSeq for 2 polymorphic P. falciparum genes: 1) apical membrane antigen 1 (pfama1) and 2) circumsporozoite protein (pfcsp)</em></li>
-<li><em>Used BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets.</em></li>
-<li><em>Used CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads.</em></li>
-<li><em>Used Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score &lt; 15 or was less than 80 nucleotides long.</em></li>
-<li><em>Used DADA2 to perform haplotype calling of pfcsp and pfama1 targets using additional quality filtering based on DADA2’s machine learning error-estimation algorithm and allowing single-nucleotide resolution.</em></li>
+<li>Sequenced in 300bp paired-end fragments on Illumina MiSeq for 2 polymorphic P. falciparum genes: 1) apical membrane antigen 1 (pfama1) and 2) circumsporozoite protein (pfcsp)</li>
+<li>Used BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets.</li>
+<li>Used CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads.</li>
+<li>Used Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score &lt; 15 or was less than 80 nucleotides long.</li>
 </ol></li>
-<li>After cleaning the reads and calling haplotypes, we censored falsely detected haplotypes. Censoring criteria was applied in this order:
+<li>How to implement:
+<ul>
+<li>Scripts needed: <code>step1_splitSyncReadsMultiRef.pl</code> and <code>step1_split_reads_slurm.sh</code></li>
+</ul>
 <ol style="list-style-type: decimal">
-<li><em>Haplotypes that occur in &lt; 250 of the sample’s reads are removed.</em></li>
-<li><em>Haplotypes that occur in &lt; 3% of the sample’s reads are removed.</em></li>
-<li><em>Haplotypes that are a different length than the majority of haplotypes (300 nucleotides for pfama1, 288 nucleotides for pfcsp) are removed.</em></li>
-<li><em>For haplotypes that have 1 SNP difference, occur in the same sample, and have a &gt;8 times read depth difference between them within that sample, removed the hapltoype with the lower read depth from that sample.</em></li>
+<li>Make sure the raw reads downloaded from the Duke Sequencing Core are in the correct directory set up:
+<ul>
+<li>forward reads (indicated by R1 in name): <em>raw reads/1</em></li>
+<li>reverse reads (indicated by R2 in name): <em>raw reads/2</em></li>
+</ul></li>
+<li>Now move into the scripts folder. Update paths in <code>step1_split_reads_slurm.sh</code>
+<ol style="list-style-type: decimal">
+<li>Get into script. Type in cluster console: <code>vim step1_split_reads_slurm.sh</code></li>
+<li>Edit script. Type in cluster console: <code>i</code></li>
+<li>Edit paths indicated below by using sideways arrows on keyboard and typing in new paths.
+<ul>
+<li>Places where input needed italicized (other areas typically have same between runs): ./step1_splitSyncReadsMultiRef.pl 2 /data/taylorlab/kms94/haplotype_tutorial/refs/AMA/AMA.fasta,/data/taylorlab/kms94/haplotype_tutorial/refs/CSP/CSP.fasta <em>/data/taylorlab/kms94/haplotype_tutorial/out</em> <em>/data/taylorlab/kms94/haplotype_tutorial/raw_reads/1</em> <em>/data/taylorlab/kms94/haplotype_tutorial/raw_reads/2</em> /data/taylorlab/kms94/haplotype_tutorial/adapters/forwardPrimers.fasta /data/taylorlab/kms94/haplotype_tutorial/adapters/reversePrimers.fasta</li>
+<li>Description of call separated by spaces: <em>script</em> <em>number of gene targets to map to</em> <em>path for first gene target 3D7 reference sequence,path for second gene target 3D7 reference sequence</em> <em>path for where to output cleaned, mapped reads</em> <em>path for forward raw reads</em> <em>path for reverse raw reads</em> <em>path for forward primers</em> <em>path for reverse primers</em></li>
+</ul></li>
+<li>Once new paths are typed in, press ESC on keyboard then type <code>:wq</code> to save your edits to the Bash file.</li>
+</ol></li>
+<li>Schedule <code>step1_splitSyncReadsMultiRef.pl</code> to run on the HARDAC cluster using the <code>step1_split_reads_slurm.sh</code>. To do so, while in the scripts folder type in cluster console: <code>sbatch step1_split_reads_slurm.sh</code>. Depending on the number of samples that need to be processed, this could take up to 24 hours to complete.</li>
+<li>Check that the script is running by typing in the cluster console: <code>squeue</code></li>
 </ol></li>
 </ul>
 </div>
-<div id="cleaning-haplotype-output" class="section level2">
-<h2>Cleaning Haplotype Output</h2>
+<div id="calling-haplotypes" class="section level2">
+<h2>Calling haplotypes</h2>
 <ul>
-<li>Clean the DADA2 haplotype inference output to only include samples and haplotypes that occurred in a high enough prevalence</li>
-<li>Merge sample information to create one final cleaned data set of the processing from the initial fastq files to the final, cleaned haplotype data set</li>
-<li>Example R script for cleaning initial haplotype output: <code>https://github.com/kelseysumner/taylorlab/haplotype_censoring_example.R</code></li>
+<li>Used DADA2 to perform haplotype calling of pfcsp and pfama1 targets using additional quality filtering based on DADA2’s machine learning error-estimation algorithm and allowing single-nucleotide resolution.</li>
+<li>How to implement:
+<ul>
+<li>Scripts needed: <code>step2a_dada2_AMA.R</code> and <code>step2b_dada2_CSP.R</code> and <code>step2a_dada2_slurm_AMA.sh</code> and <code>step2b_dada2_slurm_CSP.sh</code></li>
+</ul>
+<ol style="list-style-type: decimal">
+<li>Go into the output folder of cleaned and mapped fastq files (called fastq). An example is: <code>/data/taylorlab/kms94/haplotype_tutorial/out/fastq</code></li>
+<li>You will find two folders of the cleaned files: AMA and CSP. Move into the AMA folder by doing: <code>cd AMA</code></li>
+<li>You will see two folders of the forward and reverse reads for AMA indicated by “1” and “2”. Create a new folder named “all_samples” by typing in the cluster console: <code>mkdir all_samples</code></li>
+<li>Move the forward and reverse sequences into that new folder by moving into the “1” folder and typing into the cluster console: <code>cp *.fastq.gz ../all_samples</code>. Then move into the “2” folder and repeat.</li>
+<li>Now go back into the “out” folder and create a new folder called “haplotype_output” by typing into the cluster console: <code>mkdir haplotype_output</code></li>
+<li>Now move into the scripts folder and update paths for <code>step2a_dada2_ama.R</code>
+<ol style="list-style-type: decimal">
+<li>Get into script. Type in cluster console: <code>vim step2a_dada2_ama.R</code></li>
+<li>Edit script. Type in cluster console: <code>i</code></li>
+<li>Edit paths indicated below by using sideways arrows on keyboard and typing in new paths.
+<ul>
+<li>Edit the path on the line that starts with the word “path.” This is where you will tell R to look for the new, cleaned and mapped sequence files. An example path is: <code>/data/taylorlab/kms94/haplotype_tutorial/out/fastq/AMA/all_samples</code></li>
+<li>Edit the path on the line that starts with “write.csv” that is right below “output summary of read trimming and filtering” to indicate where R should export a trim and filter table during the haplotype calling process. An example path is: <code>/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output/AMA_trimAndFilterTable.csv</code></li>
+<li>Edit the path on the line that starts with “saveRDS” to indicate where R should export the haplotypes file. An example path is: <code>/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output/AMA_haplotypes.rds</code></li>
+<li>Edit the path on the last line of the script that starts with “write.csv” which exports a table of the reads being tracked through the haplotype calling pipeline: <code>/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output/AMA_trackReadsThroughPipeline.csv</code></li>
+</ul></li>
+<li>Once new paths are typed in, press ESC on keyboard then type <code>:wq</code> to save your edits to the Bash file.</li>
+</ol></li>
+<li>Schedule <code>step2a_dada2_ama.R</code> to run on the HARDAC cluster using the <code>step2a_dada2_slurm_ama.sh</code>. To do so, while in the scripts folder type in cluster console: <code>sbatch step2a_dada2_slurm_ama.sh</code>. Depending on the number of samples that need to be processed, this could take 1-3 hours to complete.</li>
+<li>Repeat steps 2-7 for CSP.</li>
+<li>Check that the script is running by typing in the cluster console: <code>squeue</code></li>
+<li>Once the scripts have finished running, you will transfer the haplotype output onto your computer. Open a new window in terminal by clicking on the top bar “Shell” then “New window.” In the new window navigate to your computer desktop. Now securely transfer the files from the cluster onto your desktop by using this command: <code>scp -r kms94@hardac-login.genome.duke.edu:/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output .</code> Note that you will have to replace “kms94” in <a href="mailto:kms94@hardac" class="email">kms94@hardac</a> with your netid and update the path following the colon with the path that your haplotype output is located.</li>
+</ol></li>
+<li>Note: If there are multiple sequencing runs, then you’d have to rename the samples prior to calling haplotypes (Betsy reuses her BFID#s for each run).</li>
+</ul>
+</div>
+<div id="censoring-haplotypes" class="section level2">
+<h2>Censoring haplotypes</h2>
+<ul>
+<li>After cleaning the reads and calling haplotypes, we censored falsely detected haplotypes. Censoring criteria was applied in this order:
+<ol style="list-style-type: decimal">
+<li>Haplotypes that occur in &lt; 250 of the sample’s reads are removed.</li>
+<li>Haplotypes that occur in &lt; 3% of the sample’s reads are removed.</li>
+<li>Haplotypes that are a different length than the majority of haplotypes (300 nucleotides for pfama1, 288 nucleotides for pfcsp) are removed.</li>
+<li>For haplotypes that have 1 SNP difference, occur in the same sample, and have a &gt;8 times read depth difference between them within that sample, removed the hapltoype with the lower read depth from that sample.</li>
+<li>If a haplotype is defined by a single variant position that is only variable within that haplotype, then it is removed.</li>
+</ol></li>
+<li>Clean the DADA2 haplotype inference output on your personal computer.</li>
+<li>How to implement:
+<ul>
+<li>Scripts needed: <code>haplotype_censoring_example.R</code></li>
+</ul></li>
 </ul>
 </div>
 </div>
@@ -1598,36 +1690,36 @@ div.tocify {
 <div id="standardizing-ct-values-from-qpcr-results" class="section level2">
 <h2>Standardizing Ct values from qPCR results</h2>
 <ul>
-<li>An example R script can be found at: <code>https://github.com/kelseysumner/taylorlab/Haplotype_calling_tutorial/qpcr_data_cleaning_example.R</code>
+<li>An example R script can be found at: <code>qpcr_data_cleaning_example.R</code>
 <ol style="list-style-type: decimal">
-<li><em>Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL). This step was done for the MESA and Mozzie studies but not Turkana/Embatalk. Betsy updated the standards so it was not needed for Embatalk. Ask Betsy if this step is still needed.</em></li>
-<li><em>Censoring criteria for parasitemia:</em>
+<li>Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL). This step was done for the MESA and Mozzie studies but not Turkana/Embatalk. Betsy updated the standards so it was not needed for Embatalk. Ask Betsy if this step is still needed.</li>
+<li>Censoring criteria for parasitemia:
 <ul>
-<li><em>Recoding of CT values:</em>
+<li>Recoding of CT values:
 <ul>
-<li><em>CT values of 0 recoded to missing (NA).</em></li>
-<li><em>CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.</em></li>
-<li><em>CT values 0 &lt; CT &lt; 40 for human beta-tubulin (Hb) are considered valid detection.</em></li>
-<li><em>CT values of 0 &lt; CT &lt; 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 &lt; CT &lt; 38 for Plasmodium falciparum to be considered valid.</em></li>
-<li><em>Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.</em></li>
+<li>CT values of 0 recoded to missing (NA).</li>
+<li>CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.</li>
+<li>CT values 0 &lt; CT &lt; 40 for human beta-tubulin (Hb) are considered valid detection.</li>
+<li>CT values of 0 &lt; CT &lt; 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 &lt; CT &lt; 38 for Plasmodium falciparum to be considered valid.</li>
+<li>Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.</li>
 </ul></li>
-<li><em>CT value censoring rules:</em>
+<li>CT value censoring rules:
 <ul>
-<li><em>Pf positive via PCR:</em>
+<li>Pf positive via PCR:
 <ul>
-<li><em>If 2 replicates amplified Pf: Pf CT values 0 &lt; CT &lt; 40</em></li>
-<li><em>If 1 replicate amplified Pf: Pf CT values 0 &lt; CT &lt; 38</em></li>
+<li>If 2 replicates amplified Pf: Pf CT values 0 &lt; CT &lt; 40</li>
+<li>If 1 replicate amplified Pf: Pf CT values 0 &lt; CT &lt; 38</li>
 </ul></li>
-<li><em>Pf negative via PCR: Pf CT undetermined (or Pf CT &gt; 38 if one replicate), Hb CT values 0 &lt; CT &lt; 40</em></li>
-<li><em>Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR</em></li>
+<li>Pf negative via PCR: Pf CT undetermined (or Pf CT &gt; 38 if one replicate), Hb CT values 0 &lt; CT &lt; 40</li>
+<li>Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR</li>
 </ul></li>
 </ul></li>
-<li><em>Rules for determining if participant is positive/negative/missing for Pf parasitemia:</em>
+<li>Rules for determining if participant is positive/negative/missing for Pf parasitemia:
 <ul>
-<li><em>If 1 replicate Pf positive per criteria above, used that replicate’s standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.</em></li>
-<li><em>If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.</em></li>
-<li><em>If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.</em></li>
-<li><em>If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.</em></li>
+<li>If 1 replicate Pf positive per criteria above, used that replicate’s standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.</li>
+<li>If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.</li>
+<li>If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.</li>
+<li>If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.</li>
 </ul></li>
 </ol></li>
 </ul>

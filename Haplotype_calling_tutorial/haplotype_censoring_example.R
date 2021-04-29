@@ -1,8 +1,6 @@
 # ----------------------------------------- #
-#       Spat21 Haplotype Output Cleaning    #
-#       All Samples (Human and Mosquito)    #
-#         FINAL CENSORING VERSION           #
-#           September 24, 2019              #
+#         Haplotype censoring tutorial      #
+#               April 27, 2021              #
 #                K. Sumner                  #
 # ----------------------------------------- #
 
@@ -27,10 +25,14 @@ library(schoolmath)
 # read in the haplotype data set
 foo = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Final Data Sets/Sequencing Information/Haplotype Results/AMA/raw haplotype output/AMA_spat21_allsamples_haplotypes.rds")
 
+# for the sake of time we are going to cut this down to only 5 samples
+foo = foo[c(1:5),]
+
 # figure out how many rows and columns
 nrow(foo)
 ncol(foo)
 table(nchar(getSequences(foo)))
+
 
 ### --- look at the raw haplotype output and censor it
 
@@ -202,6 +204,12 @@ foo = foo[,c(haplotype_num_summary$haplotype_ids)]
 # write out the haplotypes results as a fasta
 uniquesToFasta(getUniques(foo), fout="Desktop/AMA_uniqueSeqs.fasta", ids=paste0("Seq", seq(length(getUniques(foo)))))
 # created a sequence variant table with the haplotype sequences
+
+
+
+### ----- STOP: go to seqmanpro from DNA star and follow these steps ---- ###
+
+
 
 ### ---- read back in that haplotype sequence file
 
