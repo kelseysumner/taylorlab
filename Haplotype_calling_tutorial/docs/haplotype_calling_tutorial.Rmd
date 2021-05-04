@@ -1,0 +1,149 @@
+---
+title: "Haplotype calling pipeline"
+author: "Kelsey Sumner"
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    theme: lumen
+    highlight: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Last Updated `r format(Sys.Date(), format="%m/%d/%Y")`
+
+
+# **Introduction** 
+*Overview:* 
+Using human or mosquito samples from Webuye, Kenya, evaluate the extent to which there are unique haplotypes among two polymorphic gene targets: AMA, CSP.
+
+*Method:* 
+Targeted amplicon deep sequencing which produces forward and reverse fastq files for each sample.
+
+*What you need:*
+NetID, Duke HARDAC cluster access. Unix/Linux compution system to get into cluster via Terminal or another application. All scripts I reference on the HARDAC cluster can also be found on my Github: https://github.com/kelseysumner/taylorlab/tree/master/Haplotype_calling_tutorial
+
+
+# **Setting up cluster environment**
+* Login to the cluster by typing the following command and replacing "NETID" with your netid: `ssh NETID@hardac-login.genome.duke.edu`
+* To start, you will need 4 main folders:
+    1. adapters: list of miseq adapters and primers that Betsy used for sequencing. Consists of two fasta files (forwardPrimers.fasta and reversePrimers.fasta). This shoudn't change unless Betsy notifies you that it has. If unchanged from previous runs, can copy from the haplotype_tutorial folder. 
+    2. raw_reads: where you will place the forward and reverse reads you receive from the Duke Sequencing Core. The steps for receiving reads from the Duke Sequencing Core are described next. You need to separate the forward reads (indicated by R1 in the name) and reverse reads (indicated by R2) into two separate folders called "1" (for forward reads) and "2" (for reverse reads).
+    3. refs: contains the AMA and CSP 3D7 reference sequences that will be used to map the raw reads to the appropriate gene targets of interest. The references are stored as fasta files within the "AMA" and "CSP" folders. These references should not change between runs so you can copy from the haplotype_tutorial folder. Other references can be added here as well but will require further downstream changes in the code if done.
+    4. scripts: contains all the scripts you will need for read cleaning and haplotype calling. 
+          1. `step1_splitSyncReadsMultiRef.pl` - this is a Perl script that Joe wrote that cleans, filters, and maps the raw reads. Briefly, it uses BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets, CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads, and uses Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score < 15 or was less than 80 nucleotides long. This is the first step in read processing on the cluster.
+          2. `step1_split_reads_slurm.sh` - this is the Bash file that you use to schedule the step1_splitSyncRreadsMultiRef.pl script to run on the cluster via the slurm scheduler. This is where you need to input specific paths each time you run the code.
+          3. `step2a_dada2_AMA.R` - this is the R script that you will use to call haplotypes for the AMA target. It uses the DADA2 program. This is the second step in the read processing on the cluster. 
+          4. `step2a_dada2_slurm_AMA.sh` - this is the Bash file that you use to schedule the step2a_dada2_AMA.R script to run on the cluster via the slurm scheduler. 
+          5. `step2a_dada2_CSP.R` - this is the R script that you will use to call haplotypes for the CSP target. It uses the DADA2 program. This is the second step in the read processing on the cluster. 
+          6. `step2a_dada2_slurm_CSP.sh` - this is the Bash file that you use to schedule the step2a_dada2_CSP.R script to run on the cluster via the slurm scheduler. 
+* Note: 
+    + It is important to keep the same directory set up (what folders are called, when folders are used, etc) to ensure all code is calling in data from the proper places.
+    + You will need to have the appropriate R packages installed in your cluster environment: dada2
+
+
+# **Receiving sequencing reads from Duke Sequencing Core**
+* Step 1: Betsy grants you access to the sequencing reads
+    + Duke has a now delivery platform for the reads called the Duke Data Service. Betsy will have to add you as a person on the project for you to access the reads. She will do so using this link: https://datadelivery.genome.duke.edu/ 
+* Step 2: Set up DukeDSClient and download the data to the the HARDAC cluster
+    + Follow the instructions for part B "Download data from DDS to HARDAC:" https://datadelivery.genome.duke.edu/
+    + Note that part B.1 Betsy will do in step 1, so you will start at part B.2 "Log into HARDAC"
+    + You will end up with 2 fastq files per sample (R1 is the forward file and R2 is the reverse file). 
+    + Split up the fastq files in separate directories for forward and reverse files as follows: 
+          + forward reads (indicated by R1 in name): `raw reads/1`
+          + reverse reads (indicated by R2 in name): `raw reads/2`
+
+
+# **Haplotype inference**
+
+## Cleaning sequencing reads
+* This part explains how to clean and map raw fastq files from the Duke sequencing core using Joe's cleaning pipeline on the Duke HARDAC cluster. Joe wrote a script that will take all the raw reads from the sequencing core, clean them, and map them to the gene targets of interest. Some details are:
+  1. Sequenced in 300bp paired-end fragments on Illumina MiSeq for 2 polymorphic P. falciparum genes: 1) apical membrane antigen 1 (pfama1) and 2) circumsporozoite protein (pfcsp)
+  2. Used BBmap to map all reads from pfama1 and pfcsp 3D7 reference sequences to differentiate between the two targets.
+  3. Used CutAdapt to trim pfama1 and pfcsp primers and adapter sequences from sequencing reads.
+  4. Used Trimmomatic to quality filter reads if average of every 4 nucleotides had a Phred Quality Score < 15 or was less than 80 nucleotides long.
+* How to implement:
+    + Scripts needed: `step1_splitSyncReadsMultiRef.pl` and `step1_split_reads_slurm.sh`
+    1. Make sure the raw reads downloaded from the Duke Sequencing Core are in the correct directory set up:
+        + forward reads (indicated by R1 in name): *raw reads/1*
+        + reverse reads (indicated by R2 in name): *raw reads/2*
+    2. Now move into the scripts folder. Update paths in `step1_split_reads_slurm.sh`
+        1. Get into script. Type in cluster console: `vim step1_split_reads_slurm.sh`
+        2. Edit script. Type in cluster console: `i`
+        3. Edit paths indicated below by using sideways arrows on keyboard and typing in new paths. 
+            + Places where input needed italicized (other areas typically have same between runs): ./step1_splitSyncReadsMultiRef.pl 2 /data/taylorlab/kms94/haplotype_tutorial/refs/AMA/AMA.fasta,/data/taylorlab/kms94/haplotype_tutorial/refs/CSP/CSP.fasta */data/taylorlab/kms94/haplotype_tutorial/out* */data/taylorlab/kms94/haplotype_tutorial/raw_reads/1* */data/taylorlab/kms94/haplotype_tutorial/raw_reads/2* /data/taylorlab/kms94/haplotype_tutorial/adapters/forwardPrimers.fasta /data/taylorlab/kms94/haplotype_tutorial/adapters/reversePrimers.fasta
+            + Description of call separated by spaces: *script* *number of gene targets to map to* *path for first gene target 3D7 reference sequence,path for second gene target 3D7 reference sequence* *path for where to output cleaned, mapped reads* *path for forward raw reads* *path for reverse raw reads* *path for forward primers* *path for reverse primers*
+        4. Once new paths are typed in, press ESC on keyboard then type `:wq` to save your edits to the Bash file.
+    3. Schedule `step1_splitSyncReadsMultiRef.pl` to run on the HARDAC cluster using the `step1_split_reads_slurm.sh`. To do so, while in the scripts folder type in cluster console: `sbatch step1_split_reads_slurm.sh`. Depending on the number of samples that need to be processed, this could take up to 24 hours to complete.
+    4. Check that the script is running by typing in the cluster console: `squeue`
+        
+
+## Calling haplotypes
+* Used DADA2 to perform haplotype calling of pfcsp and pfama1 targets using additional quality filtering based on DADA2's machine learning error-estimation algorithm and allowing single-nucleotide resolution.
+* How to implement: 
+    + Scripts needed: `step2a_dada2_AMA.R` and `step2b_dada2_CSP.R` and `step2a_dada2_slurm_AMA.sh` and `step2b_dada2_slurm_CSP.sh`
+    1. Go into the output folder of cleaned and mapped fastq files (called fastq). An example is: `/data/taylorlab/kms94/haplotype_tutorial/out/fastq`
+    2. You will find two folders of the cleaned files: AMA and CSP. Move into the AMA folder by doing: `cd AMA`
+    3. You will see two folders of the forward and reverse reads for AMA indicated by "1" and "2". Create a new folder named "all_samples" by typing in the cluster console: `mkdir all_samples`
+    4. Move the forward and reverse sequences into that new folder by moving into the "1" folder and typing into the cluster console: `cp *.fastq.gz ../all_samples`. Then move into the "2" folder and repeat.
+    5. Now go back into the "out" folder and create a new folder called "haplotype_output" by typing into the cluster console: `mkdir haplotype_output`
+    6. Now move into the scripts folder and update paths for `step2a_dada2_ama.R`
+        1. Get into script. Type in cluster console: `vim step2a_dada2_ama.R`
+        2. Edit script. Type in cluster console: `i`
+        3. Edit paths indicated below by using sideways arrows on keyboard and typing in new paths.
+            + Edit the path on the line that starts with the word "path." This is where you will tell R to look for the new, cleaned and mapped sequence files. An example path is: `/data/taylorlab/kms94/haplotype_tutorial/out/fastq/AMA/all_samples`
+            + Edit the path on the line that starts with "write.csv" that is right below "output summary of read trimming and filtering" to indicate where R should export a trim and filter table during the haplotype calling process. An example path is: `/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output/AMA_trimAndFilterTable.csv` 
+            + Edit the path on the line that starts with "saveRDS" to indicate where R should export the haplotypes file. An example path is: `/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output/AMA_haplotypes.rds` 
+            + Edit the path on the last line of the script that starts with "write.csv" which exports a table of the reads being tracked through the haplotype calling pipeline: `/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output/AMA_trackReadsThroughPipeline.csv`
+        4. Once new paths are typed in, press ESC on keyboard then type `:wq` to save your edits to the Bash file.
+    7. Schedule `step2a_dada2_ama.R` to run on the HARDAC cluster using the `step2a_dada2_slurm_ama.sh`. To do so, while in the scripts folder type in cluster console: `sbatch step2a_dada2_slurm_ama.sh`. Depending on the number of samples that need to be processed, this could take 1-3 hours to complete.
+    8. Repeat steps 2-7 for CSP.
+    9. Check that the script is running by typing in the cluster console: `squeue`
+    10. Once the scripts have finished running, you will transfer the haplotype output onto your computer. Open a new window in terminal by clicking on the top bar "Shell" then "New window." In the new window navigate to your computer desktop. Now securely transfer the files from the cluster onto your desktop by using this command: `scp -r kms94@hardac-login.genome.duke.edu:/data/taylorlab/kms94/haplotype_tutorial/out/haplotype_output .`   Note that you will have to replace "kms94" in kms94@hardac with your netid and update the path following the colon with the path that your haplotype output is located.
+* Note: If there are multiple sequencing runs, then you'd have to rename the samples prior to calling haplotypes (Betsy reuses her BFID#s for each run).
+
+
+## Censoring haplotypes
+* After cleaning the reads and calling haplotypes, we censored falsely detected haplotypes. Censoring criteria was applied in this order:
+  1. Haplotypes that occur in < 250 of the sample's reads are removed.
+  2. Haplotypes that occur in < 3% of the sample's reads are removed.
+  3. Haplotypes that are a different length than the majority of haplotypes (300 nucleotides for pfama1, 288 nucleotides for pfcsp) are removed.
+  4. For haplotypes that have 1 SNP difference, occur in the same sample, and have a >8 times read depth difference between them within that sample, removed the hapltoype with the lower read depth from that sample.
+  5. If a haplotype is defined by a single variant position that is only variable within that haplotype, then it is removed. 
+* Clean the DADA2 haplotype inference output on your personal computer.
+* How to implement: 
+    + Scripts needed: `haplotype_censoring_example.R`
+
+
+
+# **Miscellaneous**
+
+## Standardizing Ct values from qPCR results
+* An example R script can be found at: `qpcr_data_cleaning_example.R`
+    1. Recalculated parasitemia values for each duplicate for each participant by creating a new standard curve with only standards 1-8 (concentrations from 1-2000 parasites/uL). Originally, standard curve based on standards 1-10 (0.1-2000 parasites/uL). This step was done for the MESA and Mozzie studies but not Turkana/Embatalk. Betsy updated the standards so it was not needed for Embatalk. Ask Betsy if this step is still needed.
+    2. Censoring criteria for parasitemia:
+        - Recoding of CT values:
+            - CT values of 0 recoded to missing (NA).
+            - CT values of “undetermined” recoded to missing (NA) – however, these really signify negative results.
+            - CT values 0 < CT < 40 for human beta-tubulin (Hb) are considered valid detection.
+            - CT values of 0 < CT < 40 for Plasmodium falciparum are considered valid detection UNLESS only one replicate amplifies Pf, then the replicate that amplified has to have CT values of 0 < CT < 38 for Plasmodium falciparum to be considered valid.
+            - Check that the standards (especially the first few) have amplified for human beta-tubulin and Plasmodium falciparum.
+        - CT value censoring rules:
+            - Pf positive via PCR:
+                - If 2 replicates amplified Pf: Pf CT values 0 < CT < 40
+                - If 1 replicate amplified Pf: Pf CT values 0 < CT < 38
+            - Pf negative via PCR: Pf CT undetermined (or Pf CT > 38 if one replicate), Hb CT values 0 < CT < 40
+            - Pf missing via PCR: Pf CT values of 0 or sample not tested with PCR, Hb CT undetermined or 0 or sample not tested for PCR
+    3. Rules for determining if participant is positive/negative/missing for Pf parasitemia:
+        - If 1 replicate Pf positive per criteria above, used that replicate's standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.
+        - If both replicates Pf positive per criteria above, averaged the replicates standardized parasitemia for the participant to create combined parasitemia. Sample is positive for Pf in pf_pcr_infection_status variable.
+        - If both replicates Pf negative per criteria above, parasitemia is missing for combined parasitemia. Sample is negative for Pf in pf_pcr_infection_status variable.
+        - If both replicates missing via PCR per criteria above, parasitemia is missing for combined parasitemia. Sample is missing data for Pf in pf_pcr_infection_status variable.
+
