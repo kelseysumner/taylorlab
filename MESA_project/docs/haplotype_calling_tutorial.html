@@ -1587,10 +1587,10 @@ div.tocify {
 </ul></li>
 <li>Step 2: Set up DukeDSClient and download the data to the the HARDAC cluster
 <ul>
-<li>Follow the instructions for part B “Download data from DDS to HARDAC:” <a href="https://datadelivery.genome.duke.edu/" class="uri">https://datadelivery.genome.duke.edu/</a></li>
+<li>Follow the instructions for part B “Download data from DDS to HARDAC:” <a href="http://seqweb.gcb.duke.edu/DataDelivery/NGSequencingCoreDataDownloadInstructionTitlePage.html" class="uri">http://seqweb.gcb.duke.edu/DataDelivery/NGSequencingCoreDataDownloadInstructionTitlePage.html</a></li>
 <li>Note that part B.1 Betsy will do in step 1, so you will start at part B.2 “Log into HARDAC”</li>
 <li>You will end up with 2 fastq files per sample (R1 is the forward file and R2 is the reverse file).</li>
-<li>Split up the fastq files in separate directories for forward and reverse files as follows: + forward reads (indicated by R1 in name): <code>raw reads/1</code> + reverse reads (indicated by R2 in name): <code>raw reads/2</code></li>
+<li>Split up the fastq files in separate directories for forward and reverse files as follows: 1. In the raw_reads folder, make two new folders called “1” and “2” by typing: <code>mkdir 1</code> and <code>mkdir 2</code> 2. Move the forward and reverse reads into the proper folders by typing: <code>mv *R1_001.fastq.gz 1/</code> and <code>mv *R2_001.fastq.gz /2</code> + forward reads (indicated by R1 in name): <code>raw reads/1</code> + reverse reads (indicated by R2 in name): <code>raw reads/2</code></li>
 </ul></li>
 </ul>
 </div>
@@ -1628,7 +1628,7 @@ div.tocify {
 <li>Once new paths are typed in, press ESC on keyboard then type <code>:wq</code> to save your edits to the Bash file.</li>
 </ol></li>
 <li>Schedule <code>step1_splitSyncReadsMultiRef.pl</code> to run on the HARDAC cluster using the <code>step1_split_reads_slurm.sh</code>. To do so, while in the scripts folder type in cluster console: <code>sbatch step1_split_reads_slurm.sh</code>. Depending on the number of samples that need to be processed, this could take up to 24 hours to complete.</li>
-<li>Check that the script is running by typing in the cluster console: <code>squeue</code></li>
+<li>Check that the script is running by typing in the cluster console: <code>squeue</code>. If you want to cancel a run type: <code>scancel JOBID</code> where JOBID is replaced by the job ID the console outputted when you ran sbatch.</li>
 </ol></li>
 </ul>
 </div>
