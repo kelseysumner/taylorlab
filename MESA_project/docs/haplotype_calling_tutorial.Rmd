@@ -32,6 +32,7 @@ NetID, Duke HARDAC cluster access. Unix/Linux compution system to get into clust
 
 
 # **Setting up cluster environment**
+* Login to the cluster by typing the following command and replacing "NETID" with your netid: `ssh NETID@hardac-login.genome.duke.edu`
 * To start, you will need 4 main folders:
     1. adapters: list of miseq adapters and primers that Betsy used for sequencing. Consists of two fasta files (forwardPrimers.fasta and reversePrimers.fasta). This shoudn't change unless Betsy notifies you that it has. If unchanged from previous runs, can copy from the haplotype_tutorial folder. 
     2. raw_reads: where you will place the forward and reverse reads you receive from the Duke Sequencing Core. The steps for receiving reads from the Duke Sequencing Core are described next. You need to separate the forward reads (indicated by R1 in the name) and reverse reads (indicated by R2) into two separate folders called "1" (for forward reads) and "2" (for reverse reads).
