@@ -3,7 +3,7 @@
 #               April 27, 2021              #
 #                K. Sumner                  #
 # ----------------------------------------- #
-
+# run this script in pieces, where you run each section separated by 1-2 returns before moving to the next section
 
 #### --------- load packages ----------------- ####
 library(readr)
