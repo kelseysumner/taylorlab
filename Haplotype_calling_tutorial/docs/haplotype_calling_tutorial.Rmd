@@ -53,10 +53,12 @@ NetID, Duke HARDAC cluster access. Unix/Linux compution system to get into clust
 * Step 1: Betsy grants you access to the sequencing reads
     + Duke has a now delivery platform for the reads called the Duke Data Service. Betsy will have to add you as a person on the project for you to access the reads. She will do so using this link: https://datadelivery.genome.duke.edu/ 
 * Step 2: Set up DukeDSClient and download the data to the the HARDAC cluster
-    + Follow the instructions for part B "Download data from DDS to HARDAC:" https://datadelivery.genome.duke.edu/
+    + Follow the instructions for part B "Download data from DDS to HARDAC:" http://seqweb.gcb.duke.edu/DataDelivery/NGSequencingCoreDataDownloadInstructionTitlePage.html
     + Note that part B.1 Betsy will do in step 1, so you will start at part B.2 "Log into HARDAC"
     + You will end up with 2 fastq files per sample (R1 is the forward file and R2 is the reverse file). 
     + Split up the fastq files in separate directories for forward and reverse files as follows: 
+          1. In the raw_reads folder, make two new folders called "1" and "2" by typing: `mkdir 1` and `mkdir 2`
+          2. Move the forward and reverse reads into the proper folders by typing: `mv *R1_001.fastq.gz 1/` and `mv *R2_001.fastq.gz /2`
           + forward reads (indicated by R1 in name): `raw reads/1`
           + reverse reads (indicated by R2 in name): `raw reads/2`
 
@@ -79,10 +81,10 @@ NetID, Duke HARDAC cluster access. Unix/Linux compution system to get into clust
         2. Edit script. Type in cluster console: `i`
         3. Edit paths indicated below by using sideways arrows on keyboard and typing in new paths. 
             + Places where input needed italicized (other areas typically have same between runs): ./step1_splitSyncReadsMultiRef.pl 2 /data/taylorlab/kms94/haplotype_tutorial/refs/AMA/AMA.fasta,/data/taylorlab/kms94/haplotype_tutorial/refs/CSP/CSP.fasta */data/taylorlab/kms94/haplotype_tutorial/out* */data/taylorlab/kms94/haplotype_tutorial/raw_reads/1* */data/taylorlab/kms94/haplotype_tutorial/raw_reads/2* /data/taylorlab/kms94/haplotype_tutorial/adapters/forwardPrimers.fasta /data/taylorlab/kms94/haplotype_tutorial/adapters/reversePrimers.fasta
-            + Description of call separated by spaces: *script* *number of gene targets to map to* *path for first gene target 3D7 reference sequence,path for second gene target 3D7 reference sequence* *path for where to output cleaned, mapped reads* *path for forward raw reads* *path for reverse raw reads* *path for forward primers* *path for reverse primers*
+            + Description of call separated by spaces: <*script*> <*number of gene targets to map to*> <*path for first gene target 3D7 reference sequence,path for second gene target 3D7 reference sequence*> <*path for where to output cleaned, mapped reads*> <*path for forward raw reads*> <*path for reverse raw reads*> <*path for forward primers* *path for reverse primers*>
         4. Once new paths are typed in, press ESC on keyboard then type `:wq` to save your edits to the Bash file.
     3. Schedule `step1_splitSyncReadsMultiRef.pl` to run on the HARDAC cluster using the `step1_split_reads_slurm.sh`. To do so, while in the scripts folder type in cluster console: `sbatch step1_split_reads_slurm.sh`. Depending on the number of samples that need to be processed, this could take up to 24 hours to complete.
-    4. Check that the script is running by typing in the cluster console: `squeue`
+    4. Check that the script is running by typing in the cluster console: `squeue`. If you want to cancel a run type: `scancel JOBID` where JOBID is replaced by the job ID the console outputted when you ran sbatch. 
         
 
 ## Calling haplotypes
