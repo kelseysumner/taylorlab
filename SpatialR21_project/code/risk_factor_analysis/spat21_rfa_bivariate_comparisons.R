@@ -108,27 +108,18 @@ model_data$ama_transmission = factor(model_data$ama_transmission,levels=c("no","
 
 # create a variable for transmission that just uses the mean P_te_all value
 # for csp
-mean_csp = mean(model_data$p_te_all_csp)
-model_data$csp_transmission_mean = ifelse(model_data$p_te_all_csp >= mean_csp,"yes",ifelse(model_data$p_te_all_csp < mean_csp,"no",NA))
-model_data$csp_transmission_mean = factor(model_data$csp_transmission_mean,levels=c("no","yes"))
+median_csp = median(model_data$p_te_all_csp)
+model_data$csp_transmission_median = ifelse(model_data$p_te_all_csp >= median_csp,"yes",ifelse(model_data$p_te_all_csp < median_csp,"no",NA))
+model_data$csp_transmission_median = factor(model_data$csp_transmission_median,levels=c("no","yes"))
 # for ama
-mean_ama = mean(model_data$p_te_all_ama)
-model_data$ama_transmission_mean = ifelse(model_data$p_te_all_ama >= mean_ama,"yes",ifelse(model_data$p_te_all_ama < mean_ama,"no",NA))
-model_data$ama_transmission_mean = factor(model_data$ama_transmission_mean,levels=c("no","yes"))
-
-
-# create a variable for transmission that uses 0.2 as the cutoff
-# for csp
-model_data$csp_transmission_0.2 = ifelse(model_data$p_te_all_csp >= 0.2,"yes",ifelse(model_data$p_te_all_csp < 0.2,"no",NA))
-model_data$csp_transmission_0.2 = factor(model_data$csp_transmission_0.2,levels=c("no","yes"))
-# for ama
-model_data$ama_transmission_0.2 = ifelse(model_data$p_te_all_ama >= 0.2,"yes",ifelse(model_data$p_te_all_ama < 0.2,"no",NA))
-model_data$ama_transmission_0.2 = factor(model_data$ama_transmission_0.2,levels=c("no","yes"))
+median_ama = mean(model_data$p_te_all_ama)
+model_data$ama_transmission_median = ifelse(model_data$p_te_all_ama >= median_ama,"yes",ifelse(model_data$p_te_all_ama < median_ama,"no",NA))
+model_data$ama_transmission_median = factor(model_data$ama_transmission_median,levels=c("no","yes"))
 
 
 # export the data set
-#write_csv(model_data,"Desktop/mozzie_rfa_data_1APR2021.csv")
-#write_rds(model_data,"Desktop/mozzie_rfa_data_1APR2021.rds")
+write_csv(model_data,"Desktop/mozzie_rfa_data_1APR2021.csv")
+write_rds(model_data,"Desktop/mozzie_rfa_data_1APR2021.rds")
 
 
 #### ------ compare PTEall across covariates for csp ------- ####
