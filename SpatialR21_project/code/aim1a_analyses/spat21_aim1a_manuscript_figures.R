@@ -64,7 +64,7 @@ survival_data_secondary_permissive$new_age_cat_baseline = relevel(survival_data_
 plot_human_data = survival_data_primary %>%
   select(main_exposure_primary_case_def,month_year,unq_memID) %>%
   group_by(month_year,main_exposure_primary_case_def,unq_memID) %>%
-  summarize(n=n())
+  summarise(n=n())
 plot_human_data_withperc = plot_human_data %>%
   group_by(month_year) %>%
   mutate(perc_n=n/sum(n))
@@ -741,3 +741,184 @@ sd <- survdiff(Surv(days_until_event, event_indicator) ~ main_exposure_secondary
 
 
 
+#### ------- make a figure for the distribution of participant's age ------- ####
+
+# make a data set of just each participant and their first entry
+unq_memID_start_date = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
+length(unique(unq_memID_start_date$unq_memID))
+
+# make a summary by age
+age_summary = unq_memID_start_date %>%
+  group_by(age_all_baseline) %>%
+  summarise(n=n())
+
+# now make a density plot of the age distribution across study participants
+age_density_plot = ggplot(data=age_summary,aes(x=age_all_baseline,y=n)) +
+  geom_histogram(stat="identity",fill="light grey",colour="black") +
+  theme_bw() +
+  xlab("Age (years)") +
+  ylab("Number of participants") +
+  scale_x_continuous(breaks=c(0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85))
+age_density_plot
+
+# export the plot
+ggsave(age_density_plot, filename="/Users/kelseysumner/Desktop/age_density_plot.png", device="png",
+       height=3, width=6, units="in", dpi=300)
+
+
+#### ------ calcculate some summary statistics for the data set ------ ####
+
+# first look at the infection status of people over time
+infection_plot  = survival_data_primary %>% 
+  group_by(unq_memID,main_exposure_primary_case_def) %>%
+  summarise(n=n())
+infection_plot_withperc = infection_plot %>%
+  group_by(unq_memID) %>%
+  mutate(perc_n=n/sum(n))
+
+# pull out how many people never had an asymptomatic infection
+length(which(infection_plot_withperc$main_exposure_primary_case_def == "no infection" & infection_plot_withperc$perc_n == 1))
+
+# now look at the median and IQR percent of monthly visits where someone had an asymptomatic infection
+summary(infection_plot_withperc$n)
+summary(infection_plot_withperc$perc_n)
+
+# order data set by person and date
+survival_data_primary = arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# rearrange the data to have each person as the row and their infection status over time as the columns
+follow_up_data = pivot_wider(survival_data_primary,id_cols=unq_memID,names_from = month_year,values_from=main_exposure_primary_case_def)
+
+# reorder consecutive follow-up columns
+follow_up_data_ordered <- follow_up_data[,c("unq_memID","2017-06-01","2017-07-01","2017-08-01","2017-09-01","2017-10-01","2017-11-01","2017-12-01","2018-01-01","2018-02-01","2018-03-01","2018-04-01","2018-05-01","2018-06-01","2018-07-01","2018-08-01","2018-09-01","2018-10-01","2018-11-01","2018-12-01","2019-01-01","2019-02-01","2019-03-01","2019-04-01","2019-05-01","2019-06-01","2019-07-01","2019-08-01","2019-09-01","2019-10-01","2019-11-01")]
+
+# export this plot
+write_csv(follow_up_data_ordered,"Desktop/monthly_follow_up_over_time_13JUNE2021.csv")
+
+
+#### ------- do a secondary analysis looking at seasonality ------ ####
+
+# rainy season and month afterward: May - October
+
+# create a seasonality variable
+survival_data_primary$seasonality = ifelse(survival_data_primary$month_year == "2017-06-01" | 
+                                             survival_data_primary$month_year == "2017-07-01" |
+                                             survival_data_primary$month_year == "2017-08-01" |
+                                             survival_data_primary$month_year == "2017-09-01" |
+                                             survival_data_primary$month_year == "2017-10-01" |
+                                             survival_data_primary$month_year == "2018-05-01" |
+                                             survival_data_primary$month_year == "2018-06-01" | 
+                                             survival_data_primary$month_year == "2018-07-01" |
+                                             survival_data_primary$month_year == "2018-08-01" |
+                                             survival_data_primary$month_year == "2018-09-01" |
+                                             survival_data_primary$month_year == "2018-10-01" |
+                                             survival_data_primary$month_year == "2019-05-01" |
+                                             survival_data_primary$month_year == "2019-06-01" | 
+                                             survival_data_primary$month_year == "2019-07-01" |
+                                             survival_data_primary$month_year == "2019-08-01" |
+                                             survival_data_primary$month_year == "2019-09-01" |
+                                             survival_data_primary$month_year == "2019-10-01","high transmission","low transmission")
+table(survival_data_primary$month_year,survival_data_primary$seasonality,useNA = "always")
+survival_data_primary$seasonality = factor(survival_data_primary$seasonality,levels=c("low transmission","high transmission"))
+
+# run the model now with seasonality added in
+fit.coxph.seasonality <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + seasonality + (1 | unq_memID), 
+                   data = survival_data_primary)
+fit.coxph.seasonality
+exp(confint(fit.coxph.seasonality))
+
+
+#### ---- do a secondary analysis looking at the number of prior infections ----- ####
+
+# first order the data set by date
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# first pull out each participant's first infection
+unq_memID_first_infection = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+number_prior_infections = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_first_infection)){
+  count = 0
+  for (j in 1:nrow(survival_data_primary)){
+    if (unq_memID_first_infection$unq_memID[i] == survival_data_primary$unq_memID[j]){
+      if (survival_data_primary$main_exposure_primary_case_def[j] == "asymptomatic infection"){
+        count = count + 1
+        number_prior_infections[j] = count - 1
+      } else {
+        count = count
+        number_prior_infections[j] = count
+      }
+    } 
+  }
+}
+summary(number_prior_infections)  
+survival_data_primary$number_prior_infections = number_prior_infections
+str(survival_data_primary$number_prior_infections)
+survival_data_primary %>% select(unq_memID,sample_id_date,main_exposure_primary_case_def,number_prior_infections) %>% View()
+
+
+# run the model now with number of prior infections added in
+fit.coxph.priorinfxn <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + number_prior_infections + (1 | unq_memID), 
+                              data = survival_data_primary)
+fit.coxph.priorinfxn
+exp(confint(fit.coxph.priorinfxn))
+
+
+#### ------- do a secondary analysis looking to see if treatment influences results ------- ####
+
+# if a person has a symptomatic infection, code them as having treatment during the study for any time after that
+
+# first order the data set by date
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# first pull out each participant's symptomatic infections
+survival_data_primary_symptomatic_only = survival_data_primary %>% filter(event_indicator == 1)
+
+# now pull out each person's first symptomatic infection
+symptomatic_group = survival_data_primary_symptomatic_only %>%
+  group_by(unq_memID,fu_end_date) %>%
+  summarise(n=n())
+unq_memID_first_symp_infection = symptomatic_group[match(unique(symptomatic_group$unq_memID), symptomatic_group$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+received_treatment = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_first_symp_infection)){
+  treated = "no"
+  for (j in 1:nrow(survival_data_primary)){
+    if (unq_memID_first_symp_infection$unq_memID[i] == survival_data_primary$unq_memID[j]){
+      if (survival_data_primary$fu_end_date[j] > unq_memID_first_symp_infection$fu_end_date[i]){
+        treated = "yes"
+      } 
+      if (treated == "yes"){
+        received_treatment[j] = "yes"
+      } 
+    }
+  }
+}
+table(received_treatment,useNA = "always") 
+survival_data_primary$received_treatment = received_treatment
+survival_data_primary$received_treatment = ifelse(is.na(survival_data_primary$received_treatment),"no","yes")
+table(survival_data_primary$received_treatment,useNA = "always") 
+survival_data_primary$received_treatment = factor(survival_data_primary$received_treatment,levels=c("no","yes"))
+str(survival_data_primary$received_treatment)
+survival_data_primary %>% select(unq_memID,sample_id_date,main_exposure_primary_case_def,event_indicator,status,fu_end_date,received_treatment) %>% View()
+
+# run the model now with treatment in study variable added in
+fit.coxph.treated <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + received_treatment + (1 | unq_memID), 
+                              data = survival_data_primary)
+fit.coxph.treated
+exp(confint(fit.coxph.treated))
+
+
+
+#### ------- imputation sensitivity analysis ---------- ####
+
+# read in the data set prior to imputation being performed
+survival_data_primary_no_imputation = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/No imputation/survival_data_primary_survival_format_no_imputation_20JUNE2021.rds")
+
+# rerun the model
+fit.coxph.29month <- coxme(Surv(days_until_event, event_indicator) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                           data = survival_data_primary_no_imputation)
+fit.coxph.29month
+exp(confint(fit.coxph.29month))

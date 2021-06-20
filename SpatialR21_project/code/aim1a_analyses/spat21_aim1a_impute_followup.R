@@ -31,14 +31,14 @@ followup_data = read_csv("Desktop/Dissertation Materials/SpatialR21 Grant/Final 
 # calculate how many people sleep under net regularly
 participant_data = final_data %>%
   group_by(village_name,unq_memID) %>%
-  summarize(slept_avg=mean(slept_times, na.rm =T))
+  summarise(slept_avg=mean(slept_times, na.rm =T))
 # make a variable that indicates some slept under a net more than usual
 slept_under_net_regularly = ifelse(is.na(participant_data$slept_avg),NA,ifelse(participant_data$slept_avg>5,"yes","no"))
 table(slept_under_net_regularly,participant_data$slept_avg, useNA = "always")
 participant_data$slept_under_net_regularly = as.factor(slept_under_net_regularly)
 participant_data_v2 = participant_data %>%
   group_by(village_name, slept_under_net_regularly) %>%
-  summarize(totaln = n())
+  summarise(totaln = n())
 participant_data_v2$slept_under_net_regularly=as.factor(participant_data_v2$slept_under_net_regularly)
 # add the variables to the final data set with all observations
 participant_data$village_name <- NULL
@@ -70,7 +70,7 @@ survival_data_secondary_permissive = final_data %>%
 participant_data = final_data %>%
   filter(main_outcome_primary_case_def == "symptomatic infection") %>%
   group_by(unq_memID) %>%
-  summarize(n=n()) %>%
+  summarise(n=n()) %>%
   filter(n>1)
 
 # first order the data set by date
@@ -758,7 +758,7 @@ small_symp_infections_data = symp_infections_data %>% select(unq_memID,sample_id
 small_symp_infections_data$end_type = rep("symptomatic infection",nrow(small_symp_infections_data))
 small_end_study_data = survival_data_primary %>%
   group_by(unq_memID) %>%
-  summarize(sample_id_date = max(sample_id_date),month_year = max(month_year))
+  summarise(sample_id_date = max(sample_id_date),month_year = max(month_year))
 small_end_study_data$end_type = rep("study ended",nrow(small_end_study_data))
 all_end_dates_df = rbind(end_date_df,small_symp_infections_data,small_end_study_data)
 all_end_dates_df$sample_id_date = lubridate::as_date(all_end_dates_df$sample_id_date, origin = lubridate::origin)
@@ -821,7 +821,7 @@ all_end_dates_df = all_end_dates_df %>% filter(is.na(remove))
 # check for duplicate dates
 dups_list = all_end_dates_df %>%
   group_by(unq_memID,month_year) %>%
-  summarize(n=n())
+  summarise(n=n())
 dups_list = dups_list %>% filter(n>1)
 # this scenario is fine
 

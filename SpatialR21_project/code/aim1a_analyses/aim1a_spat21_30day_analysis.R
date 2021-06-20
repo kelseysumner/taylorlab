@@ -972,4 +972,316 @@ fp
 ggsave(fp, filename="/Users/kelseysumner/Desktop/hazard_symp_malaria_1month_sex.png", device="png",
        height=4, width=5, units="in", dpi=400)
 
+#### ------- do a secondary analysis looking at seasonality ------ ####
+
+# rainy season and month afterward: May - October
+
+# create a seasonality variable
+survival_data_primary$seasonality = ifelse(survival_data_primary$month_year == "2017-06-01" | 
+                                             survival_data_primary$month_year == "2017-07-01" |
+                                             survival_data_primary$month_year == "2017-08-01" |
+                                             survival_data_primary$month_year == "2017-09-01" |
+                                             survival_data_primary$month_year == "2017-10-01" |
+                                             survival_data_primary$month_year == "2018-05-01" |
+                                             survival_data_primary$month_year == "2018-06-01" | 
+                                             survival_data_primary$month_year == "2018-07-01" |
+                                             survival_data_primary$month_year == "2018-08-01" |
+                                             survival_data_primary$month_year == "2018-09-01" |
+                                             survival_data_primary$month_year == "2018-10-01" |
+                                             survival_data_primary$month_year == "2019-05-01" |
+                                             survival_data_primary$month_year == "2019-06-01" | 
+                                             survival_data_primary$month_year == "2019-07-01" |
+                                             survival_data_primary$month_year == "2019-08-01" |
+                                             survival_data_primary$month_year == "2019-09-01" |
+                                             survival_data_primary$month_year == "2019-10-01","high transmission","low transmission")
+table(survival_data_primary$month_year,survival_data_primary$seasonality,useNA = "always")
+survival_data_primary$seasonality = factor(survival_data_primary$seasonality,levels=c("low transmission","high transmission"))
+
+# run the model now with seasonality added in
+fit.coxph.seasonality <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + seasonality + (1 | unq_memID), 
+                               data = survival_data_primary)
+fit.coxph.seasonality
+exp(confint(fit.coxph.seasonality))
+
+
+#### ---- do a secondary analysis looking at the number of prior infections ----- ####
+
+# first order the data set by date
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# first pull out each participant's first infection
+unq_memID_first_infection = survival_data_primary[match(unique(survival_data_primary$unq_memID), survival_data_primary$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+number_prior_infections = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_first_infection)){
+  count = 0
+  for (j in 1:nrow(survival_data_primary)){
+    if (unq_memID_first_infection$unq_memID[i] == survival_data_primary$unq_memID[j]){
+      if (survival_data_primary$main_exposure_primary_case_def[j] == "asymptomatic infection"){
+        count = count + 1
+        number_prior_infections[j] = count - 1
+      } else {
+        count = count
+        number_prior_infections[j] = count
+      }
+    } 
+  }
+}
+summary(number_prior_infections)  
+survival_data_primary$number_prior_infections = number_prior_infections
+str(survival_data_primary$number_prior_infections)
+survival_data_primary %>% select(unq_memID,sample_id_date,main_exposure_primary_case_def,number_prior_infections) %>% View()
+
+
+# run the model now with number of prior infections added in
+fit.coxph.priorinfxn <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + number_prior_infections + (1 | unq_memID), 
+                               data = survival_data_primary)
+fit.coxph.priorinfxn
+exp(confint(fit.coxph.priorinfxn))
+
+
+#### ------- do a secondary analysis looking to see if treatment influences results ------- ####
+
+# if a person has a symptomatic infection, code them as having treatment during the study for any time after that
+
+# first order the data set by date
+survival_data_primary = dplyr::arrange(survival_data_primary,unq_memID,sample_id_date)
+
+# first pull out each participant's symptomatic infections
+survival_data_primary_symptomatic_only = survival_data_primary %>% filter(event_indicator_30day == 1)
+
+# now pull out each person's first symptomatic infection
+symptomatic_group = survival_data_primary_symptomatic_only %>%
+  group_by(unq_memID,fu_end_date) %>%
+  summarise(n=n())
+unq_memID_first_symp_infection = symptomatic_group[match(unique(symptomatic_group$unq_memID), symptomatic_group$unq_memID),]
+
+# now calculate the time since the participant first entered the study
+received_treatment = rep(NA,nrow(survival_data_primary))
+for (i in 1:nrow(unq_memID_first_symp_infection)){
+  treated = "no"
+  for (j in 1:nrow(survival_data_primary)){
+    if (unq_memID_first_symp_infection$unq_memID[i] == survival_data_primary$unq_memID[j]){
+      if (survival_data_primary$fu_end_date[j] > unq_memID_first_symp_infection$fu_end_date[i]){
+        treated = "yes"
+      } 
+      if (treated == "yes"){
+        received_treatment[j] = "yes"
+      } 
+    }
+  }
+}
+table(received_treatment,useNA = "always") 
+survival_data_primary$received_treatment = received_treatment
+survival_data_primary$received_treatment = ifelse(is.na(survival_data_primary$received_treatment),"no","yes")
+table(survival_data_primary$received_treatment,useNA = "always") 
+survival_data_primary$received_treatment = factor(survival_data_primary$received_treatment,levels=c("no","yes"))
+str(survival_data_primary$received_treatment)
+survival_data_primary %>% select(unq_memID,sample_id_date,main_exposure_primary_case_def,event_indicator_30day,status,fu_end_date,received_treatment) %>% View()
+
+# run the model now with treatment in study variable added in
+fit.coxph.treated <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + received_treatment + (1 | unq_memID), 
+                           data = survival_data_primary)
+fit.coxph.treated
+exp(confint(fit.coxph.treated))
+
+
+#### ------- look at parasite density across age groups ------- ####
+
+# now stratify the data by the <5 age group
+under5_data = survival_data_primary %>% filter(age_cat_baseline == "<5 years")
+from5to15_data = survival_data_primary %>% filter(age_cat_baseline == "5-15 years")
+greater15_data = survival_data_primary %>% filter(age_cat_baseline == ">15 years")
+
+# now run separate models for each parasite density stratification for < 5 years
+## p_any
+pany_data = under5_data %>% filter(p_any == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.pany <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = pany_data)
+fit.coxph.pany
+exp(confint(fit.coxph.pany))
+## 1
+p1_data = under5_data %>% filter(p_1 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                      data = p1_data)
+fit.coxph.p1
+exp(confint(fit.coxph.p1))
+## 10
+p10_data = under5_data %>% filter(p_10 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p10 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                       data = p10_data)
+fit.coxph.p10
+exp(confint(fit.coxph.p10))
+## 100
+p100_data = under5_data %>% filter(p_100 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p100 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p100_data)
+fit.coxph.p100
+exp(confint(fit.coxph.p100))
+## 500
+p500_data = under5_data %>% filter(p_500 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p500 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p500_data)
+fit.coxph.p500
+exp(confint(fit.coxph.p500))
+# too sparse of numbers
+## 1000
+p1000_data = under5_data %>% filter(p_1000 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1000 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = p1000_data)
+fit.coxph.p1000
+exp(confint(coxph.p1000))
+# too sparse of numbers
+
+
+# now run separate models for each parasite density stratification for 5-15 years
+## p_any
+pany_data = from5to15_data %>% filter(p_any == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.pany <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = pany_data)
+fit.coxph.pany
+exp(confint(fit.coxph.pany))
+## 1
+p1_data = from5to15_data %>% filter(p_1 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                      data = p1_data)
+fit.coxph.p1
+exp(confint(fit.coxph.p1))
+## 10
+p10_data = from5to15_data %>% filter(p_10 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p10 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                       data = p10_data)
+fit.coxph.p10
+exp(confint(fit.coxph.p10))
+## 100
+p100_data = from5to15_data %>% filter(p_100 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p100 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p100_data)
+fit.coxph.p100
+exp(confint(fit.coxph.p100))
+## 500
+p500_data = from5to15_data %>% filter(p_500 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p500 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p500_data)
+fit.coxph.p500
+exp(confint(fit.coxph.p500))
+## 1000
+p1000_data = from5to15_data %>% filter(p_1000 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1000 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = p1000_data)
+fit.coxph.p1000
+exp(confint(fit.coxph.p1000))
+
+
+# now run separate models for each parasite density stratification for >15 years
+## p_any
+pany_data = greater15_data %>% filter(p_any == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.pany <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = pany_data)
+fit.coxph.pany
+exp(confint(fit.coxph.pany))
+## 1
+p1_data = greater15_data %>% filter(p_1 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                      data = p1_data)
+fit.coxph.p1
+exp(confint(fit.coxph.p1))
+## 10
+p10_data = greater15_data %>% filter(p_10 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p10 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                       data = p10_data)
+fit.coxph.p10
+exp(confint(fit.coxph.p10))
+## 100
+p100_data = greater15_data %>% filter(p_100 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p100 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p100_data)
+fit.coxph.p100
+exp(confint(fit.coxph.p100))
+## 500
+p500_data = greater15_data %>% filter(p_500 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p500 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                        data = p500_data)
+fit.coxph.p500
+exp(confint(fit.coxph.p500))
+## 1000
+p1000_data = greater15_data %>% filter(p_1000 == "yes" | main_exposure_primary_case_def == "no infection")
+fit.coxph.p1000 <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = p1000_data)
+fit.coxph.p1000
+exp(confint(fit.coxph.p1000))
+
+
+# read in the csv file of the results and make a plot
+age_density_plot_data = read_csv("Desktop/age_density_plot.csv")
+age_density_plot_data$age_cat = factor(age_density_plot_data$age_cat,levels=c("<5 years","5-15 years",">15 years"))
+age_density_plot_data$parasite_density_threshold = factor(age_density_plot_data$parasite_density_threshold,levels=c("Any density",">1 p/uL",">10 p/uL",">100 p/uL"))
+fp <- ggplot(data=age_density_plot_data, aes(x=parasite_density_threshold, y=estimate, ymin=lower_CI, ymax=upper_CI,group=age_cat)) +
+  geom_pointrange(size=1.25) + 
+  geom_hline(yintercept=1, lty=2) +  # add a dotted line at x=1 after flip
+  xlab("Parasite density threshold") + ylab("Hazard of symptomatic malaria (95% CI)") +
+  scale_y_continuous(trans="log10",breaks = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17)) +
+  theme_bw() +
+  facet_grid(~age_cat) +
+  theme(text = element_text(size=12.5))
+fp
+ggsave(fp, filename="/Users/kelseysumner/Desktop/age_density_plot.png", device="png",
+       height=6, width=10, units="in", dpi=400)
+
+
+
+#### ------- imputation sensitivity analysis ---------- ####
+
+# read in the data set prior to imputation being performed
+survival_data_primary_no_imputation = read_rds("Desktop/Dissertation Materials/SpatialR21 Grant/Final Dissertation Materials/Aim 1A/survival_data_sets/No imputation/survival_data_primary_survival_format_no_imputation_20JUNE2021.rds")
+
+## ------ now recode follow-up to be within 30 days ------- ##
+
+## ------- for primary data
+
+# first pull out when each participant entered the study
+unq_memID_start_date = survival_data_primary_no_imputation[match(unique(survival_data_primary_no_imputation$unq_memID), survival_data_primary_no_imputation$unq_memID),]
+
+# only follow-up participants for 30 days
+days_until_event_30day = rep(NA,nrow(survival_data_primary_no_imputation))
+status_30day = rep(NA,nrow(survival_data_primary_no_imputation))
+for (i in 1:nrow(unq_memID_start_date)){
+  for (j in 1:nrow(survival_data_primary_no_imputation)){
+    if (survival_data_primary_no_imputation$unq_memID[j] == unq_memID_start_date$unq_memID[i]){
+      if (survival_data_primary_no_imputation$days_until_event[j] <= 30){
+        days_until_event_30day[j] = survival_data_primary_no_imputation$days_until_event[j]
+        if (survival_data_primary_no_imputation$status[j] == "symptomatic infection"){
+          status_30day[j] = "symptomatic infection"
+        } else {
+          status_30day[j] = "censored"
+        }
+      } else {
+        days_until_event_30day[j] = 30
+        status_30day[j] = "censored"
+      }
+    }
+  }
+}
+survival_data_primary_no_imputation$days_until_event_30day = days_until_event_30day
+survival_data_primary_no_imputation$status_30day = status_30day
+
+# test the output
+symptomatic_data = survival_data_primary_no_imputation %>% filter(status_30day == "symptomatic infection")
+summary(symptomatic_data$days_until_event_30day)
+test = symptomatic_data %>% select(unq_memID,fu_end_date)
+length(unique(test$unq_memID,test$fu_end_date))
+summary(survival_data_primary_no_imputation$days_until_event_30day)
+table(survival_data_primary_no_imputation$status_30day,useNA="always")
+
+# update the event indicator variable
+survival_data_primary_no_imputation$event_indicator_30day = ifelse(survival_data_primary_no_imputation$status_30day == "symptomatic infection",1,0)
+table(survival_data_primary_no_imputation$event_indicator_30day,survival_data_primary_no_imputation$status_30day,useNA = "always")
+
+# run a multi-level coxph model with random intercepts for the participant level (not doing hh level because not using hh level covariates and didn't explain much variance, also makes interpretation better)
+# primary data set
+fit.coxph.30day <- coxme(Surv(days_until_event_30day, event_indicator_30day) ~ main_exposure_primary_case_def + age_cat_baseline + gender + slept_under_net_regularly + village_name + (1 | unq_memID), 
+                         data = survival_data_primary_no_imputation)
+fit.coxph.30day
+
 
